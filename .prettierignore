@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+target
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+Cargo.lock
+apps/desktop/gen

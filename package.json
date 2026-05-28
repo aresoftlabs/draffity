@@ -1,0 +1,55 @@
+{
+  "name": "draffity",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "description": "Asistente de escritura desktop multi-formato (Tauri 2 + Rust + Vue 3)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "dev": "pnpm --filter @draffity/ui dev",
+    "tauri": "pnpm --filter @draffity/desktop tauri",
+    "tauri:dev": "pnpm --filter @draffity/desktop tauri dev",
+    "tauri:build": "pnpm --filter @draffity/desktop tauri build",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @draffity/ui test:e2e",
+    "lint": "pnpm lint:js && pnpm lint:rs",
+    "lint:js": "eslint .",
+    "lint:rs": "cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings",
+    "fmt": "prettier --write . && cargo fmt --manifest-path apps/desktop/Cargo.toml",
+    "fmt:check": "prettier --check . && cargo fmt --manifest-path apps/desktop/Cargo.toml -- --check",
+    "typecheck": "pnpm --filter @draffity/ui typecheck",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@eslint/js": "^9.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.15.0",
+    "eslint-plugin-vue": "^9.31.0",
+    "globals": "^15.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.1",
+    "typescript": "^5.6.3",
+    "vue-eslint-parser": "^9.4.3"
+  },
+  "lint-staged": {
+    "*.{ts,vue,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml,html,css}": [
+      "prettier --write"
+    ],
+    "apps/desktop/**/*.rs": [
+      "cargo fmt --manifest-path apps/desktop/Cargo.toml --"
+    ]
+  }
+}

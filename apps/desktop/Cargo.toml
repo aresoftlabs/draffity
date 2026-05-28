@@ -1,0 +1,48 @@
+[package]
+name = "draffity-desktop"
+version = "0.1.0"
+description = "Draffity desktop (Tauri 2 + Rust)"
+authors = ["Draffity"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "draffity_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+anyhow = "1"
+ulid = { version = "1", features = ["serde"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+docx-rs = "0.4"
+epub-builder = "0.7"
+html2md = "0.2"
+scraper = { version = "0.20", default-features = false }
+ego-tree = "0.6"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[features]
+# this feature is used for production builds where `devUrl` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

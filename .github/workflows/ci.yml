@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test-js:
+    name: Lint & test (JS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm fmt:check
+      - run: pnpm lint:js
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  lint-and-test-rs:
+    name: Lint & test (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Install Tauri Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file libxdo-dev \
+            libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop
+      - run: cargo fmt --manifest-path apps/desktop/Cargo.toml --all -- --check
+      - run: cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --manifest-path apps/desktop/Cargo.toml --all
+
+  e2e:
+    name: E2E (Playwright + mock IPC)
+    needs: [lint-and-test-js]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm --filter @draffity/ui exec playwright install --with-deps chromium
+      - name: Run E2E
+        run: pnpm test:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/ui/playwright-report
+          retention-days: 7
+
+  build-tauri:
+    name: Build (${{ matrix.os }})
+    needs: [lint-and-test-js, lint-and-test-rs, e2e]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop
+      - name: Install Tauri Linux deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file libxdo-dev \
+            libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tauri:build
+        env:
+          CI: 'true'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: draffity-${{ matrix.os }}
+          path: |
+            apps/desktop/target/release/bundle/msi/*.msi
+            apps/desktop/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: ignore
