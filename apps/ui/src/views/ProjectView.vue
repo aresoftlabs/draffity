@@ -21,6 +21,7 @@ import Inspector from '@/components/Inspector.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
+import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -50,6 +51,8 @@ const editor = computed(() => editorRef.value?.editor ?? null);
 
 const showExport = ref(false);
 const showSearch = ref(false);
+const findVisible = ref(false);
+const findMode = ref<'find' | 'replace'>('find');
 const sessionStartWords = ref(0);
 const sessionWordCount = computed(() =>
   Math.max(0, totalWordCount.value - sessionStartWords.value),
@@ -146,6 +149,15 @@ useShortcuts({
   'ctrl+shift+f': () => {
     showSearch.value = true;
   },
+  'ctrl+f': () => {
+    findMode.value = 'find';
+    findVisible.value = true;
+  },
+  'ctrl+h': () => {
+    if (readOnly.value) return;
+    findMode.value = 'replace';
+    findVisible.value = true;
+  },
   f11: () => toggleFocus(),
 });
 
@@ -231,6 +243,12 @@ onMounted(loadProject);
           {{ t('project.readOnlyBanner') }}
         </div>
         <EditorToolbar :editor="editor" :disabled="readOnly" />
+        <FindReplaceBar
+          v-model:visible="findVisible"
+          :editor="editor"
+          :mode="findMode"
+          :read-only="readOnly"
+        />
         <div class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950">
           <div v-if="!selected" class="h-full flex items-center justify-center text-sm opacity-60">
             {{ t('project.noSelection') }}

@@ -157,6 +157,17 @@
     "hint": "Start typing to search across your chapters and notes.",
     "error": "Search failed"
   },
+  "find": {
+    "findPlaceholder": "Find in this document…",
+    "replacePlaceholder": "Replace with…",
+    "next": "Next (Enter)",
+    "previous": "Previous (Shift+Enter)",
+    "replace": "Replace",
+    "replaceAll": "Replace all",
+    "close": "Close (Esc)",
+    "counter": "{current}/{total}",
+    "noMatches": "No matches"
+  },
   "onboarding": {
     "welcomeTitle": "Welcome to Draffity",
     "welcomeBody": "Your multi-format writing assistant: novels, papers, manga, articles. Local, fast and distraction-free.",
