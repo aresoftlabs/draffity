@@ -7,6 +7,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
+import KeybindingsEditor from '@/components/KeybindingsEditor.vue';
 import { useUiStore } from '@/stores/ui';
 import { useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
@@ -167,6 +168,14 @@ function kindLabel(kind: BackupRecord['kind']): string {
           <p class="text-xs opacity-60 mt-1">{{ t('settings.typewriterHint') }}</p>
         </div>
         <ToggleSwitch v-model="ui.typewriterMode" />
+      </section>
+
+      <section>
+        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+          {{ t('shortcuts.title') }}
+        </h2>
+        <p class="text-xs opacity-60 mb-2">{{ t('shortcuts.hint') }}</p>
+        <KeybindingsEditor />
       </section>
 
       <section>

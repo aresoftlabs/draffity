@@ -270,6 +270,21 @@
     "coverClear": "Quitar",
     "coverPickerTitle": "Selecciona la imagen de portada"
   },
+  "shortcuts": {
+    "title": "Atajos de teclado",
+    "hint": "Hacé clic en \"Cambiar\" y presioná la combinación nueva. Esc cancela.",
+    "rebind": "Cambiar",
+    "capturing": "Presioná la combinación…",
+    "reset": "Por defecto",
+    "flushSave": "Guardar ahora",
+    "newChapter": "Nuevo capítulo",
+    "searchProject": "Buscar en el proyecto",
+    "findInDocument": "Buscar en el documento",
+    "replaceInDocument": "Reemplazar en el documento",
+    "prevDocument": "Documento anterior",
+    "nextDocument": "Documento siguiente",
+    "focusMode": "Modo enfoque"
+  },
   "saveAsTemplate": {
     "openButton": "Guardar como plantilla",
     "title": "Guardar proyecto como plantilla",

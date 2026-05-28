@@ -224,27 +224,27 @@ async function onProjectGoalChange(goal: number | null) {
 }
 
 useShortcuts({
-  'ctrl+s': () => {
+  flushSave: () => {
     void auto.flush();
   },
-  'ctrl+n': () => {
+  newChapter: () => {
     if (!readOnly.value) onCreate('chapter');
   },
-  'ctrl+shift+f': () => {
+  searchProject: () => {
     showSearch.value = true;
   },
-  'ctrl+f': () => {
+  findInDocument: () => {
     findMode.value = 'find';
     findVisible.value = true;
   },
-  'ctrl+h': () => {
+  replaceInDocument: () => {
     if (readOnly.value) return;
     findMode.value = 'replace';
     findVisible.value = true;
   },
-  'ctrl+,': () => navigateDoc(-1),
-  'ctrl+.': () => navigateDoc(1),
-  f11: () => toggleFocus(),
+  prevDocument: () => navigateDoc(-1),
+  nextDocument: () => navigateDoc(1),
+  focusMode: () => toggleFocus(),
 });
 
 useTypewriterScroll(editor, typewriterEnabled);

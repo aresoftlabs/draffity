@@ -1,32 +1,28 @@
 import { onBeforeUnmount, onMounted } from 'vue';
+import { formatCombo, useKeybindingsStore, type ShortcutAction } from '@/stores/keybindings';
 
-export interface ShortcutMap {
-  [combo: string]: (e: KeyboardEvent) => void;
-}
-
-/** Format the active modifier+key combo as a normalized key, e.g. `ctrl+s`. */
-function formatCombo(e: KeyboardEvent): string {
-  const parts: string[] = [];
-  if (e.ctrlKey || e.metaKey) parts.push('ctrl');
-  if (e.shiftKey) parts.push('shift');
-  if (e.altKey) parts.push('alt');
-  parts.push(e.key.toLowerCase());
-  return parts.join('+');
-}
+export type ShortcutHandlers = Partial<Record<ShortcutAction, (e: KeyboardEvent) => void>>;
 
 /**
  * Register keyboard shortcuts during the lifetime of the calling component.
- * Combos are normalized as `ctrl+s`, `ctrl+shift+n`, etc. `meta` is mapped to
- * `ctrl` so Mac keyboard support is automatic.
+ * Handlers are keyed by stable **action** ids (`flushSave`, `newChapter`,
+ * …); the actual combo comes from the keybindings store so users can
+ * rebind any action from Settings.
  */
-export function useShortcuts(map: ShortcutMap) {
+export function useShortcuts(handlers: ShortcutHandlers) {
+  const store = useKeybindingsStore();
+  // Kick off the load lazily — every consumer benefits, no harm in racing
+  // (the dispatcher just sees defaults for the first frame).
+  void store.load();
+
   function onKey(e: KeyboardEvent) {
     const combo = formatCombo(e);
-    const handler = map[combo];
-    if (handler) {
-      e.preventDefault();
-      handler(e);
-    }
+    const action = store.comboMap.get(combo);
+    if (!action) return;
+    const handler = handlers[action];
+    if (!handler) return;
+    e.preventDefault();
+    handler(e);
   }
   onMounted(() => window.addEventListener('keydown', onKey));
   onBeforeUnmount(() => window.removeEventListener('keydown', onKey));

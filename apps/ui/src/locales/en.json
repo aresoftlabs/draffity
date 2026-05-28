@@ -270,6 +270,21 @@
     "coverClear": "Clear",
     "coverPickerTitle": "Select a cover image"
   },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "hint": "Click \"Rebind\" and press the new combination. Esc cancels.",
+    "rebind": "Rebind",
+    "capturing": "Press the combination…",
+    "reset": "Default",
+    "flushSave": "Save now",
+    "newChapter": "New chapter",
+    "searchProject": "Search project",
+    "findInDocument": "Find in document",
+    "replaceInDocument": "Replace in document",
+    "prevDocument": "Previous document",
+    "nextDocument": "Next document",
+    "focusMode": "Focus mode"
+  },
   "saveAsTemplate": {
     "openButton": "Save as template",
     "title": "Save project as template",
