@@ -7,16 +7,98 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Deferred to v0.5
+### Deferred to v0.6
 
-- **PDF export** (S1-02 originalmente Sprint 1). Sigue pendiente.
-  Próximo sprint con bloque dedicado.
+Bloques que originalmente estaban planeados para Sprint 4 pero que
+requieren su propia sesión de trabajo por scope o por decisión de
+diseño aún abierta:
+
+- **Imágenes inline** (S4-02). Paste/drop → blob en disco + tabla
+  `media(document_id, path, mime, hash)` + custom node con
+  ProseMirror nodeView. Decisión abierta: ¿almacenamos blobs en el
+  app_data_dir junto a la DB o en `<project>/media/`? Afecta backup
+  y portabilidad.
+- **Footnotes** (S4-03). Custom node con nodeView para numeración
+  automática + render como superíndice. Export DOCX/EPUB ya soporta
+  el modelo, falta el nodo en el editor.
+- **Diff visual entre snapshots** (S4-05). Dep `diff-match-patch`
+  o `unified-diff` + componente `SnapshotDiffView`. Requiere
+  decidir si comparamos HTML (rápido pero ruidoso) o texto plano
+  derivado.
+- **Markdown import** (S4-06) y **DOCX import** (S4-07). Strategy
+  paralelo al `LocalExporter`: `LocalImporter` con `import_from`
+  por formato. Necesita normalizar el HTML resultante al subset
+  que TipTap StarterKit + tablas reconoce.
+- **Round-trip tests de exporters** (S4-09). Export → import →
+  comparar AST. Bloqueado por S4-06/07.
+
+Bloques aún pendientes de sprints anteriores:
+
+- **PDF export** (S1-02 originalmente Sprint 1).
 - **Stats históricas con gráfico de 30 días** (S2-08 originalmente
-  Sprint 2). Pendiente la decisión de librería de charts.
-- **Split editor** (S3-06 originalmente Sprint 3). Implementar dos
-  TipTap instances independientes con autosaves coordinados requiere
-  cuidado con el ciclo de vida de cada editor y la inevitable
-  segunda selección — merece su sesión dedicada.
+  Sprint 2). Pendiente decisión de librería de charts.
+- **Split editor** (S3-06 originalmente Sprint 3).
+
+## [0.5.0-beta] — 2026-05-28
+
+Sprint 4 parcial: el editor empieza a parecerse a un procesador de
+texto. Tablas TipTap con resize de columnas, spellcheck que sigue
+el idioma de la UI, y el documento ahora persiste su estado
+canónico de ProseMirror en JSON (no solo el HTML render-cache).
+El alcance original del sprint era más ambicioso — ver "Deferred
+to v0.6" para los bloques que se trasladan.
+
+### Added — Sprint 4
+
+- **Tablas en el editor** (S4-01): extensiones `@tiptap/extension-
+table` (v2.27.x, peer-compatible con el resto de TipTap v2.10)
+  - TableRow / TableHeader / TableCell. Header row habilitada por
+    defecto, columnas redimensionables por drag (`resizable: true`).
+    Toolbar con 4 botones nuevos: insertar tabla, agregar fila,
+    agregar columna, eliminar tabla. Solo los 3 de edición se
+    muestran cuando el cursor está dentro de una tabla
+    (`isInTable` computado). Estilos scoped en TipTapEditor con
+    handle de resize visible al hover.
+- **Spellcheck dinámico por locale** (S4-08): el atributo `lang`
+  del editable ProseMirror se sincroniza con `useI18n().locale`
+  via watch directo sobre `editor.view.dom`. Cambiar idioma de UI
+  conmuta el diccionario nativo del WebView sin recargar.
+- **Persistencia canónica como JSON** (S4-04): migración 006
+  aditiva agrega `content_json TEXT` a `documents`. El editor
+  ahora hace dual-write — emite `update:modelValue` (HTML render-
+  cache para export y FTS) y `update:modelValueJson` (estado
+  ProseMirror canónico). Al rehidratar, `initialContent()`
+  prefiere JSON cuando existe; HTML solo como fallback. Previene
+  pérdida de atributos no-HTML como anchos de columna de tabla
+  entre sesiones. `update_document` (IPC + trait) acepta el campo
+  nuevo; `DocNode.contentJson` añadido a shared-types.
+
+### Architecture / migrations
+
+- Migración 006 aditiva: `ALTER TABLE documents ADD COLUMN
+content_json TEXT`. `row_to_document` tolera la columna ausente
+  para queries que no la pidan (backwards-compatible).
+- El COLS constante de `storage/documents.rs` ahora lista
+  `content_json` explícitamente; no se filtra fuera de los
+  callsites internos. El SELECT de snapshots se actualiza en
+  paralelo para no romper el restore.
+- Patrón de doble emit en TipTapEditor habilita que tipo de
+  ediciones futuras (footnotes, images, custom nodes) se persistan
+  sin tocar el storage layer — el JSON ya es la fuente de verdad.
+
+### Fixed
+
+- 2 lints nuevos de clippy 1.95: `DocumentStatus` ahora usa
+  `#[derive(Default)] + #[default]` en vez de impl manual;
+  `reorder_documents` en test usa `std::slice::from_ref(&ch)` en
+  vez de `&[ch.clone()]`. Sin cambios de comportamiento.
+
+### Tests
+
+- Rust: 87 verdes (los mismos del sprint anterior, callsites de
+  `update_document` actualizados al 4to argumento `content_json`).
+- Vitest: 30 verdes.
+- Playwright: 3 specs sin cambios.
 
 ## [0.4.0-beta] — 2026-05-29
 
@@ -284,7 +366,8 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.4.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.5.0-beta...HEAD
+[0.5.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.5.0-beta
 [0.4.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.4.0-beta
 [0.3.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.3.0-beta
 [0.2.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.2.0-beta
