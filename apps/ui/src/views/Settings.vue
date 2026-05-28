@@ -2,22 +2,27 @@
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SelectButton from 'primevue/selectbutton';
+import Select from 'primevue/select';
 import Slider from 'primevue/slider';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
+import { open } from '@tauri-apps/plugin-dialog';
+import { readFile } from '@tauri-apps/plugin-fs';
 import KeybindingsEditor from '@/components/KeybindingsEditor.vue';
 import SparklineChart from '@/components/SparklineChart.vue';
 import { useUiStore } from '@/stores/ui';
-import { useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
+import { useProjectStore } from '@/stores/project';
+import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
 import { ipc } from '@/services/ipc';
-import type { BackupRecord, DailyWriting, WritingStats } from '@draffity/shared-types';
+import type { BackupRecord, DailyWriting, MediaAsset, WritingStats } from '@draffity/shared-types';
 
 const { t, locale } = useI18n();
 const ui = useUiStore();
-const { autosaveMs, font, customCss } = useEditorSettings();
+const projectStore = useProjectStore();
+const { autosaveMs, font, fontFamily, customFontId, customCss } = useEditorSettings();
 
 const themeOptions = computed(() => [
   { label: t('settings.themeLight'), value: 'light' },
@@ -30,11 +35,121 @@ const localeOptions = [
   { label: 'English', value: 'en' },
 ];
 
+const toast = useToast();
+
 const fontOptions = computed(() => [
   { label: t('settings.fontSerif'), value: 'serif' as EditorFont },
   { label: t('settings.fontSans'), value: 'sans' as EditorFont },
   { label: t('settings.fontMono'), value: 'mono' as EditorFont },
 ]);
+
+// Common system fonts. Best-effort: not every machine has Garamond etc.,
+// so the CSS family stack always falls back to the closest built-in.
+const SYSTEM_FONTS: { label: string; value: string }[] = [
+  { label: 'Georgia', value: "Georgia, 'Times New Roman', serif" },
+  { label: 'Garamond', value: "Garamond, 'EB Garamond', Georgia, serif" },
+  { label: 'Palatino', value: "Palatino, 'Palatino Linotype', 'Book Antiqua', serif" },
+  { label: 'Helvetica', value: 'Helvetica, Arial, sans-serif' },
+  { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+  { label: 'Courier', value: "'Courier New', Courier, monospace" },
+];
+
+const customFonts = ref<MediaAsset[]>([]);
+const uploadingFont = ref(false);
+
+async function loadCustomFonts() {
+  const pid = projectStore.active?.id;
+  if (!pid) {
+    customFonts.value = [];
+    return;
+  }
+  try {
+    const all = await ipc.listProjectMedia(pid);
+    customFonts.value = all.filter((m) => m.mime.startsWith('font/'));
+  } catch {
+    customFonts.value = [];
+  }
+}
+
+const fontSelectGroups = computed(() => {
+  const groups: { label: string; items: { label: string; value: string }[] }[] = [
+    {
+      label: t('settings.fontGroupBuiltIn'),
+      items: [
+        { label: 'Lora (Serif)', value: builtInFamily('serif') },
+        { label: 'Inter (Sans)', value: builtInFamily('sans') },
+        { label: 'JetBrains Mono (Mono)', value: builtInFamily('mono') },
+      ],
+    },
+    { label: t('settings.fontGroupSystem'), items: SYSTEM_FONTS },
+  ];
+  if (customFonts.value.length > 0) {
+    groups.push({
+      label: t('settings.fontGroupCustom'),
+      items: customFonts.value.map((f) => ({
+        label: prettyFontName(f),
+        value: `custom:${f.id}`,
+      })),
+    });
+  }
+  return groups;
+});
+
+function prettyFontName(asset: MediaAsset): string {
+  const base = asset.pathRelative.split(/[\\/]/).pop() ?? asset.id;
+  return base.replace(/\.[^.]+$/, '');
+}
+
+const fontFamilyModel = computed({
+  get: () => (customFontId.value ? `custom:${customFontId.value}` : fontFamily.value),
+  set: (v: string) => {
+    if (v.startsWith('custom:')) {
+      customFontId.value = v.slice('custom:'.length);
+    } else {
+      customFontId.value = null;
+      fontFamily.value = v;
+    }
+  },
+});
+
+async function onUploadFont() {
+  const pid = projectStore.active?.id;
+  if (!pid) return;
+  const picked = await open({
+    multiple: false,
+    directory: false,
+    filters: [{ name: 'Fonts', extensions: ['ttf', 'otf'] }],
+    title: t('settings.uploadFont'),
+  });
+  if (typeof picked !== 'string') return;
+  uploadingFont.value = true;
+  try {
+    const bytes = await readFile(picked);
+    const mime = picked.toLowerCase().endsWith('.otf') ? 'font/otf' : 'font/ttf';
+    const asset = await ipc.uploadMedia({
+      projectId: pid,
+      mime,
+      bytes: Array.from(bytes),
+    });
+    await loadCustomFonts();
+    customFontId.value = asset.id;
+    toast.add({
+      severity: 'success',
+      summary: t('settings.editorFont'),
+      detail: t('settings.fontUploaded'),
+      life: 3000,
+    });
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.editorFont'),
+      detail: t('settings.fontUploadFailed'),
+      life: 5000,
+    });
+  } finally {
+    uploadingFont.value = false;
+  }
+}
 
 const themeModel = computed({
   get: () => ui.theme,
@@ -52,7 +167,6 @@ const backups = ref<BackupRecord[]>([]);
 const creatingBackup = ref(false);
 const restoringId = ref<string | null>(null);
 const { run } = useIpcError();
-const toast = useToast();
 
 const totalWords30d = computed(() => dailySeries.value.reduce((acc, d) => acc + d.words, 0));
 const activeDays30d = computed(() => dailySeries.value.filter((d) => d.sessions > 0).length);
@@ -69,6 +183,7 @@ onMounted(async () => {
     dailySeries.value = [];
   }
   await loadBackups();
+  await loadCustomFonts();
 });
 
 async function loadBackups() {
@@ -153,12 +268,42 @@ function kindLabel(kind: BackupRecord['kind']): string {
         <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
           {{ t('settings.editorFont') }}
         </h2>
-        <SelectButton
-          v-model="font"
-          :options="fontOptions"
-          option-label="label"
-          option-value="value"
-        />
+        <div class="flex items-center gap-2">
+          <Select
+            v-model="fontFamilyModel"
+            :options="fontSelectGroups"
+            option-label="label"
+            option-value="value"
+            option-group-label="label"
+            option-group-children="items"
+            class="flex-1"
+            :placeholder="t('settings.fontPickerPlaceholder')"
+          />
+          <Button
+            v-tooltip.left="
+              projectStore.active ? t('settings.uploadFont') : t('settings.uploadFontNoProject')
+            "
+            :aria-label="t('settings.uploadFont')"
+            icon="pi pi-upload"
+            size="small"
+            severity="secondary"
+            :disabled="!projectStore.active || uploadingFont"
+            :loading="uploadingFont"
+            @click="onUploadFont"
+          />
+        </div>
+        <p class="text-xs opacity-60 mt-2">{{ t('settings.fontHint') }}</p>
+        <!-- Legacy 3-button selector kept for users who prefer it as a quick
+             toggle; it just swaps the family stack underneath. -->
+        <div class="mt-3">
+          <SelectButton
+            v-model="font"
+            :options="fontOptions"
+            option-label="label"
+            option-value="value"
+            @update:model-value="(v: EditorFont) => (fontFamilyModel = builtInFamily(v))"
+          />
+        </div>
       </section>
 
       <section>

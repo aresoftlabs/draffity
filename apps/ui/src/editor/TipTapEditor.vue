@@ -8,13 +8,14 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Citation } from './extensions/citation';
 import { CodexRef } from './extensions/codex-ref';
 import { Footnote } from './extensions/footnote';
 import { Image } from './extensions/image';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
+import { useMediaStore } from '@/stores/media';
 
 const props = withDefaults(
   defineProps<{
@@ -151,8 +152,28 @@ const wordCount = computed(() => {
   return storage?.words?.() ?? 0;
 });
 
-const { customCss } = useEditorSettings();
+const { customCss, fontFamily, customFontId } = useEditorSettings();
+const mediaStore = useMediaStore();
 const safeCustomCss = computed(() => sanitizeUserCss(customCss.value));
+
+const customFontUrl = ref<string | null>(null);
+const CUSTOM_FONT_NAME = 'DraffityCustomFont';
+watch(
+  customFontId,
+  async (id) => {
+    customFontUrl.value = null;
+    if (!id) return;
+    try {
+      customFontUrl.value = await mediaStore.resolve(id);
+    } catch {
+      customFontUrl.value = null;
+    }
+  },
+  { immediate: true },
+);
+const resolvedFontFamily = computed(() =>
+  customFontUrl.value ? `'${CUSTOM_FONT_NAME}', ${fontFamily.value}` : fontFamily.value,
+);
 
 // Vue's template compiler ignores inline <style> tags (side-effect), so we
 // inject the user's CSS into <head> as a singleton <style id="...">. The
@@ -172,6 +193,24 @@ watchEffect(() => {
   if (typeof document === 'undefined') return;
   getStyleEl().textContent = safeCustomCss.value;
 });
+
+const FONT_STYLE_ID = 'draffity-editor-custom-font';
+function getFontStyleEl(): HTMLStyleElement {
+  let el = document.getElementById(FONT_STYLE_ID) as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement('style');
+    el.id = FONT_STYLE_ID;
+    document.head.appendChild(el);
+  }
+  return el;
+}
+watchEffect(() => {
+  if (typeof document === 'undefined') return;
+  const url = customFontUrl.value;
+  getFontStyleEl().textContent = url
+    ? `@font-face { font-family: '${CUSTOM_FONT_NAME}'; src: url('${url}'); font-display: swap; }`
+    : '';
+});
 onBeforeUnmount(() => {
   // Leave the style element in place if other instances may still need it;
   // if its content is empty there's nothing to remove either.
@@ -183,14 +222,17 @@ defineExpose({ editor, charCount, wordCount });
 </script>
 
 <template>
-  <div class="tiptap-host h-full overflow-auto">
+  <div
+    class="tiptap-host h-full overflow-auto"
+    :style="{ '--editor-font-family': resolvedFontFamily }"
+  >
     <EditorContent :editor="editor" class="h-full" />
   </div>
 </template>
 
 <style scoped>
 .tiptap-host :deep(.tiptap-content) {
-  font-family: Lora, Georgia, 'Times New Roman', serif;
+  font-family: var(--editor-font-family, Lora, Georgia, 'Times New Roman', serif);
   font-size: 18px;
   line-height: 1.7;
   max-width: 720px;
