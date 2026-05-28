@@ -27,6 +27,7 @@ import GoalProgress from '@/components/GoalProgress.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
 import OutlinerView from '@/views/OutlinerView.vue';
+import ScriveningsView from '@/components/ScriveningsView.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -319,8 +320,13 @@ onMounted(loadProject);
           {{ t('project.readOnlyBanner') }}
         </div>
         <template v-if="viewMode === 'editor'">
-          <EditorToolbar :editor="editor" :disabled="readOnly" />
+          <EditorToolbar
+            v-if="selected?.docType !== 'folder'"
+            :editor="editor"
+            :disabled="readOnly"
+          />
           <FindReplaceBar
+            v-if="selected?.docType !== 'folder'"
             v-model:visible="findVisible"
             :editor="editor"
             :mode="findMode"
@@ -333,6 +339,11 @@ onMounted(loadProject);
             >
               {{ t('project.noSelection') }}
             </div>
+            <ScriveningsView
+              v-else-if="selected.docType === 'folder'"
+              :folder="selected"
+              :documents="docStore.documents"
+            />
             <TipTapEditor
               v-else
               ref="editorRef"
