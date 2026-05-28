@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod asr;
+pub mod backup;
 pub mod bibliography;
 pub mod exporter;
 pub mod factory;
@@ -14,6 +15,7 @@ pub mod tier;
 
 pub use ai::{AIService, NoOpAI};
 pub use asr::{ASRService, NoOpASR};
+pub use backup::{BackupKind, BackupRecord, BackupService, LocalBackupService, NoOpBackup};
 pub use bibliography::{BibliographyService, LocalBibliographyService, ParseSummary};
 pub use exporter::{
     export_config_settings_key, ExportConfig, ExportFormat, ExportService, LocalExporter, Margins,

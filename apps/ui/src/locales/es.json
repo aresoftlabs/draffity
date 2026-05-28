@@ -196,7 +196,21 @@
     "longestStreak": "Racha más larga (días)",
     "lastWritingDate": "Última actividad",
     "typewriter": "Modo máquina de escribir",
-    "typewriterHint": "Mantiene la línea actual centrada verticalmente en el editor."
+    "typewriterHint": "Mantiene la línea actual centrada verticalmente en el editor.",
+    "backupsTitle": "Backups",
+    "backupsHint": "Se crea uno automático al iniciar la app cada día. Se conservan 7 diarios + 6 mensuales + todos los manuales.",
+    "backupsEmpty": "Aún no se generaron backups en este dispositivo.",
+    "backupsError": "No se pudo acceder a los backups",
+    "backupNow": "Crear backup ahora",
+    "backupCreated": "Backup creado correctamente.",
+    "restore": "Restaurar",
+    "restoreConfirm": "Esto reemplazará tu base de datos actual. Se guardará una copia de seguridad automática antes. Reinicia la app para que el cambio se aplique. ¿Continuar?",
+    "restoreSuccess": "Backup restaurado. Reinicia la app para verlo en efecto.",
+    "backupKind": {
+      "daily": "Diario",
+      "monthly": "Mensual",
+      "manual": "Manual"
+    }
   },
   "snapshots": {
     "title": "Versiones",

@@ -33,6 +33,12 @@ pub fn run() {
             // Log guard must outlive the app — hand it to AppState.
             let log_guard = logging::init(&app_data_dir.join("logs"));
             let bundle = ServiceFactory::build(Tier::Free, &app_data_dir)?;
+            // Daily backup + prune. Idempotent — calling again today is a
+            // no-op. Failures are logged, not fatal: a missed backup must
+            // never prevent the app from launching.
+            if let Err(e) = bundle.backup.run_daily_maintenance() {
+                tracing::warn!(error = %e, "backup maintenance failed at startup");
+            }
             app.manage(AppState::from_bundle(bundle, log_guard));
 
             Ok(())
@@ -85,6 +91,11 @@ pub fn run() {
             commands::list_citations,
             commands::list_citation_keys,
             commands::delete_citation,
+            // backup
+            commands::list_backups,
+            commands::create_manual_backup,
+            commands::restore_backup,
+            commands::prune_backups,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

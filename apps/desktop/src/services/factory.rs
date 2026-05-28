@@ -14,9 +14,10 @@ use std::sync::Arc;
 use crate::capabilities::Tier;
 use crate::error::{AppError, AppResult};
 use crate::services::{
-    AIService, ASRService, BibliographyService, BuiltInTemplates, CloudSyncService, ExportService,
-    FreeTier, LocalBibliographyService, LocalExporter, LocalStorageService, NoOpAI, NoOpASR,
-    NoOpSync, ProjectManager, StorageService, TemplatesService, TierService,
+    AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
+    ExportService, FreeTier, LocalBackupService, LocalBibliographyService, LocalExporter,
+    LocalStorageService, NoOpAI, NoOpASR, NoOpSync, ProjectManager, StorageService,
+    TemplatesService, TierService,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -31,6 +32,7 @@ pub struct ServiceBundle {
     pub asr: Arc<dyn ASRService>,
     pub exporter: Arc<dyn ExportService>,
     pub bibliography: Arc<dyn BibliographyService>,
+    pub backup: Arc<dyn BackupService>,
 }
 
 /// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
@@ -58,7 +60,14 @@ impl ServiceFactory {
             asr: Self::build_asr(tier),
             exporter: Arc::new(LocalExporter),
             bibliography: Arc::new(LocalBibliographyService),
+            backup: Self::build_backup(app_data_dir),
         })
+    }
+
+    fn build_backup(app_data_dir: &Path) -> Arc<dyn BackupService> {
+        let db_path = app_data_dir.join("draffity.db");
+        let backup_dir = app_data_dir.join("backups");
+        Arc::new(LocalBackupService::new(db_path, backup_dir))
     }
 
     fn build_storage(app_data_dir: &Path) -> AppResult<Arc<dyn StorageService>> {

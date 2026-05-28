@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
+  BackupRecord,
   BibliographyImportSummary,
   Citation,
   DocNode,
@@ -98,4 +99,10 @@ export const ipc = {
   listCitations: (projectId: string) => invoke<Citation[]>('list_citations', { projectId }),
   listCitationKeys: (projectId: string) => invoke<string[]>('list_citation_keys', { projectId }),
   deleteCitation: (id: string) => invoke<void>('delete_citation', { id }),
+
+  // Backups
+  listBackups: () => invoke<BackupRecord[]>('list_backups'),
+  createManualBackup: () => invoke<BackupRecord>('create_manual_backup'),
+  restoreBackup: (id: string) => invoke<void>('restore_backup', { id }),
+  pruneBackups: () => invoke<number>('prune_backups'),
 };

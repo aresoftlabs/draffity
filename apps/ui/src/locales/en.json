@@ -196,7 +196,21 @@
     "longestStreak": "Longest streak (days)",
     "lastWritingDate": "Last activity",
     "typewriter": "Typewriter mode",
-    "typewriterHint": "Keeps the current line vertically centred in the editor."
+    "typewriterHint": "Keeps the current line vertically centred in the editor.",
+    "backupsTitle": "Backups",
+    "backupsHint": "An automatic backup is created on app start each day. The 7 most recent dailies, the last 6 monthlies and every manual backup are kept.",
+    "backupsEmpty": "No backups generated on this device yet.",
+    "backupsError": "Could not access backups",
+    "backupNow": "Create backup now",
+    "backupCreated": "Backup created.",
+    "restore": "Restore",
+    "restoreConfirm": "This will overwrite your current database. A safety backup will be saved first. Restart the app afterwards to apply the change. Continue?",
+    "restoreSuccess": "Backup restored. Restart the app to see the change.",
+    "backupKind": {
+      "daily": "Daily",
+      "monthly": "Monthly",
+      "manual": "Manual"
+    }
   },
   "snapshots": {
     "title": "Versions",

@@ -129,6 +129,18 @@ export interface BibliographyImportSummary {
   skipped: number;
 }
 
+// Backups
+
+export type BackupKind = 'daily' | 'monthly' | 'manual';
+
+export interface BackupRecord {
+  id: string;
+  path: string;
+  createdAt: number;
+  sizeBytes: number;
+  kind: BackupKind;
+}
+
 // Export
 
 export type ExportFormat = 'markdown' | 'docx' | 'epub' | 'pdf';
