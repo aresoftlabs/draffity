@@ -95,7 +95,8 @@
   "viewMode": {
     "editor": "Editor",
     "corkboard": "Corcho",
-    "outliner": "Esquema"
+    "outliner": "Esquema",
+    "codex": "Codex"
   },
   "corkboard": {
     "noSynopsis": "Sin sinopsis. Agrégala en el Inspector."
@@ -284,6 +285,36 @@
     "prevDocument": "Documento anterior",
     "nextDocument": "Documento siguiente",
     "focusMode": "Modo enfoque"
+  },
+  "codex": {
+    "title": "Codex",
+    "newEntry": "Nueva entrada",
+    "createTitle": "Nueva entrada de codex",
+    "editTitle": "Editar entrada de codex",
+    "name": "Nombre",
+    "kindLabel": "Tipo",
+    "body": "Descripción",
+    "tags": "Etiquetas",
+    "tagsPlaceholder": "Agregar etiqueta…",
+    "searchPlaceholder": "Buscar por nombre, descripción o etiqueta…",
+    "filterAllKinds": "Todos los tipos",
+    "filterAllTags": "Todas las etiquetas",
+    "empty": "Todavía no hay entradas en el codex de este proyecto.",
+    "noBody": "Sin descripción aún.",
+    "noMatches": "Sin coincidencias para los filtros aplicados.",
+    "loadError": "No se pudo cargar el codex",
+    "saveError": "No se pudo guardar la entrada",
+    "createSuccess": "Entrada \"{name}\" creada.",
+    "updateSuccess": "Entrada \"{name}\" actualizada.",
+    "deleteSuccess": "Entrada \"{name}\" eliminada.",
+    "deleteTitle": "Eliminar entrada",
+    "deleteConfirm": "¿Eliminar \"{name}\" del codex? Esta acción no se puede deshacer.",
+    "kind": {
+      "character": "Personaje",
+      "place": "Lugar",
+      "object": "Objeto",
+      "note": "Nota"
+    }
   },
   "saveAsTemplate": {
     "openButton": "Guardar como plantilla",

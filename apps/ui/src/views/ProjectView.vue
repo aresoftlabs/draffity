@@ -30,6 +30,7 @@ import GoalProgress from '@/components/GoalProgress.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
 import OutlinerView from '@/views/OutlinerView.vue';
+import CodexView from '@/views/CodexView.vue';
 import ScriveningsView from '@/components/ScriveningsView.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
@@ -408,7 +409,7 @@ onMounted(loadProject);
           @select="onSelect"
         />
         <OutlinerView
-          v-else
+          v-else-if="viewMode === 'outliner'"
           :documents="docStore.documents"
           :selected-id="docStore.selectedId"
           :read-only="readOnly"
@@ -417,6 +418,7 @@ onMounted(loadProject);
           @update-synopsis="onOutlinerSynopsis"
           @update-status="onOutlinerStatus"
         />
+        <CodexView v-else :project-id="project.id" :read-only="readOnly" />
       </SplitterPanel>
 
       <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">

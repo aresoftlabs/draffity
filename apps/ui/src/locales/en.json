@@ -95,7 +95,8 @@
   "viewMode": {
     "editor": "Editor",
     "corkboard": "Corkboard",
-    "outliner": "Outliner"
+    "outliner": "Outliner",
+    "codex": "Codex"
   },
   "corkboard": {
     "noSynopsis": "No synopsis. Add one in the Inspector."
@@ -284,6 +285,36 @@
     "prevDocument": "Previous document",
     "nextDocument": "Next document",
     "focusMode": "Focus mode"
+  },
+  "codex": {
+    "title": "Codex",
+    "newEntry": "New entry",
+    "createTitle": "New codex entry",
+    "editTitle": "Edit codex entry",
+    "name": "Name",
+    "kindLabel": "Type",
+    "body": "Description",
+    "tags": "Tags",
+    "tagsPlaceholder": "Add tag…",
+    "searchPlaceholder": "Search by name, description or tag…",
+    "filterAllKinds": "All types",
+    "filterAllTags": "All tags",
+    "empty": "No codex entries in this project yet.",
+    "noBody": "No description yet.",
+    "noMatches": "No matches for the current filters.",
+    "loadError": "Could not load the codex",
+    "saveError": "Could not save the entry",
+    "createSuccess": "Entry \"{name}\" created.",
+    "updateSuccess": "Entry \"{name}\" updated.",
+    "deleteSuccess": "Entry \"{name}\" deleted.",
+    "deleteTitle": "Delete entry",
+    "deleteConfirm": "Delete \"{name}\" from the codex? This action can't be undone.",
+    "kind": {
+      "character": "Character",
+      "place": "Place",
+      "object": "Object",
+      "note": "Note"
+    }
   },
   "saveAsTemplate": {
     "openButton": "Save as template",

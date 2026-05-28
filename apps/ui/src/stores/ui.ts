@@ -48,7 +48,7 @@ function saveJson<T>(key: string, value: T) {
   localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
 }
 
-export type ProjectViewMode = 'editor' | 'corkboard' | 'outliner';
+export type ProjectViewMode = 'editor' | 'corkboard' | 'outliner' | 'codex';
 
 export const useUiStore = defineStore('ui', () => {
   const theme = ref<ThemeMode>(getStoredTheme());
