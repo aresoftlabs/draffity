@@ -5,6 +5,7 @@ import SelectButton from 'primevue/selectbutton';
 import Slider from 'primevue/slider';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Button from 'primevue/button';
+import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { useUiStore } from '@/stores/ui';
 import { useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
@@ -14,7 +15,7 @@ import type { BackupRecord, WritingStats } from '@draffity/shared-types';
 
 const { t, locale } = useI18n();
 const ui = useUiStore();
-const { autosaveMs, font } = useEditorSettings();
+const { autosaveMs, font, customCss } = useEditorSettings();
 
 const themeOptions = computed(() => [
   { label: t('settings.themeLight'), value: 'light' },
@@ -166,6 +167,20 @@ function kindLabel(kind: BackupRecord['kind']): string {
           <p class="text-xs opacity-60 mt-1">{{ t('settings.typewriterHint') }}</p>
         </div>
         <ToggleSwitch v-model="ui.typewriterMode" />
+      </section>
+
+      <section>
+        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+          {{ t('settings.customCss') }}
+        </h2>
+        <p class="text-xs opacity-60 mb-2">{{ t('settings.customCssHint') }}</p>
+        <Textarea
+          v-model="customCss"
+          rows="6"
+          class="w-full font-mono text-xs"
+          :placeholder="t('settings.customCssPlaceholder')"
+          spellcheck="false"
+        />
       </section>
 
       <section>

@@ -11,6 +11,7 @@ import TableHeader from '@tiptap/extension-table-header';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Citation } from './extensions/citation';
+import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 
 const props = withDefaults(
   defineProps<{
@@ -138,11 +139,19 @@ const wordCount = computed(() => {
   return storage?.words?.() ?? 0;
 });
 
+const { customCss } = useEditorSettings();
+const safeCustomCss = computed(() => sanitizeUserCss(customCss.value));
+
 defineExpose({ editor, charCount, wordCount });
 </script>
 
 <template>
   <div class="tiptap-host h-full overflow-auto">
+    <!-- User CSS is sanitised (no @import / url() / closing </style>). Selectors
+         are at their natural specificity; we expect users to prefix with
+         `.tiptap-content` — the Settings textarea hints at this. -->
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <style v-if="safeCustomCss" v-html="safeCustomCss" />
     <EditorContent :editor="editor" class="h-full" />
   </div>
 </template>
