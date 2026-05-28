@@ -1,4 +1,7 @@
-//! Document CRUD + tree reordering.
+//! Document CRUD (create, list, get, update, delete + scalar setters for
+//! status / synopsis / goal / move). Tag set lives in `document_tags`,
+//! tree reordering in `document_positions` — both call `select_one` here
+//! when they need to return the post-mutation `DocNode`.
 
 use rusqlite::{params, Connection, OptionalExtension};
 
@@ -15,6 +18,14 @@ const COLS: &str = "id, project_id, parent_id, title, doc_type, content, content
      position, status, goal_words, created_at, updated_at, \
      (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json";
 
+/// Single-row fetcher shared with `document_tags` and `document_positions`
+/// so those modules can return the updated `DocNode` without duplicating
+/// the `COLS` list.
+pub(super) fn select_one(conn: &Connection, id: &str) -> AppResult<DocNode> {
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
+    Ok(conn.query_row(&sql, params![id], row_to_document)?)
+}
+
 pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
     input.validate()?;
 
@@ -30,7 +41,9 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         return Err(AppError::NotFound(format!("project {}", input.project_id)));
     }
 
-    // Compute next position within (project, parent).
+    // Compute next position within (project, parent). `.optional()?` so a
+    // genuine SQL error surfaces instead of being masked by a default 0
+    // (which would also clash with an existing position-0 doc).
     let next_pos: i64 = conn
         .query_row(
             "SELECT COALESCE(MAX(position), -1) + 1 FROM documents
@@ -38,6 +51,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
             params![input.project_id, input.parent_id],
             |r| r.get(0),
         )
+        .optional()?
         .unwrap_or(0);
 
     let now = now_ms();
@@ -122,9 +136,7 @@ pub(super) fn update(
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
     }
-    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
-    let doc = conn.query_row(&sql, params![id], row_to_document)?;
-    Ok(doc)
+    select_one(conn, id)
 }
 
 pub(super) fn set_status(
@@ -132,63 +144,14 @@ pub(super) fn set_status(
     id: &str,
     status: DocumentStatus,
 ) -> AppResult<DocNode> {
-    let now = now_ms();
     let updated = conn.execute(
         "UPDATE documents SET status=?2, updated_at=?3 WHERE id=?1",
-        params![id, status.as_str(), now],
+        params![id, status.as_str(), now_ms()],
     )?;
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
     }
-    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
-    let doc = conn.query_row(&sql, params![id], row_to_document)?;
-    Ok(doc)
-}
-
-/// Atomically replace the tag set of a document. Empty / blank tags are
-/// silently dropped; duplicates are deduped (the PK enforces this anyway).
-/// Tags are stored as case-sensitive strings.
-pub(super) fn set_tags(conn: &mut Connection, id: &str, tags: &[String]) -> AppResult<DocNode> {
-    // Verify the document exists before mutating.
-    let exists: Option<i64> = conn
-        .query_row("SELECT 1 FROM documents WHERE id=?1", params![id], |r| {
-            r.get(0)
-        })
-        .optional()?;
-    if exists.is_none() {
-        return Err(AppError::NotFound(format!("document {id}")));
-    }
-
-    let tx = conn.transaction()?;
-    tx.execute(
-        "DELETE FROM document_tags WHERE document_id=?1",
-        params![id],
-    )?;
-
-    let mut seen: std::collections::HashSet<&str> = std::collections::HashSet::new();
-    for raw in tags {
-        let trimmed = raw.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        if !seen.insert(trimmed) {
-            continue;
-        }
-        tx.execute(
-            "INSERT INTO document_tags(document_id, tag) VALUES (?1, ?2)",
-            params![id, trimmed],
-        )?;
-    }
-    let now = now_ms();
-    tx.execute(
-        "UPDATE documents SET updated_at=?2 WHERE id=?1",
-        params![id, now],
-    )?;
-    tx.commit()?;
-
-    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
-    let doc = conn.query_row(&sql, params![id], row_to_document)?;
-    Ok(doc)
+    select_one(conn, id)
 }
 
 /// Set or clear a document's synopsis. Trimming and empty-as-None is the
@@ -205,8 +168,7 @@ pub(super) fn set_synopsis(
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
     }
-    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
-    Ok(conn.query_row(&sql, params![id], row_to_document)?)
+    select_one(conn, id)
 }
 
 /// Set or clear a document's target word count. `None` removes the goal.
@@ -218,24 +180,7 @@ pub(super) fn set_goal(conn: &Connection, id: &str, goal: Option<i64>) -> AppRes
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
     }
-    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
-    Ok(conn.query_row(&sql, params![id], row_to_document)?)
-}
-
-/// Distinct tags in use across all documents of a project, in alphabetical
-/// order. Empty when the project has no tagged documents.
-pub(super) fn list_project_tags(conn: &Connection, project_id: &str) -> AppResult<Vec<String>> {
-    let mut stmt = conn.prepare(
-        "SELECT DISTINCT t.tag
-         FROM document_tags t
-         JOIN documents d ON d.id = t.document_id
-         WHERE d.project_id = ?1
-         ORDER BY t.tag COLLATE NOCASE ASC",
-    )?;
-    let rows = stmt
-        .query_map(params![project_id], |r| r.get::<_, String>(0))?
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(rows)
+    select_one(conn, id)
 }
 
 pub(super) fn move_to(
@@ -262,43 +207,24 @@ pub(super) fn delete(conn: &Connection, id: &str) -> AppResult<()> {
     Ok(())
 }
 
-/// Atomically reassign `position` (and optionally `parent_id`) for every id
-/// in `ordered_ids` to its index in the slice. Used by binder drag&drop to
-/// compact positions and avoid duplicates / gaps after a rearrange.
-///
-/// All ids must belong to `project_id`. Fails atomically if any row is
-/// missing — no partial update.
-pub(super) fn reorder(
-    conn: &mut Connection,
-    project_id: &str,
-    parent_id: Option<&str>,
-    ordered_ids: &[String],
-) -> AppResult<()> {
-    let tx = conn.transaction()?;
-    let now = now_ms();
-    for (idx, id) in ordered_ids.iter().enumerate() {
-        let updated = tx.execute(
-            "UPDATE documents
-             SET parent_id=?2, position=?3, updated_at=?4
-             WHERE id=?1 AND project_id=?5",
-            params![id, parent_id, idx as i64, now, project_id],
-        )?;
-        if updated == 0 {
-            return Err(AppError::NotFound(format!(
-                "document {id} in project {project_id}"
-            )));
-        }
-    }
-    tx.commit()?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::test_helpers::fresh;
     use super::super::StorageService;
-    use crate::domain::{DocumentInput, DocumentStatus, DocumentType, ProjectInput};
+    use crate::domain::{DocumentInput, DocumentStatus, DocumentType, ProjectInput, TemplateNode};
     use crate::error::AppError;
+
+    fn make_chapter(s: &impl StorageService, project_id: &str, title: &str) -> String {
+        s.create_document(DocumentInput {
+            project_id: project_id.into(),
+            parent_id: None,
+            title: title.into(),
+            doc_type: DocumentType::Chapter,
+            content: None,
+        })
+        .unwrap()
+        .id
+    }
 
     #[test]
     fn document_crud_round_trip() {
@@ -342,76 +268,6 @@ mod tests {
         let docs = s.list_documents(&p.id).unwrap();
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0].id, d.id);
-    }
-
-    fn make_chapter(s: &impl StorageService, project_id: &str, title: &str) -> String {
-        s.create_document(DocumentInput {
-            project_id: project_id.into(),
-            parent_id: None,
-            title: title.into(),
-            doc_type: DocumentType::Chapter,
-            content: None,
-        })
-        .unwrap()
-        .id
-    }
-
-    #[test]
-    fn reorder_compacts_positions_within_same_parent() {
-        let s = fresh();
-        let p = s
-            .create_project(ProjectInput {
-                title: "P".into(),
-                template_id: "x".into(),
-                metadata: None,
-            })
-            .unwrap();
-        let a = make_chapter(&s, &p.id, "A");
-        let b = make_chapter(&s, &p.id, "B");
-        let c = make_chapter(&s, &p.id, "C");
-
-        // Reverse: C, B, A
-        s.reorder_documents(&p.id, None, &[c.clone(), b.clone(), a.clone()])
-            .unwrap();
-
-        let docs = s.list_documents(&p.id).unwrap();
-        let pos_of = |id: &str| docs.iter().find(|d| d.id == id).unwrap().position;
-        assert_eq!(pos_of(&c), 0);
-        assert_eq!(pos_of(&b), 1);
-        assert_eq!(pos_of(&a), 2);
-    }
-
-    #[test]
-    fn reorder_moves_node_to_new_parent() {
-        let s = fresh();
-        let p = s
-            .create_project(ProjectInput {
-                title: "P".into(),
-                template_id: "x".into(),
-                metadata: None,
-            })
-            .unwrap();
-        // Folder + 2 chapters at root
-        let folder = s
-            .create_document(DocumentInput {
-                project_id: p.id.clone(),
-                parent_id: None,
-                title: "Folder".into(),
-                doc_type: DocumentType::Folder,
-                content: None,
-            })
-            .unwrap()
-            .id;
-        let ch = make_chapter(&s, &p.id, "Ch");
-
-        // Move ch under folder
-        s.reorder_documents(&p.id, Some(&folder), std::slice::from_ref(&ch))
-            .unwrap();
-
-        let docs = s.list_documents(&p.id).unwrap();
-        let moved = docs.iter().find(|d| d.id == ch).unwrap();
-        assert_eq!(moved.parent_id.as_deref(), Some(folder.as_str()));
-        assert_eq!(moved.position, 0);
     }
 
     #[test]
@@ -469,66 +325,6 @@ mod tests {
     }
 
     #[test]
-    fn set_document_tags_replaces_existing_set() {
-        let s = fresh();
-        let p = s
-            .create_project(ProjectInput {
-                title: "P".into(),
-                template_id: "x".into(),
-                metadata: None,
-            })
-            .unwrap();
-        let d = make_chapter(&s, &p.id, "A");
-
-        let after = s
-            .set_document_tags(
-                &d,
-                &[
-                    "fantasy".into(),
-                    "draft".into(),
-                    "  ".into(),      // dropped (blank)
-                    "fantasy".into(), // dropped (duplicate)
-                ],
-            )
-            .unwrap();
-        let mut tags = after.tags.clone();
-        tags.sort();
-        assert_eq!(tags, vec!["draft".to_string(), "fantasy".to_string()]);
-
-        // Replace with a different set — old tags are gone.
-        let after2 = s.set_document_tags(&d, &["mystery".into()]).unwrap();
-        assert_eq!(after2.tags, vec!["mystery".to_string()]);
-    }
-
-    #[test]
-    fn set_document_tags_missing_id_is_not_found() {
-        let s = fresh();
-        let err = s.set_document_tags("ghost", &["x".into()]).unwrap_err();
-        assert!(matches!(err, AppError::NotFound(_)));
-    }
-
-    #[test]
-    fn list_project_tags_returns_sorted_distinct() {
-        let s = fresh();
-        let p = s
-            .create_project(ProjectInput {
-                title: "P".into(),
-                template_id: "x".into(),
-                metadata: None,
-            })
-            .unwrap();
-        let d1 = make_chapter(&s, &p.id, "A");
-        let d2 = make_chapter(&s, &p.id, "B");
-        s.set_document_tags(&d1, &["fantasy".into(), "epic".into()])
-            .unwrap();
-        s.set_document_tags(&d2, &["fantasy".into(), "draft".into()])
-            .unwrap();
-
-        let tags = s.list_project_tags(&p.id).unwrap();
-        assert_eq!(tags, vec!["draft", "epic", "fantasy"]);
-    }
-
-    #[test]
     fn set_document_synopsis_persists_and_clears() {
         let s = fresh();
         let p = s
@@ -560,7 +356,6 @@ mod tests {
 
     #[test]
     fn template_seed_populates_synopsis_column_not_content() {
-        use crate::domain::TemplateNode;
         let s = fresh();
         let structure = vec![TemplateNode {
             title: "Acto 1".into(),
@@ -624,41 +419,5 @@ mod tests {
         assert_eq!(after.goal_words, Some(80_000));
         let cleared = s.set_project_goal(&p.id, None).unwrap();
         assert!(cleared.goal_words.is_none());
-    }
-
-    #[test]
-    fn deleting_document_cascades_its_tags() {
-        let s = fresh();
-        let p = s
-            .create_project(ProjectInput {
-                title: "P".into(),
-                template_id: "x".into(),
-                metadata: None,
-            })
-            .unwrap();
-        let d = make_chapter(&s, &p.id, "A");
-        s.set_document_tags(&d, &["x".into(), "y".into()]).unwrap();
-        s.delete_document(&d).unwrap();
-        assert!(s.list_project_tags(&p.id).unwrap().is_empty());
-    }
-
-    #[test]
-    fn reorder_rolls_back_when_id_missing() {
-        let s = fresh();
-        let p = s
-            .create_project(ProjectInput {
-                title: "P".into(),
-                template_id: "x".into(),
-                metadata: None,
-            })
-            .unwrap();
-        let a = make_chapter(&s, &p.id, "A");
-
-        let result = s.reorder_documents(&p.id, None, &[a.clone(), "ghost".into()]);
-        assert!(matches!(result, Err(AppError::NotFound(_))));
-
-        // The valid id must not have been left with a partial update.
-        let docs = s.list_documents(&p.id).unwrap();
-        assert_eq!(docs.iter().find(|d| d.id == a).unwrap().position, 0);
     }
 }

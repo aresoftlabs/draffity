@@ -23,6 +23,8 @@ pub use citations::UpsertEntry as CitationUpsert;
 
 mod citations;
 mod codex;
+mod document_positions;
+mod document_tags;
 mod documents;
 mod projects;
 mod row_mappers;
@@ -313,7 +315,7 @@ impl StorageService for LocalStorageService {
         parent_id: Option<&str>,
         ordered_ids: &[String],
     ) -> AppResult<()> {
-        documents::reorder(
+        document_positions::reorder(
             &mut self.conn.lock().unwrap(),
             project_id,
             parent_id,
@@ -326,11 +328,11 @@ impl StorageService for LocalStorageService {
     }
 
     fn set_document_tags(&self, id: &str, tags: &[String]) -> AppResult<DocNode> {
-        documents::set_tags(&mut self.conn.lock().unwrap(), id, tags)
+        document_tags::set(&mut self.conn.lock().unwrap(), id, tags)
     }
 
     fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>> {
-        documents::list_project_tags(&self.conn.lock().unwrap(), project_id)
+        document_tags::list_project_tags(&self.conn.lock().unwrap(), project_id)
     }
 
     fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode> {
