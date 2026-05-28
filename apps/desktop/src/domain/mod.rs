@@ -8,7 +8,7 @@ pub mod snapshot;
 pub mod stats;
 pub mod template;
 
-pub use document::{DocNode, DocumentInput, DocumentType};
+pub use document::{DocNode, DocumentInput, DocumentStatus, DocumentType};
 pub use project::{Project, ProjectInput, ProjectStatus};
 pub use search::SearchHit;
 pub use snapshot::Snapshot;

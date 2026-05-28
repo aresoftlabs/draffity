@@ -37,6 +37,47 @@ impl DocumentType {
     }
 }
 
+/// Position in the writing pipeline. New documents land in `Draft`;
+/// the user moves them through `Revised` → `Final`. `Trashed` is a soft
+/// delete that still lives in storage so the user can recover it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DocumentStatus {
+    Draft,
+    Revised,
+    Final,
+    Trashed,
+}
+
+impl Default for DocumentStatus {
+    fn default() -> Self {
+        DocumentStatus::Draft
+    }
+}
+
+impl DocumentStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DocumentStatus::Draft => "draft",
+            DocumentStatus::Revised => "revised",
+            DocumentStatus::Final => "final",
+            DocumentStatus::Trashed => "trashed",
+        }
+    }
+
+    pub fn parse(s: &str) -> AppResult<Self> {
+        match s {
+            "draft" => Ok(DocumentStatus::Draft),
+            "revised" => Ok(DocumentStatus::Revised),
+            "final" => Ok(DocumentStatus::Final),
+            "trashed" => Ok(DocumentStatus::Trashed),
+            other => Err(AppError::Invariant(format!(
+                "unknown document status: {other}"
+            ))),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocNode {
@@ -49,6 +90,10 @@ pub struct DocNode {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
     pub position: i64,
+    #[serde(default)]
+    pub status: DocumentStatus,
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -103,6 +148,31 @@ mod tests {
             DocumentType::parse("paragraph"),
             Err(AppError::Invariant(_))
         ));
+    }
+
+    #[test]
+    fn doc_status_round_trip() {
+        for s in [
+            DocumentStatus::Draft,
+            DocumentStatus::Revised,
+            DocumentStatus::Final,
+            DocumentStatus::Trashed,
+        ] {
+            assert_eq!(DocumentStatus::parse(s.as_str()).unwrap(), s);
+        }
+    }
+
+    #[test]
+    fn unknown_status_is_invariant_error() {
+        assert!(matches!(
+            DocumentStatus::parse("archived"),
+            Err(AppError::Invariant(_))
+        ));
+    }
+
+    #[test]
+    fn doc_status_default_is_draft() {
+        assert_eq!(DocumentStatus::default(), DocumentStatus::Draft);
     }
 
     #[test]

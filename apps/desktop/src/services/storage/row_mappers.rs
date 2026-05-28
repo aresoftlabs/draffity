@@ -3,7 +3,7 @@
 use rusqlite::Row;
 use serde_json::Value as JsonValue;
 
-use crate::domain::{DocNode, DocumentType, Project, ProjectStatus};
+use crate::domain::{DocNode, DocumentStatus, DocumentType, Project, ProjectStatus};
 
 pub(super) fn row_to_project(r: &Row<'_>) -> rusqlite::Result<Project> {
     let metadata_json: Option<String> = r.get("metadata")?;
@@ -36,6 +36,19 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         "manga_page" => DocumentType::MangaPage,
         _ => DocumentType::Note,
     };
+    // `status` may be NULL on rows produced by the bare INSERT in
+    // template_seed (the column has DEFAULT 'draft' in SQL but rusqlite
+    // returns the stored value). We tolerate the missing column gracefully.
+    let status_str: Option<String> = r.get("status").ok();
+    let status = status_str
+        .as_deref()
+        .map(|s| match s {
+            "revised" => DocumentStatus::Revised,
+            "final" => DocumentStatus::Final,
+            "trashed" => DocumentStatus::Trashed,
+            _ => DocumentStatus::Draft,
+        })
+        .unwrap_or(DocumentStatus::Draft);
     Ok(DocNode {
         id: r.get("id")?,
         project_id: r.get("project_id")?,
@@ -44,6 +57,10 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         doc_type,
         content: r.get("content")?,
         position: r.get("position")?,
+        status,
+        // Tags live in `document_tags`; populated by storage::documents when
+        // needed. Mapper-level default is empty.
+        tags: Vec::new(),
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
     })

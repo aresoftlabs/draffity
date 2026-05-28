@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Emitter, State};
 
-use crate::domain::{DocNode, DocumentInput, Snapshot};
+use crate::domain::{DocNode, DocumentInput, DocumentStatus, Snapshot};
 use crate::error::AppError;
 use crate::events;
 use crate::state::AppState;
@@ -73,6 +73,18 @@ pub fn reorder_documents(
         .reorder_documents(&project_id, parent_id.as_deref(), &ordered_ids)?;
     let _ = app.emit(events::DOCUMENT_MOVED, &project_id);
     Ok(())
+}
+
+#[tauri::command]
+pub fn set_document_status(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    id: String,
+    status: DocumentStatus,
+) -> CmdResult<DocNode> {
+    let doc = state.storage.set_document_status(&id, status)?;
+    let _ = app.emit(events::DOCUMENT_SAVED, &doc);
+    Ok(doc)
 }
 
 #[tauri::command]

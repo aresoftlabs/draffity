@@ -22,6 +22,9 @@ export interface ProjectInput {
 
 export type DocumentType = 'chapter' | 'scene' | 'note' | 'folder' | 'manga_page';
 
+/** Position in the writing pipeline. Defaults to `draft` on new documents. */
+export type DocumentStatus = 'draft' | 'revised' | 'final' | 'trashed';
+
 export interface DocNode {
   id: string;
   projectId: string;
@@ -30,6 +33,8 @@ export interface DocNode {
   docType: DocumentType;
   content?: string | null;
   position: number;
+  status: DocumentStatus;
+  tags: string[];
   createdAt: number;
   updatedAt: number;
 }

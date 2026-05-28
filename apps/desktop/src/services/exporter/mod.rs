@@ -85,7 +85,9 @@ impl ExportService for LocalExporter {
 
 #[cfg(test)]
 pub(crate) mod test_support {
-    use crate::domain::{new_id, now_ms, DocNode, DocumentType, Project, ProjectStatus};
+    use crate::domain::{
+        new_id, now_ms, DocNode, DocumentStatus, DocumentType, Project, ProjectStatus,
+    };
 
     pub fn project(title: &str) -> Project {
         let now = now_ms();
@@ -118,6 +120,8 @@ pub(crate) mod test_support {
             doc_type,
             content: content.map(|s| s.into()),
             position,
+            status: DocumentStatus::Draft,
+            tags: Vec::new(),
             created_at: now,
             updated_at: now,
         }

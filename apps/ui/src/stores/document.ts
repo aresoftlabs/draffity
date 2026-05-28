@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { DocNode, DocumentInput } from '@draffity/shared-types';
+import type { DocNode, DocumentInput, DocumentStatus } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -89,6 +89,12 @@ export const useDocumentStore = defineStore('document', () => {
     }
   }
 
+  async function setStatus(id: string, status: DocumentStatus) {
+    const updated = await ipc.setDocumentStatus({ id, status });
+    const idx = documents.value.findIndex((d) => d.id === id);
+    if (idx !== -1) documents.value[idx] = updated;
+  }
+
   /** Persist a binder reorder. Apply ops sequentially (1-2 in practice:
    * the new parent and, if the node changed parents, also the old one).
    * Reloads documents after to converge with the server's view. */
@@ -126,6 +132,7 @@ export const useDocumentStore = defineStore('document', () => {
     remove,
     move,
     reorder,
+    setStatus,
     reset,
   };
 });

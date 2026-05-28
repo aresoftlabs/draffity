@@ -103,7 +103,7 @@ pub(super) fn restore(conn: &mut Connection, snapshot_id: &str) -> AppResult<Doc
     )?;
 
     let doc = tx.query_row(
-        "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
+        "SELECT id, project_id, parent_id, title, doc_type, content, position, status, created_at, updated_at
          FROM documents WHERE id=?1",
         params![document_id],
         row_to_document,

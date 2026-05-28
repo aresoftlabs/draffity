@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   DocNode,
   DocumentInput,
+  DocumentStatus,
   ExportFormat,
   Project,
   ProjectInput,
@@ -45,6 +46,8 @@ export const ipc = {
     parentId: string | null;
     orderedIds: string[];
   }) => invoke<void>('reorder_documents', params),
+  setDocumentStatus: (params: { id: string; status: DocumentStatus }) =>
+    invoke<DocNode>('set_document_status', params),
   deleteDocument: (id: string) => invoke<void>('delete_document', { id }),
 
   // Snapshots

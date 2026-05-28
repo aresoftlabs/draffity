@@ -2,10 +2,15 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 
-use crate::domain::{new_id, now_ms, DocNode, DocumentInput};
+use crate::domain::{new_id, now_ms, DocNode, DocumentInput, DocumentStatus};
 use crate::error::{AppError, AppResult};
 
 use super::row_mappers::row_to_document;
+
+/// Column list for `SELECT` against `documents`. Kept in one place so adding
+/// columns (e.g. `goal_words` in the goals sprint) is a single-line change.
+const COLS: &str =
+    "id, project_id, parent_id, title, doc_type, content, position, status, created_at, updated_at";
 
 pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
     input.validate()?;
@@ -41,6 +46,8 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         doc_type: input.doc_type,
         content: input.content,
         position: next_pos,
+        status: DocumentStatus::Draft,
+        tags: Vec::new(),
         created_at: now,
         updated_at: now,
     };
@@ -64,12 +71,12 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
 }
 
 pub(super) fn list(conn: &Connection, project_id: &str) -> AppResult<Vec<DocNode>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
-         FROM documents
+    let sql = format!(
+        "SELECT {COLS} FROM documents
          WHERE project_id=?1
-         ORDER BY IFNULL(parent_id,''), position ASC",
-    )?;
+         ORDER BY IFNULL(parent_id,''), position ASC"
+    );
+    let mut stmt = conn.prepare(&sql)?;
     let rows = stmt
         .query_map(params![project_id], row_to_document)?
         .collect::<Result<Vec<_>, _>>()?;
@@ -77,13 +84,9 @@ pub(super) fn list(conn: &Connection, project_id: &str) -> AppResult<Vec<DocNode
 }
 
 pub(super) fn get(conn: &Connection, id: &str) -> AppResult<Option<DocNode>> {
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
     let d = conn
-        .query_row(
-            "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
-             FROM documents WHERE id=?1",
-            params![id],
-            row_to_document,
-        )
+        .query_row(&sql, params![id], row_to_document)
         .optional()?;
     Ok(d)
 }
@@ -111,13 +114,26 @@ pub(super) fn update(
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
     }
-    let doc = conn
-        .query_row(
-            "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
-             FROM documents WHERE id=?1",
-            params![id],
-            row_to_document,
-        )?;
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
+    let doc = conn.query_row(&sql, params![id], row_to_document)?;
+    Ok(doc)
+}
+
+pub(super) fn set_status(
+    conn: &Connection,
+    id: &str,
+    status: DocumentStatus,
+) -> AppResult<DocNode> {
+    let now = now_ms();
+    let updated = conn.execute(
+        "UPDATE documents SET status=?2, updated_at=?3 WHERE id=?1",
+        params![id, status.as_str(), now],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
+    let doc = conn.query_row(&sql, params![id], row_to_document)?;
     Ok(doc)
 }
 
@@ -180,7 +196,7 @@ pub(super) fn reorder(
 mod tests {
     use super::super::test_helpers::fresh;
     use super::super::StorageService;
-    use crate::domain::{DocumentInput, DocumentType, ProjectInput};
+    use crate::domain::{DocumentInput, DocumentStatus, DocumentType, ProjectInput};
     use crate::error::AppError;
 
     #[test]
@@ -295,6 +311,60 @@ mod tests {
         let moved = docs.iter().find(|d| d.id == ch).unwrap();
         assert_eq!(moved.parent_id.as_deref(), Some(folder.as_str()));
         assert_eq!(moved.position, 0);
+    }
+
+    #[test]
+    fn new_document_defaults_to_draft_status() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = s
+            .create_document(DocumentInput {
+                project_id: p.id.clone(),
+                parent_id: None,
+                title: "Cap".into(),
+                doc_type: DocumentType::Chapter,
+                content: None,
+            })
+            .unwrap();
+        assert_eq!(d.status, DocumentStatus::Draft);
+        // And persists across a re-read.
+        let reread = s.get_document(&d.id).unwrap().unwrap();
+        assert_eq!(reread.status, DocumentStatus::Draft);
+    }
+
+    #[test]
+    fn set_document_status_persists() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = make_chapter(&s, &p.id, "A");
+
+        let after = s.set_document_status(&d, DocumentStatus::Revised).unwrap();
+        assert_eq!(after.status, DocumentStatus::Revised);
+        assert_eq!(
+            s.get_document(&d).unwrap().unwrap().status,
+            DocumentStatus::Revised
+        );
+    }
+
+    #[test]
+    fn set_document_status_missing_id_is_not_found() {
+        let s = fresh();
+        let err = s
+            .set_document_status("ghost", DocumentStatus::Final)
+            .unwrap_err();
+        assert!(matches!(err, AppError::NotFound(_)));
     }
 
     #[test]

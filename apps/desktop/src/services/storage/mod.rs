@@ -13,8 +13,8 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    DocNode, DocumentInput, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
-    TemplateNode, WritingStats,
+    DocNode, DocumentInput, DocumentStatus, Project, ProjectInput, ProjectStatus, SearchHit,
+    Snapshot, TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 
@@ -32,6 +32,7 @@ mod template_seed;
 const MIGRATIONS: &[(u32, &str)] = &[
     (1, include_str!("../../migrations/001_init.sql")),
     (2, include_str!("../../migrations/002_fts.sql")),
+    (3, include_str!("../../migrations/003_status_tags.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -73,6 +74,9 @@ pub trait StorageService: Send + Sync {
         parent_id: Option<&str>,
         ordered_ids: &[String],
     ) -> AppResult<()>;
+    /// Update the writing-pipeline `status` of a document and return the
+    /// refreshed `DocNode`.
+    fn set_document_status(&self, id: &str, status: DocumentStatus) -> AppResult<DocNode>;
 
     // Snapshots
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot>;
@@ -257,6 +261,10 @@ impl StorageService for LocalStorageService {
             parent_id,
             ordered_ids,
         )
+    }
+
+    fn set_document_status(&self, id: &str, status: DocumentStatus) -> AppResult<DocNode> {
+        documents::set_status(&self.conn.lock().unwrap(), id, status)
     }
 
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot> {
