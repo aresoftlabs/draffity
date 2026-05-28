@@ -203,49 +203,25 @@ impl BackupService for LocalBackupService {
     }
 
     fn prune_old_backups(&self) -> AppResult<usize> {
-        let mut list = self.list_backups()?;
-        // Newest first already.
-        let mut keep_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
-        // Always keep manuals — explicit user decision to preserve them.
+        let list = self.list_backups()?;
+        let keep = super::retention_policy::compute_keep_ids(
+            &list,
+            self.daily_retain,
+            self.monthly_retain,
+        );
+        // Anything not in keep_ids gets removed. fs errors are logged but
+        // don't abort the prune — pruning is best-effort housekeeping.
+        let mut removed = 0usize;
         for b in &list {
-            if b.kind == BackupKind::Manual {
-                keep_ids.insert(b.id.clone());
-            }
-        }
-        // Keep the N most recent dailies.
-        let mut dailies = list
-            .iter()
-            .filter(|b| b.kind == BackupKind::Daily)
-            .collect::<Vec<_>>();
-        dailies.sort_by_key(|b| std::cmp::Reverse(b.created_at));
-        for b in dailies.iter().take(self.daily_retain) {
-            keep_ids.insert(b.id.clone());
-        }
-        // For the past N months, keep the newest backup of each.
-        let mut seen_months: std::collections::HashSet<String> = std::collections::HashSet::new();
-        for b in &list {
-            let month = local_ym_prefix(b.created_at);
-            if seen_months.len() >= self.monthly_retain && !seen_months.contains(&month) {
+            if keep.contains(&b.id) {
                 continue;
             }
-            if seen_months.insert(month) {
-                keep_ids.insert(b.id.clone());
+            if let Err(e) = fs::remove_file(&b.path) {
+                tracing::warn!(file = %b.path, error = %e, "failed to prune backup");
+            } else {
+                removed += 1;
             }
         }
-        // Anything not in keep_ids gets removed.
-        let mut removed = 0usize;
-        list.retain(|b| {
-            if keep_ids.contains(&b.id) {
-                true
-            } else {
-                if let Err(e) = fs::remove_file(&b.path) {
-                    tracing::warn!(file = %b.path, error = %e, "failed to prune backup");
-                } else {
-                    removed += 1;
-                }
-                false
-            }
-        });
         Ok(removed)
     }
 }
@@ -301,16 +277,6 @@ fn local_ymd_prefix(epoch_ms: i64) -> String {
         .single()
         .map(|dt| dt.format("%Y-%m-%d").to_string())
         .unwrap_or_else(|| "1970-01-01".into())
-}
-
-fn local_ym_prefix(epoch_ms: i64) -> String {
-    use chrono::{Local, TimeZone};
-    let secs = epoch_ms / 1000;
-    Local
-        .timestamp_opt(secs, 0)
-        .single()
-        .map(|dt| dt.format("%Y-%m").to_string())
-        .unwrap_or_else(|| "1970-01".into())
 }
 
 fn parse_stamp_ms(stem: &str) -> Option<i64> {

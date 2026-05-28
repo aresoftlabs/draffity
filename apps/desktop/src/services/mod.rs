@@ -8,6 +8,7 @@ pub mod bibliography;
 pub mod exporter;
 pub mod factory;
 pub mod project_manager;
+mod retention_policy;
 pub mod storage;
 pub mod sync;
 pub mod templates;
