@@ -10,6 +10,7 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { Citation } from './extensions/citation';
 
 const props = withDefaults(
   defineProps<{
@@ -60,6 +61,9 @@ const editor = useEditor({
     TableRow,
     TableHeader,
     TableCell,
+    // Inline bibliographic citations. Pre-rendered label keeps export
+    // trivial; the editor surface shows the label inline.
+    Citation,
   ],
   editorProps: {
     attributes: {
@@ -238,6 +242,20 @@ defineExpose({ editor, charCount, wordCount });
 }
 .tiptap-host :deep(.resize-cursor) {
   cursor: col-resize;
+}
+
+.tiptap-host :deep(.tiptap-content .citation) {
+  display: inline;
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--p-primary-50, #eff6ff);
+  color: var(--p-primary-700, #1d4ed8);
+  font-size: 0.95em;
+  cursor: default;
+  white-space: nowrap;
+}
+.tiptap-host :deep(.tiptap-content .citation.ProseMirror-selectednode) {
+  outline: 2px solid var(--p-primary-400, #60a5fa);
 }
 
 .tiptap-host :deep(.tiptap-content code) {

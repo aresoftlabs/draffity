@@ -22,6 +22,7 @@ import Inspector from '@/components/Inspector.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import BibliographyDialog from '@/components/BibliographyDialog.vue';
+import CitationPickerDialog from '@/components/CitationPickerDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
@@ -76,6 +77,7 @@ const editor = computed(() => editorRef.value?.editor ?? null);
 
 const showExport = ref(false);
 const showBibliography = ref(false);
+const showCitationPicker = ref(false);
 const showSearch = ref(false);
 const findVisible = ref(false);
 const findMode = ref<'find' | 'replace'>('find');
@@ -143,6 +145,12 @@ function onEditorInput(value: string) {
 
 function onEditorJsonInput(value: string) {
   editorContentJson.value = value;
+}
+
+function onPickCitation(payload: { key: string; label: string }) {
+  const ed = editor.value;
+  if (!ed) return;
+  ed.chain().focus().insertCitation({ citationKey: payload.key, label: payload.label }).run();
 }
 
 async function onCreate(type: DocumentType) {
@@ -312,6 +320,11 @@ onMounted(loadProject);
 
     <ExportDialog v-model:visible="showExport" :project="project" />
     <BibliographyDialog v-model:visible="showBibliography" :project-id="project.id" />
+    <CitationPickerDialog
+      v-model:visible="showCitationPicker"
+      :project-id="project.id"
+      @pick="onPickCitation"
+    />
     <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
 
     <Splitter
@@ -344,6 +357,7 @@ onMounted(loadProject);
             v-if="selected?.docType !== 'folder'"
             :editor="editor"
             :disabled="readOnly"
+            @open-citation-picker="showCitationPicker = true"
           />
           <FindReplaceBar
             v-if="selected?.docType !== 'folder'"

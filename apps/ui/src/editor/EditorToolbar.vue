@@ -9,6 +9,10 @@ const props = defineProps<{
   disabled?: boolean;
 }>();
 
+const emit = defineEmits<{
+  'open-citation-picker': [];
+}>();
+
 const { t } = useI18n();
 
 const isReady = computed(() => !!props.editor && !props.disabled);
@@ -177,6 +181,17 @@ const isInTable = computed(() => isActive('table'));
       severity="secondary"
       :disabled="!isReady || !isInTable"
       @click="() => editor?.chain().focus().deleteTable().run()"
+    />
+
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" />
+
+    <Button
+      v-tooltip.bottom="t('toolbar.insertCitation')"
+      icon="pi pi-at"
+      text
+      severity="secondary"
+      :disabled="!isReady"
+      @click="emit('open-citation-picker')"
     />
 
     <span class="flex-1" />

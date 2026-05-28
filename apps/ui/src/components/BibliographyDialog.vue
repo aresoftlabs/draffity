@@ -11,6 +11,7 @@ import { useToast } from 'primevue/usetoast';
 import type { Citation } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
 import { useIpcError } from '@/composables/useIpcError';
+import { useCitationsStore } from '@/stores/citations';
 
 const props = defineProps<{
   visible: boolean;
@@ -22,6 +23,7 @@ const emit = defineEmits<{ 'update:visible': [value: boolean] }>();
 const { t } = useI18n();
 const { run } = useIpcError();
 const toast = useToast();
+const citationsStore = useCitationsStore();
 
 const entries = ref<Citation[]>([]);
 const importing = ref(false);
@@ -57,6 +59,11 @@ async function onImport() {
   importing.value = false;
   if (summary) {
     entries.value = summary.imported;
+    // Keep the in-memory citation cache (consumed by the picker + the
+    // editor's label resolver) in sync with what just landed in storage.
+    if (citationsStore.projectId === props.projectId) {
+      citationsStore.setList(summary.imported);
+    }
     toast.add({
       severity: 'success',
       summary: t('bibliography.title'),
@@ -74,6 +81,9 @@ async function onDelete(c: Citation) {
   if (!confirm(t('bibliography.deleteConfirm'))) return;
   await run(t('bibliography.importError'), () => ipc.deleteCitation(c.id));
   entries.value = entries.value.filter((e) => e.id !== c.id);
+  if (citationsStore.projectId === props.projectId) {
+    citationsStore.setList(entries.value);
+  }
 }
 
 function close() {
