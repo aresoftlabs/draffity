@@ -159,7 +159,8 @@
     "skip": "Saltar",
     "back": "Atrás",
     "next": "Siguiente",
-    "finish": "Empezar"
+    "finish": "Empezar",
+    "createFirstProject": "Crear mi primer proyecto"
   },
   "errors": {
     "loadProjects": "No se pudieron cargar los proyectos",

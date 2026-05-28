@@ -23,6 +23,9 @@ export const useUiStore = defineStore('ui', () => {
   const binderCollapsed = ref(loadBool('binderCollapsed', false));
   const inspectorCollapsed = ref(loadBool('inspectorCollapsed', false));
   const focusMode = ref(false);
+  // One-shot flag set by onboarding to ask the dashboard to open the
+  // NewProjectWizard automatically. The dashboard clears it after acting.
+  const pendingNewProject = ref(false);
 
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
@@ -48,15 +51,30 @@ export const useUiStore = defineStore('ui', () => {
     focusMode.value = !focusMode.value;
   }
 
+  function requestNewProject() {
+    pendingNewProject.value = true;
+  }
+
+  function consumeNewProjectRequest(): boolean {
+    if (pendingNewProject.value) {
+      pendingNewProject.value = false;
+      return true;
+    }
+    return false;
+  }
+
   return {
     theme,
     binderCollapsed,
     inspectorCollapsed,
     focusMode,
+    pendingNewProject,
     setTheme,
     setLocale,
     toggleBinder,
     toggleInspector,
     toggleFocusMode,
+    requestNewProject,
+    consumeNewProjectRequest,
   };
 });

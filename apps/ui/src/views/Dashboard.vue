@@ -7,6 +7,7 @@ import Button from 'primevue/button';
 import { useConfirm } from 'primevue/useconfirm';
 import type { ProjectInput } from '@draffity/shared-types';
 import { useProjectStore } from '@/stores/project';
+import { useUiStore } from '@/stores/ui';
 import { useIpcError } from '@/composables/useIpcError';
 import ProjectCard from '@/components/ProjectCard.vue';
 import NewProjectWizard from '@/components/NewProjectWizard.vue';
@@ -15,6 +16,7 @@ import SwitchProjectDialog from '@/components/SwitchProjectDialog.vue';
 const { t } = useI18n();
 const router = useRouter();
 const projectStore = useProjectStore();
+const uiStore = useUiStore();
 const { active, archived, projects, loading } = storeToRefs(projectStore);
 const { run } = useIpcError();
 const confirm = useConfirm();
@@ -30,6 +32,10 @@ const showSwitch = computed({
 
 onMounted(async () => {
   await run(t('errors.loadProjects'), () => projectStore.loadAll());
+  // If onboarding asked us to open the wizard right after finishing, do so.
+  if (uiStore.consumeNewProjectRequest()) {
+    showNew.value = true;
+  }
 });
 
 async function onCreate(input: ProjectInput) {

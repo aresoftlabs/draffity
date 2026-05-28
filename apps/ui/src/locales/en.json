@@ -159,7 +159,8 @@
     "skip": "Skip",
     "back": "Back",
     "next": "Next",
-    "finish": "Start"
+    "finish": "Start",
+    "createFirstProject": "Create my first project"
   },
   "errors": {
     "loadProjects": "Failed to load projects",

@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
+import { useUiStore } from '@/stores/ui';
 
 const STORAGE_KEY = 'draffity.onboarded';
 
 const { t } = useI18n();
+const uiStore = useUiStore();
 
 const visible = ref(false);
 const step = ref(0);
@@ -14,6 +16,8 @@ const step = ref(0);
 if (typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY) !== '1') {
   visible.value = true;
 }
+
+const isLastSlide = computed(() => step.value === slides.length - 1);
 
 const slides = [
   {
@@ -37,7 +41,7 @@ function next() {
   if (step.value < slides.length - 1) {
     step.value += 1;
   } else {
-    finish();
+    finish({ startProject: true });
   }
 }
 
@@ -45,11 +49,12 @@ function back() {
   if (step.value > 0) step.value -= 1;
 }
 
-function finish() {
+function finish(opts: { startProject?: boolean } = {}) {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, '1');
   }
   visible.value = false;
+  if (opts.startProject) uiStore.requestNewProject();
 }
 </script>
 
@@ -86,8 +91,8 @@ function finish() {
         :label="t('onboarding.skip')"
         text
         severity="secondary"
-        :disabled="step === slides.length - 1"
-        @click="finish"
+        :disabled="isLastSlide"
+        @click="finish()"
       />
       <span class="flex-1" />
       <Button
@@ -99,8 +104,8 @@ function finish() {
         @click="back"
       />
       <Button
-        :label="step === slides.length - 1 ? t('onboarding.finish') : t('onboarding.next')"
-        :icon="step === slides.length - 1 ? 'pi pi-check' : 'pi pi-arrow-right'"
+        :label="isLastSlide ? t('onboarding.createFirstProject') : t('onboarding.next')"
+        :icon="isLastSlide ? 'pi pi-plus' : 'pi pi-arrow-right'"
         icon-pos="right"
         @click="next"
       />
