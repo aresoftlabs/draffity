@@ -245,7 +245,12 @@
     "sepBlank": "Blank line",
     "sepCustom": "Custom",
     "sepCustomPlaceholder": "E.g.: ~ ~ ~",
-    "saveAsDefault": "Remember for this project"
+    "saveAsDefault": "Remember for this project",
+    "sectionEpub": "EPUB",
+    "coverImage": "Cover image",
+    "coverPickButton": "Choose file…",
+    "coverClear": "Clear",
+    "coverPickerTitle": "Select a cover image"
   },
   "search": {
     "button": "Search in project (Ctrl+Shift+F)",

@@ -245,7 +245,12 @@
     "sepBlank": "Línea en blanco",
     "sepCustom": "Personalizado",
     "sepCustomPlaceholder": "Ej.: ~ ~ ~",
-    "saveAsDefault": "Recordar para este proyecto"
+    "saveAsDefault": "Recordar para este proyecto",
+    "sectionEpub": "EPUB",
+    "coverImage": "Imagen de portada",
+    "coverPickButton": "Elegir archivo…",
+    "coverClear": "Quitar",
+    "coverPickerTitle": "Selecciona la imagen de portada"
   },
   "search": {
     "button": "Buscar en el proyecto (Ctrl+Shift+F)",

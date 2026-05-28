@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { save } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
@@ -202,6 +202,28 @@ function displayTitle(): string {
 function sanitize(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, '_').trim() || 'manuscript';
 }
+
+async function pickCoverImage() {
+  const picked = await open({
+    multiple: false,
+    directory: false,
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
+    title: t('export.coverPickerTitle'),
+  });
+  if (typeof picked === 'string') {
+    config.value.coverImagePath = picked;
+  }
+}
+
+function clearCoverImage() {
+  config.value.coverImagePath = null;
+}
+
+function coverFilename(path: string | null | undefined): string {
+  if (!path) return '';
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] ?? '';
+}
 </script>
 
 <template>
@@ -334,6 +356,32 @@ function sanitize(name: string): string {
                 />
               </div>
             </div>
+          </div>
+        </div>
+      </Fieldset>
+
+      <Fieldset v-if="format === 'epub'" :legend="t('export.sectionEpub')" :toggleable="true">
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium">{{ t('export.coverImage') }}</label>
+          <div class="flex items-center gap-2">
+            <Button
+              :label="t('export.coverPickButton')"
+              icon="pi pi-image"
+              severity="secondary"
+              outlined
+              size="small"
+              @click="pickCoverImage"
+            />
+            <span v-if="config.coverImagePath" class="flex items-center gap-1 text-sm">
+              <span>{{ coverFilename(config.coverImagePath) }}</span>
+              <Button
+                :label="t('export.coverClear')"
+                text
+                severity="secondary"
+                size="small"
+                @click="clearCoverImage"
+              />
+            </span>
           </div>
         </div>
       </Fieldset>
