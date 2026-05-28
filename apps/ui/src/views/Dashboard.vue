@@ -52,10 +52,18 @@ async function onImport() {
   const picked = await open({
     multiple: false,
     directory: false,
-    filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
+    filters: [
+      { name: 'Manuscript', extensions: ['md', 'markdown', 'docx'] },
+      { name: 'Markdown', extensions: ['md', 'markdown'] },
+      { name: 'Word', extensions: ['docx'] },
+    ],
     title: t('dashboard.importProject'),
   });
   if (typeof picked !== 'string') return;
+  const ext = picked.toLowerCase().split('.').pop() ?? '';
+  const format: ImportFormat | null =
+    ext === 'docx' ? 'docx' : ext === 'md' || ext === 'markdown' ? 'markdown' : null;
+  if (!format) return;
   importing.value = true;
   try {
     const bytes = await readFile(picked);
@@ -64,7 +72,6 @@ async function onImport() {
         .split(/[\\/]/)
         .pop()
         ?.replace(/\.[^.]+$/, '') ?? 'imported';
-    const format: ImportFormat = 'markdown';
     const project = await run(t('errors.importProject'), () =>
       ipc.importProject({ format, bytes: Array.from(bytes), filenameHint }),
     );

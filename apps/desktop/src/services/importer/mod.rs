@@ -4,11 +4,12 @@
 //! walks to create documents under a project — the trait stays pure (no
 //! DB writes here) so importer tests can run in isolation.
 
+mod docx;
 mod markdown;
 
 pub use markdown::LocalMarkdownImporter;
 
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -67,7 +68,7 @@ pub struct LocalImporter;
 
 impl ImportService for LocalImporter {
     fn supported_formats(&self) -> Vec<ImportFormat> {
-        vec![ImportFormat::Markdown]
+        vec![ImportFormat::Markdown, ImportFormat::Docx]
     }
 
     fn import(
@@ -78,9 +79,7 @@ impl ImportService for LocalImporter {
     ) -> AppResult<ImportTree> {
         match format {
             ImportFormat::Markdown => markdown::import(bytes, filename_hint),
-            ImportFormat::Docx => Err(AppError::Unsupported(
-                "DOCX import not implemented yet".into(),
-            )),
+            ImportFormat::Docx => docx::import(bytes, filename_hint),
         }
     }
 }
