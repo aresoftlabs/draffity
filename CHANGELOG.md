@@ -40,6 +40,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Stats históricas con gráfico de 30 días** (S2-08).
 - **Split editor** (S3-06).
 
+## [0.9.0-beta] — 2026-05-28
+
+Sprint A cerrado al 100% (10 historias). Primer sprint del backlog v3
+con foco interno: deuda técnica acumulada en archivos sobre límite del
+CLAUDE.md + accesibilidad base en componentes custom + patrón
+premium-ready aplicado al project manager. No hay features nuevas
+visibles al usuario; el output es un codebase más mantenible y
+navegable con teclado / lector de pantalla, listo para sumar features
+en Sprints B/C sin disparar la deuda.
+
+### Changed — Refactors de deuda técnica
+
+- **`storage/documents.rs` (664 líneas) dividido en core + tags +
+  positions** (A-01): el archivo queda con CRUD y un helper
+  `select_one` reusable; nuevos hermanos `document_tags.rs` (con
+  `set` y `list_project_tags`) y `document_positions.rs` (con
+  `reorder`). El trait `StorageService` no cambia: el impl en
+  `mod.rs` delega a los tres submódulos según la operación.
+- **Fix silent error en `documents::create`** (A-04): el `MAX(position)`
+  query usaba `.unwrap_or(0)` que silenciaba cualquier error de
+  SQLite — incluyendo casos donde un `0` válido pisaría una row
+  existente. Ahora `.optional()?.unwrap_or(0)` distingue "tabla vacía"
+  (defaultea 0, correcto) de "error real" (propaga al caller).
+- **`exporter/docx.rs` (454 líneas) dividido extrayendo
+  `docx_helpers.rs`** (A-02): el pipeline HTML→Paragraph
+  (`render_html_blocks`, `process_block`, `collect_runs`, `push_runs`,
+  `InlineMarks`, `BlockCtx`, `ListKind`) y el builder del Codex
+  appendix se mueven al helper. `render()` queda como orquestador
+  delgado con `add_title_page`, `add_toc`, `add_document` locales.
+- **`services/backup.rs` (461 líneas) extrae `retention_policy.rs`**
+  (A-03): la política de pruning (manuals always + top-N dailies +
+  monthly anchors) pasa a una función pura `compute_keep_ids` con
+  signature `(records, daily_retain, monthly_retain) -> HashSet`,
+  testeable sin tempdirs. `prune_old_backups` queda en ~15 líneas
+  (delegar + rm_file). 5 tests nuevos para la política.
+- **`composables/useWritingTimer.ts` (179 líneas) dividido en 3**
+  (A-05): `useWritingTimer` (state machine) + `useBeepAudio`
+  (WebAudio API) + `useTimerStorage` (localStorage namespace
+  `draffity.timer.*`). El shape público del composable no cambia,
+  los 11 tests existentes pasan sin tocar.
+- **`composables/useFindReplace.ts` (146 líneas) extrae
+  `useProseMirrorSearch.ts`** (A-06): la función `findMatches` ahora
+  es pura sobre un `ProseMirrorNode` (doc, query, caseSensitive →
+  matches), testeable sin editor TipTap montado. 5 tests nuevos
+  cubren empty query, case-sensitive/insensitive, multi-paragraph y
+  no-overlap en consecutivos.
+- **`ProjectManager` ahora es `trait ProjectManagerService` +
+  `LocalProjectManager` impl** (A-10): aplica el patrón premium-ready
+  del §2 del CLAUDE.md al manager, que era un struct concreto sin
+  interfaz. `AppState.project_manager` pasa a
+  `Arc<dyn ProjectManagerService>`; los commands no cambian. Un
+  futuro `CloudProjectManager` (sync con backend premium) se enchufa
+  sin tocar nada del wiring actual.
+
+### Added — Accesibilidad
+
+- **ARIA labels en componentes custom** (A-07):
+  - `EditorToolbar`: cada uno de los 17 botones suma
+    `:aria-label` con la misma traducción del tooltip + los toggleable
+    (heading/bold/italic/etc.) llevan `:aria-pressed` reflejando
+    `isActive`. Wrapper recibe `role="toolbar" :aria-label`.
+    Decorativos (separators, icon-overlays como H1, U, S, R, C, el
+    icon de blockquote) reciben `aria-hidden="true"`.
+  - `FindReplaceBar`: inputs query/replacement suman `:aria-label`
+    (no solo placeholder); el counter pasa a region live polite que
+    anuncia cambios al cambiar (X/Y matches → no matches → …).
+  - `SaveIndicator`: pasa de span pelado a region live polite así el
+    estado guardando/guardado/error se anuncia sin invadir.
+  - `Binder`: contenedor recibe role navigation con aria-label
+    propio.
+- **Focus-visible ring global** (A-08): nuevo CSS en
+  `styles/main.css` con outline 2px primary + offset 2px sobre
+  `*:focus-visible`. PrimeVue components mantienen sus propios
+  estilos; este catch-all rescata custom buttons, cards, chips y
+  divs interactivos que no tenían foco visible.
+
+### Architecture audit (A-08)
+
+Verificado que PrimeVue 4 da por default:
+
+- Dialogs con `modal` cierran con Esc (`closeOnEscape: true`) y
+  atrapan foco; el `OnboardingDialog` tiene `:closable="false"`
+  adrede (flujo forzado), no es bug.
+- PrimeVue Tree (binder) ya soporta ArrowUp/Down para navegar,
+  Enter/Space para seleccionar, ArrowLeft/Right para colapsar.
+
+### Tests
+
+- Rust: 153 verdes (149 lib + 4 integración).
+  149 lib: 144 previos + 5 nuevos de `retention_policy`.
+- Vitest: 35 verdes (30 previos + 5 nuevos de `useProseMirrorSearch`).
+- Playwright: 3 specs sin cambios.
+
 ## [0.8.0-beta] — 2026-05-28
 
 Sprint 7 cerrado al 100%: codex (worldbuilding/personajes) llega en
@@ -626,7 +719,8 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.8.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.9.0-beta...HEAD
+[0.9.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.9.0-beta
 [0.8.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.8.0-beta
 [0.7.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.7.0-beta
 [0.6.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.6.0-beta

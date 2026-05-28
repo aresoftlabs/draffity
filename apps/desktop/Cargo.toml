@@ -1,6 +1,6 @@
 [package]
 name = "draffity-desktop"
-version = "0.8.0"
+version = "0.9.0"
 description = "Draffity desktop (Tauri 2 + Rust)"
 authors = ["Draffity"]
 edition = "2021"
