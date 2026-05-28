@@ -95,11 +95,16 @@
   "viewMode": {
     "editor": "Editor",
     "corkboard": "Corkboard",
-    "outliner": "Outliner",
-    "outlinerPlaceholder": "Outliner view (next commit)"
+    "outliner": "Outliner"
   },
   "corkboard": {
     "noSynopsis": "No synopsis. Add one in the Inspector."
+  },
+  "outliner": {
+    "title": "Title",
+    "synopsis": "Synopsis",
+    "words": "Words",
+    "noSynopsis": "No synopsis"
   },
   "goal": {
     "documentLabel": "Document goal",

@@ -26,6 +26,7 @@ import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
+import OutlinerView from '@/views/OutlinerView.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -178,6 +179,21 @@ async function onDocGoalChange(goal: number | null) {
 async function onSynopsisChange(synopsis: string | null) {
   if (!selected.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => docStore.setSynopsis(selected.value!.id, synopsis));
+}
+
+async function onOutlinerTitle(payload: { id: string; title: string }) {
+  if (readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.save(payload.id, { title: payload.title }));
+}
+
+async function onOutlinerSynopsis(payload: { id: string; synopsis: string | null }) {
+  if (readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setSynopsis(payload.id, payload.synopsis));
+}
+
+async function onOutlinerStatus(payload: { id: string; status: DocumentStatus }) {
+  if (readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setStatus(payload.id, payload.status));
 }
 
 async function onProjectGoalChange(goal: number | null) {
@@ -333,9 +349,16 @@ onMounted(loadProject);
           :selected-id="docStore.selectedId"
           @select="onSelect"
         />
-        <div v-else class="flex-1 flex items-center justify-center text-sm opacity-60">
-          {{ t('viewMode.outlinerPlaceholder') }}
-        </div>
+        <OutlinerView
+          v-else
+          :documents="docStore.documents"
+          :selected-id="docStore.selectedId"
+          :read-only="readOnly"
+          @select="onSelect"
+          @update-title="onOutlinerTitle"
+          @update-synopsis="onOutlinerSynopsis"
+          @update-status="onOutlinerStatus"
+        />
       </SplitterPanel>
 
       <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">
