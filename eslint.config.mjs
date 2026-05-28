@@ -98,6 +98,16 @@ export default [
             'px',
             'em',
             'rem',
+            // Etiquetas de teclas (idénticas en ES/EN)
+            'Esc',
+            'Tab',
+            'Enter',
+            'Space',
+            'Ctrl',
+            'Shift',
+            'Alt',
+            'Cmd',
+            'Meta',
           ],
           attributes: {
             '/.+/': [

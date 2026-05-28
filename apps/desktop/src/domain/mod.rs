@@ -3,12 +3,14 @@
 
 pub mod document;
 pub mod project;
+pub mod search;
 pub mod snapshot;
 pub mod stats;
 pub mod template;
 
 pub use document::{DocNode, DocumentInput, DocumentType};
 pub use project::{Project, ProjectInput, ProjectStatus};
+pub use search::SearchHit;
 pub use snapshot::Snapshot;
 pub use stats::WritingStats;
 pub use template::{

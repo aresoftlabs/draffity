@@ -13,14 +13,15 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    DocNode, DocumentInput, Project, ProjectInput, ProjectStatus, Snapshot, TemplateNode,
-    WritingStats,
+    DocNode, DocumentInput, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
+    TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 
 mod documents;
 mod projects;
 mod row_mappers;
+mod search;
 mod settings;
 mod snapshots;
 mod stats;
@@ -28,7 +29,10 @@ mod template_seed;
 
 /// Embedded migrations applied in order. Each entry is `(version, sql)`.
 /// Premium adds entries in the 100_* range without touching MVP migrations.
-const MIGRATIONS: &[(u32, &str)] = &[(1, include_str!("../../migrations/001_init.sql"))];
+const MIGRATIONS: &[(u32, &str)] = &[
+    (1, include_str!("../../migrations/001_init.sql")),
+    (2, include_str!("../../migrations/002_fts.sql")),
+];
 
 pub trait StorageService: Send + Sync {
     fn migrate(&self) -> AppResult<()>;
@@ -90,6 +94,12 @@ pub trait StorageService: Send + Sync {
     /// one day ago the streak is reported as 0 (the broken streak is not
     /// persisted until the next `record_writing_activity`).
     fn get_writing_stats(&self) -> AppResult<WritingStats>;
+
+    // Search
+    /// Full-text search across documents of a single project. Returns up to
+    /// 50 hits ordered by FTS5 rank, each with a `<mark>`-wrapped excerpt.
+    /// Empty or whitespace-only queries return `[]` without hitting the DB.
+    fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>>;
 }
 
 /// Local SQLite-backed implementation. Single connection guarded by Mutex —
@@ -275,6 +285,10 @@ impl StorageService for LocalStorageService {
 
     fn get_writing_stats(&self) -> AppResult<WritingStats> {
         stats::get(&self.conn.lock().unwrap())
+    }
+
+    fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>> {
+        search::search(&self.conn.lock().unwrap(), project_id, query)
     }
 }
 

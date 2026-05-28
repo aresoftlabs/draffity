@@ -149,6 +149,14 @@
     "successTitle": "Exportación completada",
     "successDetail": "Archivo guardado en {path}"
   },
+  "search": {
+    "button": "Buscar en el proyecto (Ctrl+Shift+F)",
+    "placeholder": "Buscar en todo el proyecto…",
+    "loading": "Buscando…",
+    "empty": "Sin coincidencias.",
+    "hint": "Empieza a escribir para buscar entre tus capítulos y notas.",
+    "error": "No se pudo realizar la búsqueda"
+  },
   "onboarding": {
     "welcomeTitle": "Bienvenido a Draffity",
     "welcomeBody": "Tu asistente de escritura multi-formato: novelas, papers, manga, artículos. Local, rápido y sin distracciones.",

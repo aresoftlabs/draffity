@@ -83,6 +83,17 @@ export interface Template {
   metadataFields: MetadataField[];
 }
 
+// Search
+
+/** One match from a project-scoped FTS search.
+ * `excerpt` contains the matched snippet with `<mark>` tags around hits. */
+export interface SearchHit {
+  documentId: string;
+  projectId: string;
+  title: string;
+  excerpt: string;
+}
+
 // Export
 
 export type ExportFormat = 'markdown' | 'docx' | 'epub' | 'pdf';

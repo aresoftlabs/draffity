@@ -5,6 +5,7 @@ import type {
   ExportFormat,
   Project,
   ProjectInput,
+  SearchHit,
   Snapshot,
   Template,
   WritingStats,
@@ -55,6 +56,10 @@ export const ipc = {
   // Templates
   listTemplates: () => invoke<Template[]>('list_templates'),
   getTemplate: (id: string) => invoke<Template | null>('get_template', { id }),
+
+  // Search
+  searchDocuments: (params: { projectId: string; query: string }) =>
+    invoke<SearchHit[]>('search_documents', params),
 
   // Export
   exportProject: (params: { projectId: string; format: ExportFormat; outputPath: string }) =>

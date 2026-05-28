@@ -4,11 +4,13 @@
 pub mod document;
 pub mod export;
 pub mod project;
+pub mod search;
 pub mod system;
 pub mod templates;
 
 pub use document::*;
 pub use export::*;
 pub use project::*;
+pub use search::*;
 pub use system::*;
 pub use templates::*;

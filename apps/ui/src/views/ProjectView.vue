@@ -20,6 +20,7 @@ import Binder from '@/components/Binder.vue';
 import Inspector from '@/components/Inspector.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
+import SearchDialog from '@/components/SearchDialog.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -48,6 +49,7 @@ const editorRef = ref<InstanceType<typeof TipTapEditor> | null>(null);
 const editor = computed(() => editorRef.value?.editor ?? null);
 
 const showExport = ref(false);
+const showSearch = ref(false);
 const sessionStartWords = ref(0);
 const sessionWordCount = computed(() =>
   Math.max(0, totalWordCount.value - sessionStartWords.value),
@@ -141,8 +143,15 @@ useShortcuts({
   'ctrl+n': () => {
     if (!readOnly.value) onCreate('chapter');
   },
+  'ctrl+shift+f': () => {
+    showSearch.value = true;
+  },
   f11: () => toggleFocus(),
 });
+
+function onSearchJump(documentId: string) {
+  docStore.select(documentId);
+}
 
 onMounted(loadProject);
 </script>
@@ -165,6 +174,15 @@ onMounted(loadProject);
       <span class="flex-1" />
       <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
       <Button
+        v-tooltip.bottom="t('search.button')"
+        icon="pi pi-search"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('search.button')"
+        @click="showSearch = true"
+      />
+      <Button
         v-tooltip.bottom="t('project.focusMode')"
         :icon="focusMode ? 'pi pi-window-minimize' : 'pi pi-arrows-alt'"
         text
@@ -185,6 +203,7 @@ onMounted(loadProject);
     </header>
 
     <ExportDialog v-model:visible="showExport" :project="project" />
+    <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
 
     <Splitter
       class="flex-1 !rounded-none !border-0 min-h-0"

@@ -149,6 +149,14 @@
     "successTitle": "Export complete",
     "successDetail": "File saved to {path}"
   },
+  "search": {
+    "button": "Search in project (Ctrl+Shift+F)",
+    "placeholder": "Search across the whole project…",
+    "loading": "Searching…",
+    "empty": "No matches.",
+    "hint": "Start typing to search across your chapters and notes.",
+    "error": "Search failed"
+  },
   "onboarding": {
     "welcomeTitle": "Welcome to Draffity",
     "welcomeBody": "Your multi-format writing assistant: novels, papers, manga, articles. Local, fast and distraction-free.",

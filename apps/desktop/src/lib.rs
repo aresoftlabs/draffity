@@ -67,6 +67,8 @@ pub fn run() {
             // templates
             commands::list_templates,
             commands::get_template,
+            // search
+            commands::search_documents,
             // export
             commands::export_project,
             commands::supported_export_formats,
