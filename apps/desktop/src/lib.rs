@@ -11,14 +11,10 @@ mod state;
 
 pub use error::{AppError, AppResult};
 
-use std::sync::Arc;
-
 use tauri::Manager;
 
-use crate::services::{
-    BuiltInTemplates, FreeTier, LocalExporter, LocalStorageService, NoOpAI, NoOpASR, NoOpSync,
-    ProjectManager, StorageService,
-};
+use crate::capabilities::Tier;
+use crate::services::ServiceFactory;
 use crate::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -34,36 +30,10 @@ pub fn run() {
                 .expect("failed to resolve app data dir");
             std::fs::create_dir_all(&app_data_dir)?;
 
-            // Initialise tracing once we know where to put logs. The guard
-            // must outlive the app process — we hand it to AppState.
-            let log_dir = app_data_dir.join("logs");
-            let log_guard = logging::init(&log_dir);
-
-            let db_path = app_data_dir.join("draffity.db");
-            tracing::info!(path = %db_path.display(), "opening canonical database");
-
-            let storage = Arc::new(LocalStorageService::open(&db_path)?);
-            storage.migrate()?;
-
-            let tier = Arc::new(FreeTier);
-            let templates = Arc::new(BuiltInTemplates::load()?);
-            let project_manager = Arc::new(ProjectManager::new(
-                storage.clone(),
-                tier.clone(),
-                templates.clone(),
-            ));
-
-            app.manage(AppState {
-                storage,
-                tier,
-                project_manager,
-                templates,
-                ai: Arc::new(NoOpAI),
-                sync: Arc::new(NoOpSync),
-                asr: Arc::new(NoOpASR),
-                exporter: Arc::new(LocalExporter),
-                _log_guard: log_guard,
-            });
+            // Log guard must outlive the app — hand it to AppState.
+            let log_guard = logging::init(&app_data_dir.join("logs"));
+            let bundle = ServiceFactory::build(Tier::Free, &app_data_dir)?;
+            app.manage(AppState::from_bundle(bundle, log_guard));
 
             Ok(())
         })

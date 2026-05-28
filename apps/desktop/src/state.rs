@@ -1,4 +1,5 @@
-//! Tauri-managed application state. Built in `lib.rs::run` and consumed by
+//! Tauri-managed application state. Built in `lib.rs::run` from a
+//! `ServiceBundle` (services) + `WorkerGuard` (log lifecycle), consumed by
 //! IPC commands via `State<AppState>`.
 
 use std::sync::Arc;
@@ -6,8 +7,8 @@ use std::sync::Arc;
 use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::services::{
-    AIService, ASRService, CloudSyncService, ExportService, ProjectManager, StorageService,
-    TemplatesService, TierService,
+    AIService, ASRService, CloudSyncService, ExportService, ProjectManager, ServiceBundle,
+    StorageService, TemplatesService, TierService,
 };
 
 pub struct AppState {
@@ -26,4 +27,20 @@ pub struct AppState {
     /// Dropping this guard flushes any pending log lines.
     #[allow(dead_code)]
     pub _log_guard: WorkerGuard,
+}
+
+impl AppState {
+    pub fn from_bundle(bundle: ServiceBundle, log_guard: WorkerGuard) -> Self {
+        Self {
+            storage: bundle.storage,
+            tier: bundle.tier,
+            project_manager: bundle.project_manager,
+            templates: bundle.templates,
+            ai: bundle.ai,
+            sync: bundle.sync,
+            asr: bundle.asr,
+            exporter: bundle.exporter,
+            _log_guard: log_guard,
+        }
+    }
 }

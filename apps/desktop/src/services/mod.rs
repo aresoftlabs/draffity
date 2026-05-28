@@ -4,6 +4,7 @@
 pub mod ai;
 pub mod asr;
 pub mod exporter;
+pub mod factory;
 pub mod project_manager;
 pub mod storage;
 pub mod sync;
@@ -13,6 +14,7 @@ pub mod tier;
 pub use ai::{AIService, NoOpAI};
 pub use asr::{ASRService, NoOpASR};
 pub use exporter::{ExportFormat, ExportService, LocalExporter};
+pub use factory::{ServiceBundle, ServiceFactory};
 pub use project_manager::ProjectManager;
 pub use storage::{LocalStorageService, StorageService};
 pub use sync::{CloudSyncService, NoOpSync};
