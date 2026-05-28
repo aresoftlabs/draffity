@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { DocNode } from '@draffity/shared-types';
+import Select from 'primevue/select';
+import type { DocNode, DocumentStatus } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
 
 const props = defineProps<{
@@ -14,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   snapshotRestored: [];
+  statusChange: [status: DocumentStatus];
 }>();
 
 const { t, d, locale } = useI18n();
@@ -28,6 +30,19 @@ function formatDate(ts: number) {
 }
 
 const docTypeLabel = computed(() => (props.doc ? t(`documentType.${props.doc.docType}`) : ''));
+
+const statusOptions = computed<{ value: DocumentStatus; label: string }[]>(() =>
+  (['draft', 'revised', 'final', 'trashed'] as const).map((value) => ({
+    value,
+    label: t(`status.${value}`),
+  })),
+);
+
+function onStatusChange(value: DocumentStatus) {
+  if (!props.doc || props.readOnly) return;
+  if (value === props.doc.status) return;
+  emit('statusChange', value);
+}
 </script>
 
 <template>
@@ -53,6 +68,20 @@ const docTypeLabel = computed(() => (props.doc ? t(`documentType.${props.doc.doc
           <div class="flex justify-between gap-2">
             <dt class="opacity-60">{{ t('project.type') }}</dt>
             <dd class="font-medium">{{ docTypeLabel }}</dd>
+          </div>
+          <div class="flex justify-between items-center gap-2">
+            <dt class="opacity-60">{{ t('status.label') }}</dt>
+            <Select
+              :model-value="doc.status"
+              :options="statusOptions"
+              option-label="label"
+              option-value="value"
+              :disabled="readOnly"
+              class="!min-w-[8rem]"
+              size="small"
+              :pt="{ root: { class: '!text-xs' } }"
+              @update:model-value="onStatusChange"
+            />
           </div>
           <div class="flex justify-between gap-2">
             <dt class="opacity-60">{{ t('project.createdAt') }}</dt>

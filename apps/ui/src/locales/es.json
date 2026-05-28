@@ -76,6 +76,13 @@
     "folder": "Carpeta",
     "manga_page": "Página manga"
   },
+  "status": {
+    "label": "Estado",
+    "draft": "Borrador",
+    "revised": "Revisado",
+    "final": "Final",
+    "trashed": "Descartado"
+  },
   "save": {
     "idle": "",
     "saving": "Guardando…",

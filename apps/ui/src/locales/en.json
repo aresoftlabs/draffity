@@ -76,6 +76,13 @@
     "folder": "Folder",
     "manga_page": "Manga page"
   },
+  "status": {
+    "label": "Status",
+    "draft": "Draft",
+    "revised": "Revised",
+    "final": "Final",
+    "trashed": "Trashed"
+  },
   "save": {
     "idle": "",
     "saving": "Saving…",

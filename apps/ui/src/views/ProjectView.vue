@@ -7,7 +7,7 @@ import Splitter from 'primevue/splitter';
 import SplitterPanel from 'primevue/splitterpanel';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
-import type { DocumentType } from '@draffity/shared-types';
+import type { DocumentStatus, DocumentType } from '@draffity/shared-types';
 
 import { useProjectStore } from '@/stores/project';
 import { useDocumentStore, type ReorderOp } from '@/stores/document';
@@ -137,6 +137,11 @@ function onSelect(id: string) {
 async function onReorder(ops: ReorderOp[]) {
   if (!project.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => docStore.reorder(project.value!.id, ops));
+}
+
+async function onStatusChange(status: DocumentStatus) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setStatus(selected.value!.id, status));
 }
 
 useShortcuts({
@@ -272,6 +277,7 @@ onMounted(loadProject);
           :session-word-count="sessionWordCount"
           :read-only="readOnly"
           @snapshot-restored="onSnapshotRestored"
+          @status-change="onStatusChange"
         />
       </SplitterPanel>
     </Splitter>

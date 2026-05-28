@@ -6,7 +6,7 @@ import type { TreeNode } from 'primevue/treenode';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import { ref } from 'vue';
-import type { DocNode, DocumentType } from '@draffity/shared-types';
+import type { DocNode, DocumentStatus, DocumentType } from '@draffity/shared-types';
 import type { ReorderOp } from '@/stores/document';
 
 const props = defineProps<{
@@ -53,6 +53,21 @@ function iconFor(t: DocumentType): string {
       return 'pi pi-folder';
     case 'manga_page':
       return 'pi pi-image';
+  }
+}
+
+/** Class for the small status dot rendered next to the node label. */
+function statusDotClass(s: DocumentStatus): string {
+  switch (s) {
+    case 'revised':
+      return 'bg-blue-400';
+    case 'final':
+      return 'bg-emerald-500';
+    case 'trashed':
+      return 'bg-rose-400 opacity-60';
+    case 'draft':
+    default:
+      return 'bg-surface-300 dark:bg-surface-600';
   }
 }
 
@@ -185,7 +200,15 @@ const newMenuItems = computed(() => [
       @node-drop="onNodeDrop"
     >
       <template #default="{ node }">
-        <span class="text-sm truncate">{{ node.label }}</span>
+        <span class="flex items-center gap-2 min-w-0">
+          <span
+            v-if="node.data"
+            class="w-1.5 h-1.5 rounded-full shrink-0"
+            :class="statusDotClass((node.data as DocNode).status)"
+            :aria-label="t(`status.${(node.data as DocNode).status}`)"
+          />
+          <span class="text-sm truncate">{{ node.label }}</span>
+        </span>
       </template>
     </Tree>
   </div>
