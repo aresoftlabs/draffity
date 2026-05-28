@@ -113,6 +113,52 @@ export interface SearchHit {
 
 export type ExportFormat = 'markdown' | 'docx' | 'epub' | 'pdf';
 
+export type PageSize =
+  | 'a4'
+  | 'letter'
+  | 'legal'
+  | { custom: { widthMm: number; heightMm: number } };
+
+export interface Margins {
+  topMm: number;
+  rightMm: number;
+  bottomMm: number;
+  leftMm: number;
+}
+
+export type SceneSeparator =
+  | { kind: 'stars' }
+  | { kind: 'dashes' }
+  | { kind: 'blank' }
+  | { kind: 'custom'; value: string };
+
+/** User-tunable export options. Persisted per-project. Backend tolerates
+ *  partial payloads — any missing field falls back to a default. */
+export interface ExportConfig {
+  titleOverride?: string | null;
+  author?: string | null;
+  fontFamily?: string | null;
+  pageSize: PageSize;
+  margins: Margins;
+  includeToc: boolean;
+  includeTitlePage: boolean;
+  sceneSeparator: SceneSeparator;
+  coverImagePath?: string | null;
+}
+
+/** Defaults mirrored from `services::exporter::config::ExportConfig::default()`. */
+export const DEFAULT_EXPORT_CONFIG: ExportConfig = {
+  titleOverride: null,
+  author: null,
+  fontFamily: null,
+  pageSize: 'a4',
+  margins: { topMm: 25, rightMm: 25, bottomMm: 25, leftMm: 25 },
+  includeToc: true,
+  includeTitlePage: true,
+  sceneSeparator: { kind: 'stars' },
+  coverImagePath: null,
+};
+
 // Writing stats
 
 export interface WritingStats {

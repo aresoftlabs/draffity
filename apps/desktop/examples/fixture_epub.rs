@@ -8,7 +8,10 @@ use std::env;
 
 use draffity_desktop_lib::{
     domain::{DocumentInput, DocumentType, ProjectInput},
-    services::{ExportFormat, ExportService, LocalExporter, LocalStorageService, StorageService},
+    services::{
+        ExportConfig, ExportFormat, ExportService, LocalExporter, LocalStorageService,
+        StorageService,
+    },
 };
 
 fn main() {
@@ -49,7 +52,12 @@ fn main() {
 
     let docs = storage.list_documents(&project.id).expect("list documents");
     let bytes = LocalExporter
-        .export(&project, &docs, ExportFormat::Epub)
+        .export(
+            &project,
+            &docs,
+            ExportFormat::Epub,
+            &ExportConfig::default(),
+        )
         .expect("render EPUB");
 
     std::fs::write(&out, &bytes).expect("write output file");

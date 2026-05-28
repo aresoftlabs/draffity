@@ -1,10 +1,15 @@
 //! Export pipeline. The MVP ships Markdown, DOCX and EPUB. PDF is wired into
 //! the trait but returns `Unsupported` until Phase 4.5 / a future iteration.
 
+mod config;
 mod docx;
 mod epub;
 mod markdown;
 mod util;
+
+pub use config::{
+    settings_key as export_config_settings_key, ExportConfig, Margins, PageSize, SceneSeparator,
+};
 
 use crate::domain::{DocNode, Project};
 use crate::error::{AppError, AppResult};
@@ -45,12 +50,14 @@ pub trait ExportService: Send + Sync {
 
     /// Render a project + documents to the requested format. Returns the
     /// serialized bytes — caller writes them to disk (UI uses the Tauri save
-    /// dialog).
+    /// dialog). `config` carries user-tunable options; pass
+    /// `ExportConfig::default()` for the legacy behavior.
     fn export(
         &self,
         project: &Project,
         documents: &[DocNode],
         format: ExportFormat,
+        config: &ExportConfig,
     ) -> AppResult<Vec<u8>>;
 }
 
@@ -71,11 +78,12 @@ impl ExportService for LocalExporter {
         project: &Project,
         documents: &[DocNode],
         format: ExportFormat,
+        config: &ExportConfig,
     ) -> AppResult<Vec<u8>> {
         match format {
-            ExportFormat::Markdown => markdown::render(project, documents),
-            ExportFormat::Docx => docx::render(project, documents),
-            ExportFormat::Epub => epub::render(project, documents),
+            ExportFormat::Markdown => markdown::render(project, documents, config),
+            ExportFormat::Docx => docx::render(project, documents, config),
+            ExportFormat::Epub => epub::render(project, documents, config),
             ExportFormat::Pdf => Err(AppError::Unsupported(
                 "PDF export not implemented yet".into(),
             )),

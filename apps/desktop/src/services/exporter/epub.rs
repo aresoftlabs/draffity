@@ -9,9 +9,14 @@ use epub_builder::{EpubBuilder, EpubContent, ReferenceType, ZipLibrary};
 use crate::domain::{DocNode, Project};
 use crate::error::{AppError, AppResult};
 
+use super::config::ExportConfig;
 use super::util::{flatten_in_order, xml_escape};
 
-pub fn render(project: &Project, documents: &[DocNode]) -> AppResult<Vec<u8>> {
+pub fn render(
+    project: &Project,
+    documents: &[DocNode],
+    _config: &ExportConfig,
+) -> AppResult<Vec<u8>> {
     let zip = ZipLibrary::new().map_err(|e| AppError::Unexpected(format!("epub zip init: {e}")))?;
     let mut builder = EpubBuilder::new(zip)
         .map_err(|e| AppError::Unexpected(format!("epub builder init: {e}")))?;
@@ -110,7 +115,7 @@ mod tests {
             Some("<p>Hola.</p>"),
             0,
         )];
-        let bytes = render(&p, &docs).unwrap();
+        let bytes = render(&p, &docs, &ExportConfig::default()).unwrap();
         // ZIP magic
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
         // EPUB requires the mimetype file as the first entry, uncompressed.
@@ -122,7 +127,7 @@ mod tests {
     #[test]
     fn empty_project_still_renders() {
         let p = project("X");
-        let bytes = render(&p, &[]).unwrap();
+        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 }

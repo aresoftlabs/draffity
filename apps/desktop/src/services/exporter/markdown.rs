@@ -4,9 +4,14 @@
 use crate::domain::{DocNode, Project};
 use crate::error::AppResult;
 
+use super::config::ExportConfig;
 use super::util::{flatten_in_order, yaml_quote};
 
-pub fn render(project: &Project, documents: &[DocNode]) -> AppResult<Vec<u8>> {
+pub fn render(
+    project: &Project,
+    documents: &[DocNode],
+    _config: &ExportConfig,
+) -> AppResult<Vec<u8>> {
     let mut out = String::new();
 
     // Frontmatter
@@ -72,7 +77,7 @@ mod tests {
                 0,
             ),
         ];
-        let bytes = render(&p, &docs).unwrap();
+        let bytes = render(&p, &docs, &ExportConfig::default()).unwrap();
         let text = String::from_utf8(bytes).unwrap();
 
         assert!(text.starts_with("---\n"));
@@ -87,7 +92,7 @@ mod tests {
     #[test]
     fn empty_project_still_has_frontmatter() {
         let p = project("X");
-        let bytes = render(&p, &[]).unwrap();
+        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
         let text = String::from_utf8(bytes).unwrap();
         assert!(text.starts_with("---\n"));
         assert!(text.contains("# X"));

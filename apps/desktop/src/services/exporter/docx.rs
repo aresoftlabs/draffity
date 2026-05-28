@@ -8,9 +8,14 @@ use scraper::{ElementRef, Html, Node};
 use crate::domain::{DocNode, Project};
 use crate::error::AppResult;
 
+use super::config::ExportConfig;
 use super::util::flatten_in_order;
 
-pub fn render(project: &Project, documents: &[DocNode]) -> AppResult<Vec<u8>> {
+pub fn render(
+    project: &Project,
+    documents: &[DocNode],
+    _config: &ExportConfig,
+) -> AppResult<Vec<u8>> {
     let mut docx = Docx::new();
 
     // Project title (H1, centered)
@@ -268,7 +273,7 @@ mod tests {
             ),
             0,
         )];
-        let bytes = render(&p, &docs).unwrap();
+        let bytes = render(&p, &docs, &ExportConfig::default()).unwrap();
         // ZIP local file header signature
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
         // Should contain at least the standard word/document.xml entry name.
@@ -279,7 +284,7 @@ mod tests {
     #[test]
     fn empty_project_still_produces_zip() {
         let p = project("X");
-        let bytes = render(&p, &[]).unwrap();
+        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 }

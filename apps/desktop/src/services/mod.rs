@@ -13,7 +13,10 @@ pub mod tier;
 
 pub use ai::{AIService, NoOpAI};
 pub use asr::{ASRService, NoOpASR};
-pub use exporter::{ExportFormat, ExportService, LocalExporter};
+pub use exporter::{
+    export_config_settings_key, ExportConfig, ExportFormat, ExportService, LocalExporter, Margins,
+    PageSize, SceneSeparator,
+};
 pub use factory::{ServiceBundle, ServiceFactory};
 pub use project_manager::ProjectManager;
 pub use storage::{LocalStorageService, StorageService};

@@ -3,6 +3,7 @@ import type {
   DocNode,
   DocumentInput,
   DocumentStatus,
+  ExportConfig,
   ExportFormat,
   Project,
   ProjectInput,
@@ -78,7 +79,14 @@ export const ipc = {
     invoke<SearchHit[]>('search_documents', params),
 
   // Export
-  exportProject: (params: { projectId: string; format: ExportFormat; outputPath: string }) =>
-    invoke<string>('export_project', params),
+  exportProject: (params: {
+    projectId: string;
+    format: ExportFormat;
+    outputPath: string;
+    config?: ExportConfig;
+  }) => invoke<string>('export_project', params),
   supportedExportFormats: () => invoke<ExportFormat[]>('supported_export_formats'),
+  getExportConfig: (projectId: string) => invoke<ExportConfig>('get_export_config', { projectId }),
+  setExportConfig: (params: { projectId: string; config: ExportConfig }) =>
+    invoke<void>('set_export_config', params),
 };
