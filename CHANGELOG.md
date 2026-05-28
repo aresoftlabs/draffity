@@ -7,38 +7,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Deferred to v0.7
+### Deferred to backlog futuro
 
-Refactors arquitectónicos del Sprint 5 que no entregan valor de
-usuario directo y cuyo costo/beneficio mejora cuando el codebase
-crezca un poco más:
+- **Research browser embebido + bookmarks + captura web** (S6-01..03).
+  Decisión consciente de no abordarlo en Sprint 6: la opción
+  técnica entre `WebviewWindow` embebido vs iframe sandbox no
+  estaba investigada y el riesgo era alto. Queda en backlog para
+  un sprint dedicado cuando lo retomemos.
 
-- **`specta` para autogenerar tipos Rust↔TS** (S5-07). Hoy
-  mantenemos ~15 structs en `packages/shared-types` sincronizados
-  a mano — costo real ~1-2 min por sprint. Migrar a specta requiere
-  derivar `Type` en cada struct serializado, validar que la TS
-  generada coincide con la mano, integrar CI que detecte drift y
-  rewritear el flujo de build. El payoff llega cuando tengamos
-  ~30+ types — todavía no estamos ahí. Cuando aterrice también
-  cierra F1-12 del v1.
-- **Pool de conexiones SQLite** (S5-08) y **migrar `Mutex<Connection>`
-  a pool** (S5-09). La contención actual es hipotética: un único
-  usuario, sin escritos concurrentes. Cambiar a `r2d2-sqlite`
-  requiere reescribir los locks y reverificar 112 tests; sin un
-  benchmark que muestre el cuello de botella, es churn. Hacerlo
-  cuando aparezca el primer storage premium o sync remoto.
-- **Hot-swap de tier en `factory.rs`** (S5-10, ya P1). Sólo gana
-  valor cuando exista un tier premium real al que swapear.
+### Deferred to v0.8
 
-Bloques aún pendientes de Sprints anteriores:
+- **Custom fonts** (S6-10, P2). Dropdown con fuentes del sistema
+  más upload de TTF/OTF guardado en una tabla `media`. Depende de
+  cómo resolvamos imágenes inline (S4-02), que también necesita
+  storage de blobs — los hacemos juntos.
+
+### Deferred (arrastres de Sprint 5)
+
+- **`specta` para autogenerar tipos Rust↔TS** (S5-07). El payoff
+  llega cuando tengamos ~30+ types. Cuando aterrice también cierra
+  F1-12 del v1.
+- **Pool de conexiones SQLite** (S5-08+09). Contención hipotética
+  con un único usuario; sin benchmark que muestre cuello, es churn.
+  Cuando aparezca storage premium o sync remoto.
+- **Hot-swap de tier** (S5-10, P1). Sólo gana valor con un tier
+  premium real al que swapear.
+
+### Deferred (arrastres anteriores)
 
 - **Footnotes** (S4-03), **imágenes inline** (S4-02), **diff visual**
-  (S4-05), **MD/DOCX import** (S4-06/07), **round-trip tests** (S4-09)
-  — todo del Sprint 4 sin S4-01/04/08.
+  (S4-05), **MD/DOCX import** (S4-06/07), **round-trip tests** (S4-09).
 - **PDF export** (S1-02 originalmente Sprint 1).
-- **Stats históricas con gráfico de 30 días** (S2-08 originalmente
-  Sprint 2). Pendiente decisión de librería de charts.
-- **Split editor** (S3-06 originalmente Sprint 3).
+- **Stats históricas con gráfico de 30 días** (S2-08).
+- **Split editor** (S3-06).
+
+## [0.7.0-beta] — 2026-05-28
+
+Sprint 6 cerrado parcialmente (6 de 10 historias). Se diferencia
+por backups automáticos confiables, plantillas reutilizables y
+customización del entorno de escritura.
+
+El research browser (S6-01..03) se difiere conscientemente al
+backlog futuro — la decisión técnica entre WebviewWindow embebido
+y iframe sandbox necesita una sesión propia. Custom fonts (P2) y
+los arrastres arquitectónicos de Sprint 5 (specta, pool) siguen
+en "Deferred".
+
+### Added — Sprint 6
+
+- **Backup automático diario** (S6-04, S6-05): nuevo
+  `BackupService` trait + `LocalBackupService` (free) + `NoOpBackup`
+  (premium-ready para `CloudBackupService` futuro). Copia
+  `<app_data>/draffity.db` a `<app_data>/backups/` con nombre
+  `YYYY-MM-DD-HHMMSS-{daily,monthly,manual}.db`. Política de
+  rotación: 7 dailies + último de cada uno de los últimos 6
+  meses + todos los manuales. Al iniciar la app corre
+  `run_daily_maintenance` (idempotente: si ya existe un daily
+  para hoy es no-op) y luego poda. Errores se loguean pero nunca
+  bloquean el arranque. `restore_backup` toma un manual de
+  seguridad de la DB actual antes de pisarla, así el usuario puede
+  deshacer. IPC: `list_backups`, `create_manual_backup`,
+  `restore_backup`, `prune_backups`. UI: nueva sección "Backups"
+  en Settings con lista (id, kind, fecha, tamaño) y botones para
+  crear manual y restaurar (con confirm).
+- **Plantillas de usuario** (S6-06): `template_from_project` arma
+  un `Template` a partir del proyecto activo — estructura del
+  binder (DFS por position), sinopsis conservados, contenido
+  descartado (las plantillas siembran docs vacíos). El id va
+  prefijado con `user-` + ULID para no chocar con built-ins; los
+  documentos `trashed` no se incluyen. IPC:
+  `save_project_as_template` + `delete_user_template`. UI: botón
+  "Guardar como plantilla" en el header del proyecto con dialog
+  (nombre + descripción opcional).
+- **Loader de plantillas extendido** (S6-07):
+  `UserTemplatesLoader` escanea `<app_data>/templates/user/*.json`
+  en cada call (sin cache; se accede sólo al abrir el wizard).
+  `LayeredTemplatesService` mergea built-in + user detrás del
+  mismo trait — el wizard ve una lista única sorteada por nombre.
+  Cambio cero en `ProjectManager` ni en `NewProjectWizard`.
+- **CSS personalizado del editor** (S6-09): textarea en Settings
+  persiste un snippet CSS en la tabla `settings`;
+  `TipTapEditor` lo inyecta como hoja de estilos runtime con
+  `sanitizeUserCss` que strippea `</style>`, `@import` y `url()`
+  para evitar escape del bloque y carga de recursos remotos. Cap
+  de 4 KB. El placeholder muestra el patrón `.tiptap-content`
+  como prefijo de selector.
+- **Atajos de teclado personalizables** (S6-08): refactor de
+  `useShortcuts` — ahora se llama con un dict `{action: handler}`
+  en lugar de `{combo: handler}`. La traducción action→combo vive
+  en `useKeybindingsStore` (Pinia), que carga el dict persistido
+  en `settings.editor.keybindings` y cae a `DEFAULT_BINDINGS` si
+  no hay nada guardado. Action ids son estables; combos legacy
+  se descartan si la action ya no existe (tolerante a upgrade).
+  Settings suma una sección con `KeybindingsEditor`: por cada
+  action muestra la combinación actual + botón "cambiar" que
+  captura la próxima tecla (Esc cancela) y botón "por defecto".
+
+### Architecture / migrations
+
+- Sin migraciones nuevas — backups son archivos en disco; user
+  templates JSON; CSS y keybindings en `settings`.
+- `ServiceBundle` y `AppState` ahora cargan `backup` y
+  `user_templates` (este último separado del `templates` trait
+  para que el IPC pueda escribir sin downcasts).
+- Patrón premium-ready aplicado a backup: `BackupService` trait
+  más `NoOpBackup` stub. `CloudBackupService` futuro implementa el
+  mismo trait sin tocar `lib.rs::setup`.
+
+### Tests
+
+- Rust: 126 verdes (112 previos + 8 backup + 6 user_templates).
+- Vitest: 30 verdes (sin cambio).
+- Playwright: 3 specs sin cambios.
 
 ## [0.6.0-beta] — 2026-05-28
 
@@ -464,7 +544,8 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.6.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.7.0-beta...HEAD
+[0.7.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.7.0-beta
 [0.6.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.6.0-beta
 [0.5.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.5.0-beta
 [0.4.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.4.0-beta
