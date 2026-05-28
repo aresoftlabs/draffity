@@ -29,10 +29,14 @@ const isInTable = computed(() => isActive('table'));
 
 <template>
   <div
+    role="toolbar"
+    :aria-label="t('toolbar.label')"
     class="flex items-center gap-1 flex-wrap px-3 py-2 border-b border-surface-200 dark:border-surface-700 bg-surface-50/80 dark:bg-surface-900/80 backdrop-blur"
   >
     <Button
       v-tooltip.bottom="t('toolbar.heading1')"
+      :aria-label="t('toolbar.heading1')"
+      :aria-pressed="isActive('heading', { level: 1 })"
       icon="pi pi-hashtag"
       text
       severity="secondary"
@@ -40,33 +44,39 @@ const isInTable = computed(() => isActive('table'));
       :class="{ 'p-button-outlined': isActive('heading', { level: 1 }) }"
       @click="() => editor?.chain().focus().toggleHeading({ level: 1 }).run()"
     >
-      <span class="text-xs font-bold">H1</span>
+      <span class="text-xs font-bold" aria-hidden="true">H1</span>
     </Button>
     <Button
       v-tooltip.bottom="t('toolbar.heading2')"
+      :aria-label="t('toolbar.heading2')"
+      :aria-pressed="isActive('heading', { level: 2 })"
       text
       severity="secondary"
       :disabled="!isReady"
       :class="{ 'p-button-outlined': isActive('heading', { level: 2 }) }"
       @click="() => editor?.chain().focus().toggleHeading({ level: 2 }).run()"
     >
-      <span class="text-xs font-bold">H2</span>
+      <span class="text-xs font-bold" aria-hidden="true">H2</span>
     </Button>
     <Button
       v-tooltip.bottom="t('toolbar.heading3')"
+      :aria-label="t('toolbar.heading3')"
+      :aria-pressed="isActive('heading', { level: 3 })"
       text
       severity="secondary"
       :disabled="!isReady"
       :class="{ 'p-button-outlined': isActive('heading', { level: 3 }) }"
       @click="() => editor?.chain().focus().toggleHeading({ level: 3 }).run()"
     >
-      <span class="text-xs font-bold">H3</span>
+      <span class="text-xs font-bold" aria-hidden="true">H3</span>
     </Button>
 
-    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" />
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
 
     <Button
       v-tooltip.bottom="t('toolbar.bold')"
+      :aria-label="t('toolbar.bold')"
+      :aria-pressed="isActive('bold')"
       icon="pi pi-bold"
       text
       severity="secondary"
@@ -76,6 +86,8 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.italic')"
+      :aria-label="t('toolbar.italic')"
+      :aria-pressed="isActive('italic')"
       icon="pi pi-italic"
       text
       severity="secondary"
@@ -85,29 +97,35 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.underline')"
+      :aria-label="t('toolbar.underline')"
+      :aria-pressed="isActive('underline')"
       text
       severity="secondary"
       :disabled="!isReady"
       :class="{ 'p-button-outlined': isActive('underline') }"
       @click="() => editor?.chain().focus().toggleUnderline().run()"
     >
-      <span class="underline text-xs font-semibold">U</span>
+      <span class="underline text-xs font-semibold" aria-hidden="true">U</span>
     </Button>
     <Button
       v-tooltip.bottom="t('toolbar.strike')"
+      :aria-label="t('toolbar.strike')"
+      :aria-pressed="isActive('strike')"
       text
       severity="secondary"
       :disabled="!isReady"
       :class="{ 'p-button-outlined': isActive('strike') }"
       @click="() => editor?.chain().focus().toggleStrike().run()"
     >
-      <span class="line-through text-xs font-semibold">S</span>
+      <span class="line-through text-xs font-semibold" aria-hidden="true">S</span>
     </Button>
 
-    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" />
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
 
     <Button
       v-tooltip.bottom="t('toolbar.bulletList')"
+      :aria-label="t('toolbar.bulletList')"
+      :aria-pressed="isActive('bulletList')"
       icon="pi pi-list"
       text
       severity="secondary"
@@ -117,6 +135,8 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.orderedList')"
+      :aria-label="t('toolbar.orderedList')"
+      :aria-pressed="isActive('orderedList')"
       icon="pi pi-sort-numeric-down"
       text
       severity="secondary"
@@ -126,16 +146,19 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.blockquote')"
+      :aria-label="t('toolbar.blockquote')"
+      :aria-pressed="isActive('blockquote')"
       text
       severity="secondary"
       :disabled="!isReady"
       :class="{ 'p-button-outlined': isActive('blockquote') }"
       @click="() => editor?.chain().focus().toggleBlockquote().run()"
     >
-      <i class="pi pi-comment text-xs" />
+      <i class="pi pi-comment text-xs" aria-hidden="true" />
     </Button>
     <Button
       v-tooltip.bottom="t('toolbar.horizontalRule')"
+      :aria-label="t('toolbar.horizontalRule')"
       icon="pi pi-minus"
       text
       severity="secondary"
@@ -143,10 +166,11 @@ const isInTable = computed(() => isActive('table'));
       @click="() => editor?.chain().focus().setHorizontalRule().run()"
     />
 
-    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" />
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
 
     <Button
       v-tooltip.bottom="t('toolbar.insertTable')"
+      :aria-label="t('toolbar.insertTable')"
       icon="pi pi-table"
       text
       severity="secondary"
@@ -157,26 +181,29 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.tableAddRow')"
+      :aria-label="t('toolbar.tableAddRow')"
       icon="pi pi-plus"
       text
       severity="secondary"
       :disabled="!isReady || !isInTable"
       @click="() => editor?.chain().focus().addRowAfter().run()"
     >
-      <span class="text-[10px] font-semibold ml-1">R</span>
+      <span class="text-[10px] font-semibold ml-1" aria-hidden="true">R</span>
     </Button>
     <Button
       v-tooltip.bottom="t('toolbar.tableAddCol')"
+      :aria-label="t('toolbar.tableAddCol')"
       icon="pi pi-plus"
       text
       severity="secondary"
       :disabled="!isReady || !isInTable"
       @click="() => editor?.chain().focus().addColumnAfter().run()"
     >
-      <span class="text-[10px] font-semibold ml-1">C</span>
+      <span class="text-[10px] font-semibold ml-1" aria-hidden="true">C</span>
     </Button>
     <Button
       v-tooltip.bottom="t('toolbar.tableDelete')"
+      :aria-label="t('toolbar.tableDelete')"
       icon="pi pi-trash"
       text
       severity="secondary"
@@ -184,10 +211,11 @@ const isInTable = computed(() => isActive('table'));
       @click="() => editor?.chain().focus().deleteTable().run()"
     />
 
-    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" />
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
 
     <Button
       v-tooltip.bottom="t('toolbar.insertCitation')"
+      :aria-label="t('toolbar.insertCitation')"
       icon="pi pi-at"
       text
       severity="secondary"
@@ -196,6 +224,7 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.insertCodexRef')"
+      :aria-label="t('toolbar.insertCodexRef')"
       icon="pi pi-link"
       text
       severity="secondary"
@@ -203,10 +232,11 @@ const isInTable = computed(() => isActive('table'));
       @click="emit('open-codex-picker')"
     />
 
-    <span class="flex-1" />
+    <span class="flex-1" aria-hidden="true" />
 
     <Button
       v-tooltip.bottom="t('toolbar.undo')"
+      :aria-label="t('toolbar.undo')"
       icon="pi pi-undo"
       text
       severity="secondary"
@@ -215,6 +245,7 @@ const isInTable = computed(() => isActive('table'));
     />
     <Button
       v-tooltip.bottom="t('toolbar.redo')"
+      :aria-label="t('toolbar.redo')"
       icon="pi pi-refresh"
       text
       severity="secondary"

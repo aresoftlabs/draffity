@@ -200,7 +200,11 @@ const newMenuItems = computed(() => [
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-surface-50 dark:bg-surface-900">
+  <div
+    class="flex flex-col h-full bg-surface-50 dark:bg-surface-900"
+    role="navigation"
+    :aria-label="t('project.binder')"
+  >
     <header
       class="flex items-center justify-between px-3 py-2 border-b border-surface-200 dark:border-surface-700"
     >

@@ -159,6 +159,7 @@
     "back": "Back"
   },
   "toolbar": {
+    "label": "Editor toolbar",
     "bold": "Bold",
     "italic": "Italic",
     "underline": "Underline",

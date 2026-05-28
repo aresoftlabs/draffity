@@ -79,15 +79,22 @@ const counter = computed(() => {
     class="flex items-center gap-2 px-3 py-2 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900"
     role="search"
   >
-    <i class="pi pi-search opacity-60 text-sm" />
+    <i class="pi pi-search opacity-60 text-sm" aria-hidden="true" />
     <InputText
       ref="findInput"
       v-model="fr.query.value"
       :placeholder="t('find.findPlaceholder')"
+      :aria-label="t('find.findPlaceholder')"
       class="!py-1 !text-sm flex-1 max-w-md"
       @keydown="onFindKey"
     />
-    <span class="text-xs opacity-60 min-w-[5rem]">{{ counter }}</span>
+    <span
+      class="text-xs opacity-60 min-w-[5rem]"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      >{{ counter }}</span
+    >
 
     <Button
       v-tooltip.bottom="t('find.previous')"
@@ -111,10 +118,11 @@ const counter = computed(() => {
     />
 
     <template v-if="mode === 'replace' && !readOnly">
-      <span class="w-px h-5 bg-surface-300 dark:bg-surface-700 mx-1" />
+      <span class="w-px h-5 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
       <InputText
         v-model="fr.replacement.value"
         :placeholder="t('find.replacePlaceholder')"
+        :aria-label="t('find.replacePlaceholder')"
         class="!py-1 !text-sm max-w-xs"
         @keydown.escape.prevent="close"
       />
@@ -135,7 +143,7 @@ const counter = computed(() => {
       />
     </template>
 
-    <span class="flex-1" />
+    <span class="flex-1" aria-hidden="true" />
     <Button
       v-tooltip.bottom="t('find.close')"
       icon="pi pi-times"

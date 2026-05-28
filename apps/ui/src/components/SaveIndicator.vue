@@ -38,8 +38,13 @@ const iconClass = computed(() => {
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-2 text-xs opacity-75 select-none">
-    <i :class="iconClass" />
+  <span
+    class="inline-flex items-center gap-2 text-xs opacity-75 select-none"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <i :class="iconClass" aria-hidden="true" />
     <span v-if="label">{{ label }}</span>
   </span>
 </template>

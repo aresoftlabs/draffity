@@ -159,6 +159,7 @@
     "back": "Volver"
   },
   "toolbar": {
+    "label": "Herramientas del editor",
     "bold": "Negrita",
     "italic": "Cursiva",
     "underline": "Subrayado",
