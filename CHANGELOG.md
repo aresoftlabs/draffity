@@ -86,8 +86,8 @@ queda fuera del release.
   TOC y title page cierran con page break para que el manuscrito
   arranque limpio.
 - **BibTeX import + tabla `citations`** (S5-05): migración 007
-  aditiva agrega `citations(id, project_id, key, entry_type,
-fields_json, …)` con `UNIQUE(project_id, key)` para upsert
+  aditiva agrega la tabla nueva con columnas id/project_id/key/
+  entry_type/fields_json + `UNIQUE(project_id, key)` para upsert
   seguro y cascade delete. Nuevo dominio `Citation` con helpers
   para autor/año, storage submodule que hace upsert batch atómico,
   `LocalBibliographyService` que parsea con la crate `biblatex`
