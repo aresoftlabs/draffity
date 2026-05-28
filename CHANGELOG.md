@@ -50,15 +50,16 @@ to v0.6" para los bloques que se trasladan.
 
 ### Added — Sprint 4
 
-- **Tablas en el editor** (S4-01): extensiones `@tiptap/extension-
-table` (v2.27.x, peer-compatible con el resto de TipTap v2.10)
-  - TableRow / TableHeader / TableCell. Header row habilitada por
-    defecto, columnas redimensionables por drag (`resizable: true`).
-    Toolbar con 4 botones nuevos: insertar tabla, agregar fila,
-    agregar columna, eliminar tabla. Solo los 3 de edición se
-    muestran cuando el cursor está dentro de una tabla
-    (`isInTable` computado). Estilos scoped en TipTapEditor con
-    handle de resize visible al hover.
+- **Tablas en el editor** (S4-01): se añade el conjunto de
+  extensiones de tabla de TipTap (v2.27.x, peer-compatible con el
+  resto de TipTap v2.10), incluyendo TableRow, TableHeader y
+  TableCell. Header row habilitada por defecto, columnas
+  redimensionables por drag (`resizable: true`). Toolbar con 4
+  botones nuevos: insertar tabla, agregar fila, agregar columna,
+  eliminar tabla. Solo los 3 de edición se muestran cuando el
+  cursor está dentro de una tabla (`isInTable` computado).
+  Estilos scoped en TipTapEditor con handle de resize visible al
+  hover.
 - **Spellcheck dinámico por locale** (S4-08): el atributo `lang`
   del editable ProseMirror se sincroniza con `useI18n().locale`
   via watch directo sobre `editor.view.dom`. Cambiar idioma de UI
