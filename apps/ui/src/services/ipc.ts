@@ -39,8 +39,12 @@ export const ipc = {
   createDocument: (input: DocumentInput) => invoke<DocNode>('create_document', { input }),
   listDocuments: (projectId: string) => invoke<DocNode[]>('list_documents', { projectId }),
   getDocument: (id: string) => invoke<DocNode | null>('get_document', { id }),
-  updateDocument: (params: { id: string; title?: string; content?: string }) =>
-    invoke<DocNode>('update_document', params),
+  updateDocument: (params: {
+    id: string;
+    title?: string;
+    content?: string;
+    contentJson?: string;
+  }) => invoke<DocNode>('update_document', params),
   moveDocument: (params: { id: string; parentId?: string | null; position: number }) =>
     invoke<void>('move_document', params),
   reorderDocuments: (params: {

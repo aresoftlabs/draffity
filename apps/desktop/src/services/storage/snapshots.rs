@@ -103,7 +103,7 @@ pub(super) fn restore(conn: &mut Connection, snapshot_id: &str) -> AppResult<Doc
     )?;
 
     let doc = tx.query_row(
-        "SELECT id, project_id, parent_id, title, doc_type, content, synopsis, position, status, created_at, updated_at
+        "SELECT id, project_id, parent_id, title, doc_type, content, content_json, synopsis, position, status, created_at, updated_at
          FROM documents WHERE id=?1",
         params![document_id],
         row_to_document,
@@ -165,7 +165,7 @@ mod tests {
             })
             .unwrap();
         let snap = s.create_snapshot(&d.id, Some("draft 1")).unwrap();
-        s.update_document(&d.id, None, Some("v2")).unwrap();
+        s.update_document(&d.id, None, Some("v2"), None).unwrap();
 
         let restored = s.restore_snapshot(&snap.id).unwrap();
         assert_eq!(restored.content.as_deref(), Some("v1"));

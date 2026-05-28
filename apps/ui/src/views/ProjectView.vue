@@ -69,6 +69,7 @@ const readOnly = computed(() => project.value?.status === 'archived');
 const { selected, saveState, lastSavedAt, wordCount, totalWordCount } = storeToRefs(docStore);
 
 const editorContent = ref('');
+const editorContentJson = ref<string | null>(null);
 const editorRef = ref<InstanceType<typeof TipTapEditor> | null>(null);
 const editor = computed(() => editorRef.value?.editor ?? null);
 
@@ -85,7 +86,10 @@ const auto = useAutoSave(async () => {
   if (!selected.value) return;
   if (readOnly.value) return;
   await run(t('errors.saveDocument'), () =>
-    docStore.save(selected.value!.id, { content: editorContent.value }),
+    docStore.save(selected.value!.id, {
+      content: editorContent.value,
+      contentJson: editorContentJson.value ?? undefined,
+    }),
   );
 }, 500);
 
@@ -115,6 +119,7 @@ function onSnapshotRestored() {
 
 function syncEditorFromSelection() {
   editorContent.value = selected.value?.content ?? '';
+  editorContentJson.value = selected.value?.contentJson ?? null;
 }
 
 watch(selected, () => {
@@ -132,6 +137,10 @@ watch(projectId, async (next, prev) => {
 function onEditorInput(value: string) {
   editorContent.value = value;
   if (!readOnly.value) auto.trigger();
+}
+
+function onEditorJsonInput(value: string) {
+  editorContentJson.value = value;
 }
 
 async function onCreate(type: DocumentType) {
@@ -348,9 +357,11 @@ onMounted(loadProject);
               v-else
               ref="editorRef"
               :model-value="editorContent"
+              :model-value-json="editorContentJson"
               :editable="!readOnly"
               :placeholder="t('project.untitled')"
               @update:model-value="onEditorInput"
+              @update:model-value-json="onEditorJsonInput"
             />
           </div>
         </template>

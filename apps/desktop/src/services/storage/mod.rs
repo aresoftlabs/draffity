@@ -35,6 +35,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (3, include_str!("../../migrations/003_status_tags.sql")),
     (4, include_str!("../../migrations/004_goals.sql")),
     (5, include_str!("../../migrations/005_synopsis.sql")),
+    (6, include_str!("../../migrations/006_doc_json.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -65,6 +66,7 @@ pub trait StorageService: Send + Sync {
         id: &str,
         title: Option<&str>,
         content: Option<&str>,
+        content_json: Option<&str>,
     ) -> AppResult<DocNode>;
     fn move_document(&self, id: &str, parent_id: Option<&str>, position: i64) -> AppResult<()>;
     fn delete_document(&self, id: &str) -> AppResult<()>;
@@ -250,8 +252,9 @@ impl StorageService for LocalStorageService {
         id: &str,
         title: Option<&str>,
         content: Option<&str>,
+        content_json: Option<&str>,
     ) -> AppResult<DocNode> {
-        documents::update(&self.conn.lock().unwrap(), id, title, content)
+        documents::update(&self.conn.lock().unwrap(), id, title, content, content_json)
     }
 
     fn move_document(&self, id: &str, parent_id: Option<&str>, position: i64) -> AppResult<()> {

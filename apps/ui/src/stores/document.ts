@@ -57,7 +57,10 @@ export const useDocumentStore = defineStore('document', () => {
     return doc;
   }
 
-  async function save(id: string, patch: { title?: string; content?: string }) {
+  async function save(
+    id: string,
+    patch: { title?: string; content?: string; contentJson?: string },
+  ) {
     saveState.value = 'saving';
     try {
       const updated = await ipc.updateDocument({ id, ...patch });

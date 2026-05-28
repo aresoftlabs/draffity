@@ -120,6 +120,7 @@ pub(crate) mod test_support {
             title: title.into(),
             doc_type,
             content: content.map(|s| s.into()),
+            content_json: None,
             synopsis: None,
             position,
             status: DocumentStatus::Draft,

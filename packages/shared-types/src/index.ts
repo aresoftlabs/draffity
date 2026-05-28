@@ -33,7 +33,10 @@ export interface DocNode {
   parentId?: string | null;
   title: string;
   docType: DocumentType;
+  /** HTML render-cache of the document. */
   content?: string | null;
+  /** Canonical ProseMirror state (JSON string). Preferred when present. */
+  contentJson?: string | null;
   /** Short description surfaced in Corkboard / Outliner views. Independent
    *  of `content`. `null` means no synopsis. */
   synopsis?: string | null;

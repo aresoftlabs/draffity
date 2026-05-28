@@ -35,10 +35,14 @@ pub fn update_document(
     id: String,
     title: Option<String>,
     content: Option<String>,
+    content_json: Option<String>,
 ) -> CmdResult<DocNode> {
-    let doc = state
-        .storage
-        .update_document(&id, title.as_deref(), content.as_deref())?;
+    let doc = state.storage.update_document(
+        &id,
+        title.as_deref(),
+        content.as_deref(),
+        content_json.as_deref(),
+    )?;
     // Best-effort: a writing-stats failure must not block the save.
     let _ = state.storage.record_writing_activity();
     let _ = app.emit(events::DOCUMENT_SAVED, &doc);

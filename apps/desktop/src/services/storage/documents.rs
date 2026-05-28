@@ -11,8 +11,8 @@ use super::row_mappers::row_to_document;
 /// columns is a single-line change. The trailing correlated subquery returns
 /// the document's tag set as a JSON array; an empty array (not NULL) when
 /// the document has no tags.
-const COLS: &str = "id, project_id, parent_id, title, doc_type, content, synopsis, position, \
-     status, goal_words, created_at, updated_at, \
+const COLS: &str = "id, project_id, parent_id, title, doc_type, content, content_json, synopsis, \
+     position, status, goal_words, created_at, updated_at, \
      (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json";
 
 pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
@@ -48,6 +48,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         title: input.title.trim().to_string(),
         doc_type: input.doc_type,
         content: input.content,
+        content_json: None,
         synopsis: None,
         position: next_pos,
         status: DocumentStatus::Draft,
@@ -101,6 +102,7 @@ pub(super) fn update(
     id: &str,
     title: Option<&str>,
     content: Option<&str>,
+    content_json: Option<&str>,
 ) -> AppResult<DocNode> {
     if let Some(t) = title {
         if t.trim().is_empty() {
@@ -112,9 +114,10 @@ pub(super) fn update(
         "UPDATE documents
          SET title = COALESCE(?2, title),
              content = COALESCE(?3, content),
-             updated_at = ?4
+             content_json = COALESCE(?4, content_json),
+             updated_at = ?5
          WHERE id=?1",
-        params![id, title, content, now],
+        params![id, title, content, content_json, now],
     )?;
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
@@ -330,7 +333,7 @@ mod tests {
         assert_eq!(d2.position, 1);
 
         let updated = s
-            .update_document(&d.id, Some("Cap 1 — bis"), Some("nuevo"))
+            .update_document(&d.id, Some("Cap 1 — bis"), Some("nuevo"), None)
             .unwrap();
         assert_eq!(updated.title, "Cap 1 — bis");
         assert_eq!(updated.content.as_deref(), Some("nuevo"));
@@ -402,7 +405,7 @@ mod tests {
         let ch = make_chapter(&s, &p.id, "Ch");
 
         // Move ch under folder
-        s.reorder_documents(&p.id, Some(&folder), &[ch.clone()])
+        s.reorder_documents(&p.id, Some(&folder), std::slice::from_ref(&ch))
             .unwrap();
 
         let docs = s.list_documents(&p.id).unwrap();

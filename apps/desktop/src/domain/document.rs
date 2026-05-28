@@ -40,19 +40,14 @@ impl DocumentType {
 /// Position in the writing pipeline. New documents land in `Draft`;
 /// the user moves them through `Revised` → `Final`. `Trashed` is a soft
 /// delete that still lives in storage so the user can recover it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum DocumentStatus {
+    #[default]
     Draft,
     Revised,
     Final,
     Trashed,
-}
-
-impl Default for DocumentStatus {
-    fn default() -> Self {
-        DocumentStatus::Draft
-    }
 }
 
 impl DocumentStatus {
@@ -89,6 +84,10 @@ pub struct DocNode {
     pub doc_type: DocumentType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    /// Canonical ProseMirror state for the editor, stored as a JSON string.
+    /// Preferred over `content` (HTML) when both are present.
+    #[serde(default)]
+    pub content_json: Option<String>,
     /// Short description surfaced in Corkboard / Outliner views.
     /// Independent of `content`: changing one doesn't touch the other.
     #[serde(default)]

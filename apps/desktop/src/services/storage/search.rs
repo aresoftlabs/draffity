@@ -154,6 +154,7 @@ mod tests {
             &d1,
             Some("Capítulo renombrado"),
             Some("<p>Texto reemplazado: dragón.</p>"),
+            None,
         )
         .unwrap();
         let viaje_hits = s.search_documents(&p, "viaje").unwrap();

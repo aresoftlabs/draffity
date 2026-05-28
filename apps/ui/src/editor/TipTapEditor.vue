@@ -14,20 +14,37 @@ import { useI18n } from 'vue-i18n';
 const props = withDefaults(
   defineProps<{
     modelValue: string;
+    /** Canonical ProseMirror JSON state. When provided, takes precedence
+     * over `modelValue` (HTML) for loading; useful for round-tripping
+     * TipTap-only attributes (table column widths, etc.). */
+    modelValueJson?: string | null;
     editable?: boolean;
     placeholder?: string;
   }>(),
-  { editable: true, placeholder: '' },
+  { editable: true, placeholder: '', modelValueJson: null },
 );
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
+  'update:modelValueJson': [value: string];
 }>();
 
 const { locale } = useI18n();
 
+/** Initial content prefers JSON when available; falls back to HTML. */
+function initialContent(): string | object {
+  if (props.modelValueJson) {
+    try {
+      return JSON.parse(props.modelValueJson) as object;
+    } catch {
+      // fall through to HTML
+    }
+  }
+  return props.modelValue || '';
+}
+
 const editor = useEditor({
-  content: props.modelValue || '',
+  content: initialContent(),
   editable: props.editable,
   extensions: [
     StarterKit.configure({
@@ -56,6 +73,11 @@ const editor = useEditor({
   },
   onUpdate: ({ editor: ed }) => {
     emit('update:modelValue', ed.getHTML());
+    try {
+      emit('update:modelValueJson', JSON.stringify(ed.getJSON()));
+    } catch {
+      // Highly unlikely (PM JSON is plain objects) — silently skip.
+    }
   },
 });
 
@@ -66,11 +88,24 @@ watch(locale, (next) => {
 });
 
 watch(
-  () => props.modelValue,
-  (val) => {
+  () => [props.modelValueJson, props.modelValue],
+  ([nextJson, nextHtml]) => {
     if (!editor.value) return;
-    if (editor.value.getHTML() !== val) {
-      editor.value.commands.setContent(val || '', false);
+    // Prefer JSON when set; only swap if it really differs from current state.
+    if (nextJson) {
+      try {
+        const desired = JSON.parse(nextJson);
+        const current = editor.value.getJSON();
+        if (JSON.stringify(current) !== JSON.stringify(desired)) {
+          editor.value.commands.setContent(desired, false);
+        }
+        return;
+      } catch {
+        // fall through to HTML
+      }
+    }
+    if (editor.value.getHTML() !== (nextHtml ?? '')) {
+      editor.value.commands.setContent(nextHtml ?? '', false);
     }
   },
 );
