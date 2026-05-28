@@ -106,6 +106,12 @@
     "words": "Words",
     "noSynopsis": "No synopsis"
   },
+  "scrivenings": {
+    "label": "Scrivenings — concatenated view",
+    "summary": "{count} documents in this folder",
+    "empty": "(empty)",
+    "noChildren": "This folder has no child documents yet."
+  },
   "goal": {
     "documentLabel": "Document goal",
     "projectLabel": "Project goal",
