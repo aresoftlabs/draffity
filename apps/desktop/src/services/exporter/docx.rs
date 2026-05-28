@@ -1,16 +1,17 @@
 //! DOCX export. We parse the TipTap HTML with `scraper` and emit a stream of
-//! paragraphs/headings/runs into a `docx-rs` document. List numbering is kept
-//! simple (text prefix) — this is enough for an MVP-grade manuscript export.
+//! paragraphs/headings/runs into a `docx-rs` document. The HTML→paragraph
+//! pipeline and the Codex appendix builder live in `docx_helpers`; `render`
+//! stays as a thin orchestrator.
 
 use docx_rs::{
     AlignmentType, BreakType, Docx, Paragraph, Run, RunFonts, StyleWithLevel, TableOfContents,
 };
-use scraper::{ElementRef, Html, Node};
 
-use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
+use crate::domain::{CodexEntry, DocNode, Project};
 use crate::error::AppResult;
 
 use super::config::ExportConfig;
+use super::docx_helpers::{append_codex, render_html_blocks};
 use super::util::flatten_in_order;
 
 pub fn render(
@@ -29,68 +30,15 @@ pub fn render(
         .unwrap_or(&project.title);
 
     if config.include_title_page {
-        docx = docx.add_paragraph(
-            Paragraph::new()
-                .style("Heading1")
-                .align(AlignmentType::Center)
-                .add_run(Run::new().add_text(display_title).size(72).bold()),
-        );
-        if let Some(author) = config
-            .author
-            .as_deref()
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-        {
-            docx = docx.add_paragraph(
-                Paragraph::new()
-                    .align(AlignmentType::Center)
-                    .add_run(Run::new().add_text(author).size(32)),
-            );
-        }
-        // Page break so the manuscript itself starts on the next page.
-        docx = docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)));
+        docx = add_title_page(docx, display_title, config);
     }
-
     if config.include_toc {
-        // Standard TOC that picks up Heading1..Heading6. `dirty()` makes Word
-        // prompt the user to update on open (or auto-update if configured).
-        let toc = TableOfContents::new()
-            .heading_styles_range(1, 6)
-            .add_style_with_level(StyleWithLevel::new("Heading1", 1))
-            .add_style_with_level(StyleWithLevel::new("Heading2", 2))
-            .add_style_with_level(StyleWithLevel::new("Heading3", 3))
-            .add_style_with_level(StyleWithLevel::new("Heading4", 4))
-            .add_style_with_level(StyleWithLevel::new("Heading5", 5))
-            .add_style_with_level(StyleWithLevel::new("Heading6", 6))
-            .hyperlink()
-            .dirty();
-        docx = docx.add_table_of_contents(toc);
-        // Page break after TOC so chapters start on a fresh page.
-        docx = docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)));
+        docx = add_toc(docx);
     }
 
     let ordered = flatten_in_order(documents);
     for (depth, doc) in ordered {
-        let title_level = (depth + 2).min(6);
-        // Document title heading.
-        docx = docx.add_paragraph(
-            Paragraph::new()
-                .style(&format!("Heading{title_level}"))
-                .add_run(
-                    Run::new()
-                        .add_text(doc.title.clone())
-                        .bold()
-                        .fonts(RunFonts::new().east_asia("Lora")),
-                ),
-        );
-
-        if let Some(html) = &doc.content {
-            if !html.trim().is_empty() {
-                for paragraph in render_html_blocks(html) {
-                    docx = docx.add_paragraph(paragraph);
-                }
-            }
-        }
+        docx = add_document(docx, doc, depth);
     }
 
     if config.include_codex && !codex.is_empty() {
@@ -107,252 +55,67 @@ pub fn render(
     Ok(buf)
 }
 
-/// Append a Codex appendix to the doc: page break, "Codex" heading and
-/// then sections grouped by kind. Each entry is rendered as a Heading3
-/// plus body HTML reusing the same `render_html_blocks` pipeline the doc
-/// content uses, so formatting stays consistent.
-fn append_codex(mut docx: Docx, codex: &[CodexEntry]) -> Docx {
-    docx = docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)));
+fn add_title_page(mut docx: Docx, display_title: &str, config: &ExportConfig) -> Docx {
     docx = docx.add_paragraph(
         Paragraph::new()
             .style("Heading1")
-            .add_run(Run::new().add_text("Codex").bold().size(48)),
+            .align(AlignmentType::Center)
+            .add_run(Run::new().add_text(display_title).size(72).bold()),
     );
-
-    for kind in [
-        CodexKind::Character,
-        CodexKind::Place,
-        CodexKind::Object,
-        CodexKind::Note,
-    ] {
-        let mut entries: Vec<&CodexEntry> = codex.iter().filter(|e| e.kind == kind).collect();
-        if entries.is_empty() {
-            continue;
-        }
-        entries.sort_by_key(|a| a.name.to_lowercase());
+    if let Some(author) = config
+        .author
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         docx = docx.add_paragraph(
             Paragraph::new()
-                .style("Heading2")
-                .add_run(Run::new().add_text(codex_section_name(kind)).bold()),
+                .align(AlignmentType::Center)
+                .add_run(Run::new().add_text(author).size(32)),
         );
-        for e in entries {
-            docx = docx.add_paragraph(
-                Paragraph::new()
-                    .style("Heading3")
-                    .add_run(Run::new().add_text(e.name.clone()).bold()),
-            );
-            if !e.tags.is_empty() {
-                docx = docx.add_paragraph(
-                    Paragraph::new().add_run(Run::new().add_text(e.tags.join(", ")).italic()),
-                );
-            }
-            if let Some(body) = &e.body {
-                if !body.trim().is_empty() {
-                    for paragraph in render_html_blocks(body) {
-                        docx = docx.add_paragraph(paragraph);
-                    }
-                }
+    }
+    // Page break so the manuscript itself starts on the next page.
+    docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)))
+}
+
+fn add_toc(docx: Docx) -> Docx {
+    // Standard TOC that picks up Heading1..Heading6. `dirty()` makes Word
+    // prompt the user to update on open (or auto-update if configured).
+    let toc = TableOfContents::new()
+        .heading_styles_range(1, 6)
+        .add_style_with_level(StyleWithLevel::new("Heading1", 1))
+        .add_style_with_level(StyleWithLevel::new("Heading2", 2))
+        .add_style_with_level(StyleWithLevel::new("Heading3", 3))
+        .add_style_with_level(StyleWithLevel::new("Heading4", 4))
+        .add_style_with_level(StyleWithLevel::new("Heading5", 5))
+        .add_style_with_level(StyleWithLevel::new("Heading6", 6))
+        .hyperlink()
+        .dirty();
+    let docx = docx.add_table_of_contents(toc);
+    // Page break after TOC so chapters start on a fresh page.
+    docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)))
+}
+
+fn add_document(mut docx: Docx, doc: &DocNode, depth: usize) -> Docx {
+    let title_level = (depth + 2).min(6);
+    docx = docx.add_paragraph(
+        Paragraph::new()
+            .style(&format!("Heading{title_level}"))
+            .add_run(
+                Run::new()
+                    .add_text(doc.title.clone())
+                    .bold()
+                    .fonts(RunFonts::new().east_asia("Lora")),
+            ),
+    );
+    if let Some(html) = &doc.content {
+        if !html.trim().is_empty() {
+            for paragraph in render_html_blocks(html) {
+                docx = docx.add_paragraph(paragraph);
             }
         }
     }
     docx
-}
-
-fn codex_section_name(kind: CodexKind) -> &'static str {
-    match kind {
-        CodexKind::Character => "Characters",
-        CodexKind::Place => "Places",
-        CodexKind::Object => "Objects",
-        CodexKind::Note => "Notes",
-    }
-}
-
-/// Convert a TipTap HTML fragment to a sequence of `Paragraph`s.
-fn render_html_blocks(html: &str) -> Vec<Paragraph> {
-    let parsed = Html::parse_fragment(html);
-    let mut out = Vec::new();
-    for child in parsed.root_element().child_elements() {
-        process_block(child, &mut out, BlockCtx::default());
-    }
-    out
-}
-
-#[derive(Default, Clone, Copy)]
-struct BlockCtx {
-    in_blockquote: bool,
-}
-
-#[derive(Clone, Copy)]
-enum ListKind {
-    Bullet,
-    Ordered,
-}
-
-fn process_block(el: ElementRef<'_>, out: &mut Vec<Paragraph>, ctx: BlockCtx) {
-    let name = el.value().name();
-    match name {
-        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-            let level: usize = name[1..].parse().unwrap_or(2);
-            // Embedded headings nest under document title heading: shift by +2
-            // (project=1, doc=2..6, embedded continues from there but cap at 6).
-            let style = format!("Heading{}", (level + 2).min(6));
-            let mut p = Paragraph::new().style(&style);
-            for r in collect_runs(el) {
-                p = p.add_run(r);
-            }
-            out.push(p);
-        }
-        "p" => {
-            let mut p = Paragraph::new();
-            if ctx.in_blockquote {
-                p = p.style("Quote");
-            }
-            for r in collect_runs(el) {
-                p = p.add_run(r);
-            }
-            out.push(p);
-        }
-        "blockquote" => {
-            let _ = ctx; // ctx kept for future nesting flags
-            let new_ctx = BlockCtx {
-                in_blockquote: true,
-            };
-            for child in el.child_elements() {
-                process_block(child, out, new_ctx);
-            }
-        }
-        "ul" | "ol" => {
-            let kind = if name == "ul" {
-                ListKind::Bullet
-            } else {
-                ListKind::Ordered
-            };
-            for (idx, li) in
-                (1usize..).zip(el.child_elements().filter(|e| e.value().name() == "li"))
-            {
-                let prefix = match kind {
-                    ListKind::Bullet => "• ".to_string(),
-                    ListKind::Ordered => format!("{idx}. "),
-                };
-                let mut runs = vec![Run::new().add_text(prefix)];
-                runs.extend(collect_runs(li));
-                let mut p = Paragraph::new();
-                for r in runs {
-                    p = p.add_run(r);
-                }
-                out.push(p);
-            }
-        }
-        "hr" => {
-            out.push(
-                Paragraph::new()
-                    .align(AlignmentType::Center)
-                    .add_run(Run::new().add_text("⸻")),
-            );
-        }
-        "pre" => {
-            // Code block — collapse to monospace text in a single paragraph.
-            let text = el.text().collect::<String>();
-            out.push(
-                Paragraph::new().add_run(
-                    Run::new()
-                        .add_text(text)
-                        .fonts(RunFonts::new().ascii("Consolas")),
-                ),
-            );
-        }
-        "br" => {
-            out.push(Paragraph::new());
-        }
-        _ => {
-            // Fallback: treat as a paragraph of plain inline content.
-            let runs = collect_runs(el);
-            if !runs.is_empty() {
-                let mut p = Paragraph::new();
-                for r in runs {
-                    p = p.add_run(r);
-                }
-                out.push(p);
-            }
-        }
-    }
-}
-
-#[derive(Default, Clone, Copy)]
-struct InlineMarks {
-    bold: bool,
-    italic: bool,
-    underline: bool,
-    strike: bool,
-    code: bool,
-}
-
-impl InlineMarks {
-    fn merged_with(&self, name: &str) -> Self {
-        let mut m = *self;
-        match name {
-            "strong" | "b" => m.bold = true,
-            "em" | "i" => m.italic = true,
-            "u" => m.underline = true,
-            "s" | "del" | "strike" => m.strike = true,
-            "code" => m.code = true,
-            _ => {}
-        }
-        m
-    }
-
-    fn apply(&self, mut r: Run) -> Run {
-        if self.bold {
-            r = r.bold();
-        }
-        if self.italic {
-            r = r.italic();
-        }
-        if self.underline {
-            r = r.underline("single");
-        }
-        if self.strike {
-            r = r.strike();
-        }
-        if self.code {
-            r = r.fonts(RunFonts::new().ascii("Consolas"));
-        }
-        r
-    }
-}
-
-/// Walk `el`'s descendants, producing `Run`s with the appropriate inline
-/// formatting. Inline-level only: block elements inside a paragraph are
-/// flattened to their text.
-fn collect_runs(el: ElementRef<'_>) -> Vec<Run> {
-    let mut runs = Vec::new();
-    for descendant in el.children() {
-        push_runs(descendant, InlineMarks::default(), &mut runs);
-    }
-    runs
-}
-
-fn push_runs(node: ego_tree::NodeRef<'_, Node>, marks: InlineMarks, runs: &mut Vec<Run>) {
-    match node.value() {
-        Node::Text(t) => {
-            let s = t.text.to_string();
-            if !s.is_empty() {
-                runs.push(marks.apply(Run::new().add_text(s)));
-            }
-        }
-        Node::Element(e) => {
-            let name = e.name();
-            if name == "br" {
-                runs.push(Run::new().add_break(docx_rs::BreakType::TextWrapping));
-                return;
-            }
-            let next_marks = marks.merged_with(name);
-            for child in node.children() {
-                push_runs(child, next_marks, runs);
-            }
-        }
-        _ => {}
-    }
 }
 
 #[cfg(test)]

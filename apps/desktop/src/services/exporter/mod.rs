@@ -3,6 +3,7 @@
 
 mod config;
 mod docx;
+mod docx_helpers;
 mod epub;
 mod markdown;
 mod util;
