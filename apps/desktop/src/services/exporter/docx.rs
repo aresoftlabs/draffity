@@ -115,13 +115,13 @@ fn process_block(el: ElementRef<'_>, out: &mut Vec<Paragraph>, ctx: BlockCtx) {
             } else {
                 ListKind::Ordered
             };
-            let mut idx = 1usize;
-            for li in el.child_elements().filter(|e| e.value().name() == "li") {
+            for (idx, li) in
+                (1usize..).zip(el.child_elements().filter(|e| e.value().name() == "li"))
+            {
                 let prefix = match kind {
                     ListKind::Bullet => "• ".to_string(),
                     ListKind::Ordered => format!("{idx}. "),
                 };
-                idx += 1;
                 let mut runs = vec![Run::new().add_text(prefix)];
                 runs.extend(collect_runs(li));
                 let mut p = Paragraph::new();
