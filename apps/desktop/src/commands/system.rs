@@ -1,7 +1,7 @@
 use tauri::State;
 
 use crate::capabilities::{is_enabled, Tier};
-use crate::domain::WritingStats;
+use crate::domain::{DailyWriting, WritingStats};
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -37,4 +37,12 @@ pub fn set_setting(state: State<'_, AppState>, key: String, value: String) -> Cm
 #[tauri::command]
 pub fn get_writing_stats(state: State<'_, AppState>) -> CmdResult<WritingStats> {
     state.storage.get_writing_stats()
+}
+
+#[tauri::command]
+pub fn get_recent_daily_writing(
+    state: State<'_, AppState>,
+    days: u32,
+) -> CmdResult<Vec<DailyWriting>> {
+    state.storage.list_recent_daily_writing(days)
 }

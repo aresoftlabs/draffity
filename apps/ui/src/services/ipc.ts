@@ -7,6 +7,7 @@ import type {
   CodexInput,
   CodexKind,
   CodexUpdate,
+  DailyWriting,
   DocNode,
   DocumentInput,
   DocumentStatus,
@@ -32,6 +33,8 @@ export const ipc = {
   getSetting: (key: string) => invoke<string | null>('get_setting', { key }),
   setSetting: (key: string, value: string) => invoke<void>('set_setting', { key, value }),
   getWritingStats: () => invoke<WritingStats>('get_writing_stats'),
+  getRecentDailyWriting: (days: number) =>
+    invoke<DailyWriting[]>('get_recent_daily_writing', { days }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

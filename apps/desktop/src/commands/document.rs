@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Emitter, State};
 
-use crate::domain::{DocNode, DocumentInput, DocumentStatus, Snapshot};
+use crate::domain::{count_words_in_html, DocNode, DocumentInput, DocumentStatus, Snapshot};
 use crate::error::AppError;
 use crate::events;
 use crate::state::AppState;
@@ -37,6 +37,21 @@ pub fn update_document(
     content: Option<String>,
     content_json: Option<String>,
 ) -> CmdResult<DocNode> {
+    // Snapshot the pre-update word count so we can attribute the delta to
+    // today's daily-writing row. Only matters when `content` is being
+    // changed — pure title/metadata edits don't count as writing.
+    let prev_words = if content.is_some() {
+        state
+            .storage
+            .get_document(&id)?
+            .and_then(|d| d.content)
+            .as_deref()
+            .map(count_words_in_html)
+            .unwrap_or(0)
+    } else {
+        0
+    };
+
     let doc = state.storage.update_document(
         &id,
         title.as_deref(),
@@ -45,6 +60,11 @@ pub fn update_document(
     )?;
     // Best-effort: a writing-stats failure must not block the save.
     let _ = state.storage.record_writing_activity();
+    if let Some(new_html) = content.as_deref() {
+        let new_words = count_words_in_html(new_html);
+        let delta = new_words.saturating_sub(prev_words);
+        let _ = state.storage.record_daily_writing(delta);
+    }
     let _ = app.emit(events::DOCUMENT_SAVED, &doc);
     Ok(doc)
 }

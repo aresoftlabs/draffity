@@ -51,6 +51,7 @@ pub fn run() {
             commands::get_setting,
             commands::set_setting,
             commands::get_writing_stats,
+            commands::get_recent_daily_writing,
             // projects
             commands::create_project,
             commands::list_projects,

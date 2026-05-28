@@ -8,11 +8,12 @@ import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import KeybindingsEditor from '@/components/KeybindingsEditor.vue';
+import SparklineChart from '@/components/SparklineChart.vue';
 import { useUiStore } from '@/stores/ui';
 import { useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
 import { ipc } from '@/services/ipc';
-import type { BackupRecord, WritingStats } from '@draffity/shared-types';
+import type { BackupRecord, DailyWriting, WritingStats } from '@draffity/shared-types';
 
 const { t, locale } = useI18n();
 const ui = useUiStore();
@@ -46,17 +47,26 @@ const localeModel = computed({
 });
 
 const stats = ref<WritingStats | null>(null);
+const dailySeries = ref<DailyWriting[]>([]);
 const backups = ref<BackupRecord[]>([]);
 const creatingBackup = ref(false);
 const restoringId = ref<string | null>(null);
 const { run } = useIpcError();
 const toast = useToast();
 
+const totalWords30d = computed(() => dailySeries.value.reduce((acc, d) => acc + d.words, 0));
+const activeDays30d = computed(() => dailySeries.value.filter((d) => d.sessions > 0).length);
+
 onMounted(async () => {
   try {
     stats.value = await ipc.getWritingStats();
   } catch {
     stats.value = null;
+  }
+  try {
+    dailySeries.value = await ipc.getRecentDailyWriting(30);
+  } catch {
+    dailySeries.value = [];
   }
   await loadBackups();
 });
@@ -211,6 +221,21 @@ function kindLabel(kind: BackupRecord['kind']): string {
           </div>
         </dl>
         <p v-else class="text-xs opacity-60">…</p>
+
+        <div class="mt-5">
+          <div class="flex items-baseline justify-between mb-2 text-xs">
+            <span class="opacity-70">{{ t('settings.last30Days') }}</span>
+            <span class="opacity-60">
+              {{ t('settings.totalWords', { count: totalWords30d }) }} ·
+              {{ t('settings.activeDays', { count: activeDays30d }) }}
+            </span>
+          </div>
+          <SparklineChart
+            :series="dailySeries"
+            :height="56"
+            :aria-label="t('settings.last30DaysAria')"
+          />
+        </div>
       </section>
 
       <section>

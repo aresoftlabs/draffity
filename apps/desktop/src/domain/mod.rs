@@ -18,7 +18,7 @@ pub use media::{extension_for_mime, MediaAsset};
 pub use project::{Project, ProjectInput, ProjectStatus};
 pub use search::SearchHit;
 pub use snapshot::Snapshot;
-pub use stats::WritingStats;
+pub use stats::{count_words_in_html, DailyWriting, WritingStats};
 pub use template::{
     FieldType, MetadataField, Template, TemplateKind, TemplateNode, TemplateTier,
     TEMPLATE_SCHEMA_VERSION,

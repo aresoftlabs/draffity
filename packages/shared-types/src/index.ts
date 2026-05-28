@@ -250,6 +250,13 @@ export interface WritingStats {
   lastWritingDate?: string | null;
 }
 
+/** One day in the writing-activity series. Date is `YYYY-MM-DD` local. */
+export interface DailyWriting {
+  date: string;
+  words: number;
+  sessions: number;
+}
+
 export type WireErrorCode =
   | 'io'
   | 'sqlite'

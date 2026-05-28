@@ -13,7 +13,7 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DocNode, DocumentInput,
+    Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DailyWriting, DocNode, DocumentInput,
     DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
     TemplateNode, WritingStats,
 };
@@ -47,6 +47,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (7, include_str!("../../migrations/007_citations.sql")),
     (9, include_str!("../../migrations/009_codex.sql")),
     (10, include_str!("../../migrations/010_media.sql")),
+    (11, include_str!("../../migrations/011_daily_writing.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -124,6 +125,13 @@ pub trait StorageService: Send + Sync {
     /// one day ago the streak is reported as 0 (the broken streak is not
     /// persisted until the next `record_writing_activity`).
     fn get_writing_stats(&self) -> AppResult<WritingStats>;
+    /// Accumulate a positive word-count delta onto today's row and bump the
+    /// session counter. Zero deltas are accepted (and still count as a
+    /// session) so saves that only delete text are still tracked.
+    fn record_daily_writing(&self, words_delta: u32) -> AppResult<()>;
+    /// Last `days` days of activity, oldest first, with missing days padded
+    /// by zero rows. Powers the Settings sparkline.
+    fn list_recent_daily_writing(&self, days: u32) -> AppResult<Vec<DailyWriting>>;
 
     // Citations (bibliography)
     /// List all citations attached to a project, sorted by key.
@@ -393,6 +401,14 @@ impl StorageService for LocalStorageService {
 
     fn get_writing_stats(&self) -> AppResult<WritingStats> {
         stats::get(&self.conn.lock().unwrap())
+    }
+
+    fn record_daily_writing(&self, words_delta: u32) -> AppResult<()> {
+        stats::record_daily(&self.conn.lock().unwrap(), words_delta)
+    }
+
+    fn list_recent_daily_writing(&self, days: u32) -> AppResult<Vec<DailyWriting>> {
+        stats::list_recent_daily(&self.conn.lock().unwrap(), days)
     }
 
     fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>> {
