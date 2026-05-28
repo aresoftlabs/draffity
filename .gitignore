@@ -51,3 +51,10 @@ draffity.db-wal
 .cache/
 tmp/
 *.tsbuildinfo
+
+# Agent / AI assistant guidelines y planning interno (local, no versionar)
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.claude/
+backlog-v2.md
