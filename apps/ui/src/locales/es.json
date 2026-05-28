@@ -95,7 +95,11 @@
   "viewMode": {
     "editor": "Editor",
     "corkboard": "Corcho",
-    "outliner": "Esquema"
+    "outliner": "Esquema",
+    "outlinerPlaceholder": "Vista esquema (próximo commit)"
+  },
+  "corkboard": {
+    "noSynopsis": "Sin sinopsis. Agrégala en el Inspector."
   },
   "goal": {
     "documentLabel": "Objetivo del documento",

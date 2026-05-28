@@ -25,6 +25,7 @@ import SearchDialog from '@/components/SearchDialog.vue';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
+import CorkboardView from '@/views/CorkboardView.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -301,25 +302,39 @@ onMounted(loadProject);
         >
           {{ t('project.readOnlyBanner') }}
         </div>
-        <EditorToolbar :editor="editor" :disabled="readOnly" />
-        <FindReplaceBar
-          v-model:visible="findVisible"
-          :editor="editor"
-          :mode="findMode"
-          :read-only="readOnly"
-        />
-        <div class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950">
-          <div v-if="!selected" class="h-full flex items-center justify-center text-sm opacity-60">
-            {{ t('project.noSelection') }}
-          </div>
-          <TipTapEditor
-            v-else
-            ref="editorRef"
-            :model-value="editorContent"
-            :editable="!readOnly"
-            :placeholder="t('project.untitled')"
-            @update:model-value="onEditorInput"
+        <template v-if="viewMode === 'editor'">
+          <EditorToolbar :editor="editor" :disabled="readOnly" />
+          <FindReplaceBar
+            v-model:visible="findVisible"
+            :editor="editor"
+            :mode="findMode"
+            :read-only="readOnly"
           />
+          <div class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950">
+            <div
+              v-if="!selected"
+              class="h-full flex items-center justify-center text-sm opacity-60"
+            >
+              {{ t('project.noSelection') }}
+            </div>
+            <TipTapEditor
+              v-else
+              ref="editorRef"
+              :model-value="editorContent"
+              :editable="!readOnly"
+              :placeholder="t('project.untitled')"
+              @update:model-value="onEditorInput"
+            />
+          </div>
+        </template>
+        <CorkboardView
+          v-else-if="viewMode === 'corkboard'"
+          :documents="docStore.documents"
+          :selected-id="docStore.selectedId"
+          @select="onSelect"
+        />
+        <div v-else class="flex-1 flex items-center justify-center text-sm opacity-60">
+          {{ t('viewMode.outlinerPlaceholder') }}
         </div>
       </SplitterPanel>
 
