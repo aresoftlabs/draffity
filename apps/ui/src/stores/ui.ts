@@ -71,11 +71,17 @@ export const useUiStore = defineStore('ui', () => {
   // projectId so each project remembers how the user left it.
   const projectViewModes = ref<Record<string, ProjectViewMode>>(loadJson('projectViewModes', {}));
 
+  // Split editor: secondary doc id per project. `null` means split mode
+  // is off. When set, ProjectView renders a second editor pane alongside
+  // the primary one and autosaves to this doc.
+  const splitSecondaryIds = ref<Record<string, string | null>>(loadJson('splitSecondaryIds', {}));
+
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
   watch(typewriterMode, (v) => saveBool('typewriterMode', v));
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
   watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
+  watch(splitSecondaryIds, (v) => saveJson('splitSecondaryIds', v), { deep: true });
 
   function setTheme(mode: ThemeMode) {
     theme.value = mode;
@@ -135,6 +141,17 @@ export const useUiStore = defineStore('ui', () => {
     projectViewModes.value = { ...projectViewModes.value, [projectId]: mode };
   }
 
+  function getSplitSecondary(projectId: string): string | null {
+    return splitSecondaryIds.value[projectId] ?? null;
+  }
+
+  function setSplitSecondary(projectId: string, docId: string | null) {
+    splitSecondaryIds.value = {
+      ...splitSecondaryIds.value,
+      [projectId]: docId,
+    };
+  }
+
   return {
     theme,
     binderCollapsed,
@@ -158,5 +175,7 @@ export const useUiStore = defineStore('ui', () => {
     clearSession,
     getProjectView,
     setProjectView,
+    getSplitSecondary,
+    setSplitSecondary,
   };
 });

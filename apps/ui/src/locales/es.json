@@ -183,6 +183,13 @@
     "undo": "Deshacer",
     "redo": "Rehacer"
   },
+  "split": {
+    "toggle": "Editor partido",
+    "pickDocument": "Elegí un documento",
+    "empty": "Elegí un documento para editarlo en paralelo",
+    "saving": "Guardando",
+    "close": "Cerrar panel"
+  },
   "footnote": {
     "insertTitle": "Insertar nota al pie",
     "editTitle": "Editar nota al pie",

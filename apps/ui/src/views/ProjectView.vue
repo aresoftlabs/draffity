@@ -30,6 +30,7 @@ import SaveAsTemplateDialog from '@/components/SaveAsTemplateDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import { CODEX_REF_EVENT, type CodexRefOpenDetail } from '@/editor/extensions/codex-ref';
 import FootnoteDialog from '@/components/FootnoteDialog.vue';
+import SplitSecondaryPane from '@/components/SplitSecondaryPane.vue';
 import { useCodexStore } from '@/stores/codex';
 import { useMediaStore } from '@/stores/media';
 import { ipc } from '@/services/ipc';
@@ -59,6 +60,29 @@ const viewMode = computed<ProjectViewMode>(() =>
 
 function toggleFocus() {
   uiStore.toggleFocusMode();
+}
+
+const splitSecondaryId = computed<string | null>(() =>
+  project.value ? uiStore.getSplitSecondary(project.value.id) : null,
+);
+const splitMode = computed(() => splitSecondaryId.value !== null);
+
+function toggleSplit() {
+  if (!project.value) return;
+  if (splitMode.value) {
+    uiStore.setSplitSecondary(project.value.id, null);
+    return;
+  }
+  // Default to the first available doc that isn't the primary selection.
+  const fallback = docStore.documents.find(
+    (d) => d.docType !== 'folder' && d.id !== docStore.selectedId,
+  );
+  uiStore.setSplitSecondary(project.value.id, fallback?.id ?? '');
+}
+
+function onSecondaryIdChange(v: string | null) {
+  if (!project.value) return;
+  uiStore.setSplitSecondary(project.value.id, v);
 }
 
 function changeViewMode(mode: ProjectViewMode) {
@@ -439,6 +463,16 @@ onBeforeUnmount(() => {
         @click="toggleFocus"
       />
       <Button
+        v-tooltip.bottom="t('split.toggle')"
+        icon="pi pi-clone"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('split.toggle')"
+        :aria-pressed="splitMode"
+        @click="toggleSplit"
+      />
+      <Button
         icon="pi pi-book"
         text
         severity="secondary"
@@ -539,6 +573,29 @@ onBeforeUnmount(() => {
               :folder="selected"
               :documents="docStore.documents"
             />
+            <Splitter v-else-if="splitMode" class="h-full !rounded-none !border-0">
+              <SplitterPanel :size="50" :min-size="25" class="!min-w-0">
+                <TipTapEditor
+                  ref="editorRef"
+                  :model-value="editorContent"
+                  :model-value-json="editorContentJson"
+                  :editable="!readOnly"
+                  :placeholder="t('project.untitled')"
+                  @update:model-value="onEditorInput"
+                  @update:model-value-json="onEditorJsonInput"
+                />
+              </SplitterPanel>
+              <SplitterPanel :size="50" :min-size="25" class="!min-w-0">
+                <SplitSecondaryPane
+                  :project-id="project.id"
+                  :primary-doc-id="docStore.selectedId"
+                  :secondary-doc-id="splitSecondaryId"
+                  :read-only="readOnly"
+                  @update:secondary-doc-id="onSecondaryIdChange"
+                  @close="toggleSplit"
+                />
+              </SplitterPanel>
+            </Splitter>
             <TipTapEditor
               v-else
               ref="editorRef"

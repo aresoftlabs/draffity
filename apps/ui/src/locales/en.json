@@ -183,6 +183,13 @@
     "undo": "Undo",
     "redo": "Redo"
   },
+  "split": {
+    "toggle": "Toggle split editor",
+    "pickDocument": "Pick a document",
+    "empty": "Pick a document to edit alongside",
+    "saving": "Saving",
+    "close": "Close split"
+  },
   "footnote": {
     "insertTitle": "Insert footnote",
     "editTitle": "Edit footnote",
