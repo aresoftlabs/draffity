@@ -11,6 +11,7 @@ import type { DocumentType } from '@draffity/shared-types';
 
 import { useProjectStore } from '@/stores/project';
 import { useDocumentStore, type ReorderOp } from '@/stores/document';
+import { useUiStore } from '@/stores/ui';
 import { useIpcError } from '@/composables/useIpcError';
 import { useAutoSave } from '@/composables/useAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -27,7 +28,14 @@ const router = useRouter();
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const docStore = useDocumentStore();
+const uiStore = useUiStore();
 const { run } = useIpcError();
+
+const focusMode = computed(() => uiStore.focusMode);
+
+function toggleFocus() {
+  uiStore.toggleFocusMode();
+}
 
 const projectId = computed(() => String(route.params.id));
 const project = computed(() => projectStore.projects.find((p) => p.id === projectId.value) ?? null);
@@ -133,6 +141,7 @@ useShortcuts({
   'ctrl+n': () => {
     if (!readOnly.value) onCreate('chapter');
   },
+  f11: () => toggleFocus(),
 });
 
 onMounted(loadProject);
@@ -156,6 +165,16 @@ onMounted(loadProject);
       <span class="flex-1" />
       <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
       <Button
+        v-tooltip.bottom="t('project.focusMode')"
+        :icon="focusMode ? 'pi pi-window-minimize' : 'pi pi-arrows-alt'"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('project.focusMode')"
+        :aria-pressed="focusMode"
+        @click="toggleFocus"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -174,7 +193,7 @@ onMounted(loadProject);
       }"
       style-class="h-full"
     >
-      <SplitterPanel :size="22" :min-size="14" class="!min-w-0">
+      <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">
         <Binder
           :documents="docStore.documents"
           :selected-id="docStore.selectedId"
@@ -185,7 +204,7 @@ onMounted(loadProject);
         />
       </SplitterPanel>
 
-      <SplitterPanel :size="56" :min-size="30" class="!min-w-0 flex flex-col">
+      <SplitterPanel :size="focusMode ? 100 : 56" :min-size="30" class="!min-w-0 flex flex-col">
         <div
           v-if="readOnly"
           class="px-4 py-2 text-xs italic bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-b border-amber-300 dark:border-amber-800"
@@ -208,7 +227,7 @@ onMounted(loadProject);
         </div>
       </SplitterPanel>
 
-      <SplitterPanel :size="22" :min-size="14" class="!min-w-0">
+      <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">
         <Inspector
           :doc="selected"
           :word-count-here="wordCount"

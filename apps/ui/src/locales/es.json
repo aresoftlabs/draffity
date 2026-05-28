@@ -66,7 +66,8 @@
     "updatedAt": "Modificado",
     "wordsHere": "palabras aquí",
     "wordsTotal": "palabras totales",
-    "wordsSession": "palabras esta sesión"
+    "wordsSession": "palabras esta sesión",
+    "focusMode": "Modo enfoque (F11)"
   },
   "documentType": {
     "chapter": "Capítulo",
