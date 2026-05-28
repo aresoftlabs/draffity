@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deferred to v0.3
+
+- **PDF export** (S1-02 del Sprint 1). La integración con
+  `WebviewWindow::print()` requiere más exploración del API de Tauri 2
+  para abrir un preview con auto-print. Se retoma en Sprint 2 junto
+  con el resto del editor avanzado.
+
+## [0.2.0-beta] — 2026-05-27
+
+Cierre del Sprint 1: deuda del alpha + base sólida para los sprints
+de productividad. Premium-aditivo intocado.
+
+### Added — Sprint 0 (architecture guardrails)
+
+- `CLAUDE.md` (no versionado) con workflow obligatorio antes de codear,
+  patrones canónicos, antipatrones y reglas Rust/Vue específicas.
+- `docs/ADR/` con README + template MADR-ligero + 3 ADRs retroactivos
+  (Tauri sobre Electron, SQLite canónica única vs por proyecto,
+  premium aditivo vía traits).
+- Patrones canónicos documentados en `docs/ARCHITECTURE.md` con
+  referencias al código que los materializa.
+- `vue/no-bare-strings-in-template` como error en ESLint: cualquier
+  string nueva en `<template>` debe pasar por `vue-i18n`. Allowlist
+  con tokens UI universales (H1-H6, B/I/U/S, ms/px/em, teclas).
+- Scripts `coverage:rs`, `coverage:rs:summary`, `coverage:ts` en
+  package.json + doc en CONTRIBUTING.
+
+### Changed — Sprint 0 refactors
+
+- `services::storage` pasa de un único archivo de 1115 líneas a un
+  módulo con 8 archivos hermanos (`projects`, `documents`, `snapshots`,
+  `settings`, `stats`, `row_mappers`, `template_seed`). El trait
+  `StorageService` queda intacto; el impl es un delegador fino.
+- `ServiceFactory::build(tier, app_data_dir) -> ServiceBundle`: el
+  wiring de servicios sale de `lib.rs::setup`. `AppState::from_bundle`
+  compone el state. `lib.rs::run` queda en ~13 líneas. Habilita
+  hot-swap de tier sin tocar bootstrap.
+- `NewProjectWizard.vue` se divide en 3 step components controlled-
+  by-parent: `WizardStepTemplate`, `WizardStepMetadata`,
+  `WizardStepConfirm`. El orquestador queda en 236 líneas (bajo el
+  límite suave de 250).
+- Tests Rust: `expect("razón")` en fixtures de bootstrap.
+
+### Added — Sprint 1 features
+
+- **Drag & drop en el binder** (S1-01): reordenar y mover documentos
+  entre carpetas vía arrastre. Persistencia atómica con reindex de
+  posiciones; rollback si algún id falla.
+- **Búsqueda full-text por proyecto** (S1-04 + S1-05): FTS5 sobre
+  `documents` con migración 002, triggers de sincronización
+  AI/AD/AU, tokenizer `unicode61 remove_diacritics 2` (canción
+  matchea cancion). Dialog modal Ctrl+Shift+F con resultados
+  resaltados via `<mark>`.
+- **Find & Replace en documento** (S1-03): Ctrl+F (find) y Ctrl+H
+  (replace) abren una barra anclada al editor. Navegación con
+  Enter/Shift+Enter, contador "N/M", Replace y Replace all,
+  case-insensitive. Recompute reactivo cuando el editor cambia.
+- **Focus mode** (S1-07): F11 o botón en header oculta binder e
+  inspector. El editor crece al 100%. focusMode store ahora
+  conectado a la UI.
+- **Onboarding paso final lanza el wizard** (S1-08): el último slide
+  ("Crear mi primer proyecto") setea un flag one-shot en `uiStore`
+  que el Dashboard consume al montar para abrir el NewProjectWizard.
+
+### Added — CI
+
+- **epubcheck en CI** (S1-06): job nuevo `validate-epub` que instala
+  Temurin 21, descarga epubcheck 5.1.0, genera un fixture EPUB via
+  `cargo run --example fixture_epub` y lo valida. Falla CI si el
+  output no cumple la spec.
+
+### Added — Docs
+
+- `docs/USER-GUIDE.en.md`: traducción completa al inglés.
+- USER-GUIDE.md (ES): sección de búsqueda + atajos nuevos.
+- README: estado actualizado a v0.2.0-beta + links a ambas guías.
+
+### Architecture / tests
+
+- **Patrones canónicos** ahora también incluyen Strategy aplicado a
+  exporter, Event bus para reaccionar sin acoplar (búsqueda no
+  necesita evento, pero futuras features sí).
+- Tests Rust: **73 verdes** (65 previos + 3 nuevos para
+  `reorder_documents` + 5 nuevos para `search_documents`).
+- Vitest: 19 verdes (sin cambio — `useFindReplace` queda sin tests
+  unitarios por dependencia del editor TipTap montado; Sprint 2).
+
 ## [0.1.0-alpha] — 2026-05-08
 
 First public alpha. Free MVP, premium-ready architecture.
@@ -76,5 +163,6 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.2.0-beta...HEAD
+[0.2.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.2.0-beta
 [0.1.0-alpha]: https://github.com/OWNER/draffity/releases/tag/v0.1.0-alpha
