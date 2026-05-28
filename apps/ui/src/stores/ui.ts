@@ -37,6 +37,7 @@ export const useUiStore = defineStore('ui', () => {
   const binderCollapsed = ref(loadBool('binderCollapsed', false));
   const inspectorCollapsed = ref(loadBool('inspectorCollapsed', false));
   const focusMode = ref(false);
+  const typewriterMode = ref(loadBool('typewriterMode', false));
   // One-shot flag set by onboarding to ask the dashboard to open the
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
@@ -50,6 +51,7 @@ export const useUiStore = defineStore('ui', () => {
 
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
+  watch(typewriterMode, (v) => saveBool('typewriterMode', v));
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
 
   function setTheme(mode: ThemeMode) {
@@ -71,6 +73,10 @@ export const useUiStore = defineStore('ui', () => {
 
   function toggleFocusMode() {
     focusMode.value = !focusMode.value;
+  }
+
+  function toggleTypewriterMode() {
+    typewriterMode.value = !typewriterMode.value;
   }
 
   function requestNewProject() {
@@ -102,6 +108,7 @@ export const useUiStore = defineStore('ui', () => {
     binderCollapsed,
     inspectorCollapsed,
     focusMode,
+    typewriterMode,
     pendingNewProject,
     sessionGoal,
     sessionStartTotal,
@@ -110,6 +117,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleBinder,
     toggleInspector,
     toggleFocusMode,
+    toggleTypewriterMode,
     requestNewProject,
     consumeNewProjectRequest,
     captureSessionStart,

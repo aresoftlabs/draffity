@@ -15,6 +15,7 @@ import { useUiStore } from '@/stores/ui';
 import { useIpcError } from '@/composables/useIpcError';
 import { useAutoSave } from '@/composables/useAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
+import { useTypewriterScroll } from '@/composables/useTypewriterScroll';
 
 import Binder from '@/components/Binder.vue';
 import Inspector from '@/components/Inspector.vue';
@@ -35,9 +36,19 @@ const uiStore = useUiStore();
 const { run } = useIpcError();
 
 const focusMode = computed(() => uiStore.focusMode);
+const typewriterEnabled = computed(() => uiStore.typewriterMode);
 
 function toggleFocus() {
   uiStore.toggleFocusMode();
+}
+
+function navigateDoc(delta: 1 | -1) {
+  const ids = docStore.documents.map((d) => d.id);
+  if (ids.length === 0) return;
+  const current = docStore.selectedId;
+  const idx = current ? ids.indexOf(current) : -1;
+  const next = idx === -1 ? 0 : (idx + delta + ids.length) % ids.length;
+  docStore.select(ids[next]);
 }
 
 const projectId = computed(() => String(route.params.id));
@@ -179,8 +190,12 @@ useShortcuts({
     findMode.value = 'replace';
     findVisible.value = true;
   },
+  'ctrl+,': () => navigateDoc(-1),
+  'ctrl+.': () => navigateDoc(1),
   f11: () => toggleFocus(),
 });
+
+useTypewriterScroll(editor, typewriterEnabled);
 
 function onSearchJump(documentId: string) {
   docStore.select(documentId);

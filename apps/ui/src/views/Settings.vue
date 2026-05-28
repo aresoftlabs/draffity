@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SelectButton from 'primevue/selectbutton';
 import Slider from 'primevue/slider';
+import ToggleSwitch from 'primevue/toggleswitch';
 import { useUiStore } from '@/stores/ui';
 import { useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { ipc } from '@/services/ipc';
@@ -98,6 +99,16 @@ onMounted(async () => {
         </h2>
         <Slider v-model="autosaveMs" :min="200" :max="3000" :step="100" />
         <p class="text-xs opacity-60 mt-2">{{ t('settings.autosaveHint') }}</p>
+      </section>
+
+      <section class="flex items-center justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+            {{ t('settings.typewriter') }}
+          </h2>
+          <p class="text-xs opacity-60 mt-1">{{ t('settings.typewriterHint') }}</p>
+        </div>
+        <ToggleSwitch v-model="ui.typewriterMode" />
       </section>
 
       <section>

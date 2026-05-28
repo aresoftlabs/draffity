@@ -152,7 +152,9 @@
     "writingStats": "Hábito de escritura",
     "currentStreak": "Racha actual (días)",
     "longestStreak": "Racha más larga (días)",
-    "lastWritingDate": "Última actividad"
+    "lastWritingDate": "Última actividad",
+    "typewriter": "Modo máquina de escribir",
+    "typewriterHint": "Mantiene la línea actual centrada verticalmente en el editor."
   },
   "snapshots": {
     "title": "Versiones",

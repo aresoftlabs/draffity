@@ -152,7 +152,9 @@
     "writingStats": "Writing habit",
     "currentStreak": "Current streak (days)",
     "longestStreak": "Longest streak (days)",
-    "lastWritingDate": "Last activity"
+    "lastWritingDate": "Last activity",
+    "typewriter": "Typewriter mode",
+    "typewriterHint": "Keeps the current line vertically centred in the editor."
   },
   "snapshots": {
     "title": "Versions",
