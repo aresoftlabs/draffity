@@ -5,6 +5,11 @@
 //! Activating a project archives the currently active one. Premium can flip
 //! the `multi_active_projects` capability and the manager will skip the
 //! archive step automatically — no UI changes required.
+//!
+//! Behind `ProjectManagerService` so a future `CloudProjectManager`
+//! (premium remote-sync) can swap in without touching `AppState`,
+//! commands or the rest of the wiring. Pattern: §2 CLAUDE.md
+//! ("Trait + impl NoOp services premium-ready").
 
 use std::sync::Arc;
 
@@ -14,13 +19,31 @@ use crate::services::storage::StorageService;
 use crate::services::templates::TemplatesService;
 use crate::services::tier::TierService;
 
-pub struct ProjectManager {
+pub trait ProjectManagerService: Send + Sync {
+    /// Create a new project, seeding it from the requested template if known.
+    /// If single-active is enforced (free tier), any currently-active project
+    /// is archived first.
+    fn create(&self, input: ProjectInput) -> AppResult<Project>;
+
+    /// Activate an existing project. Archives the currently-active one
+    /// when single-active is enforced.
+    fn activate(&self, id: &str) -> AppResult<Project>;
+
+    fn archive(&self, id: &str) -> AppResult<()>;
+    fn delete(&self, id: &str) -> AppResult<()>;
+
+    fn list(&self) -> AppResult<Vec<Project>>;
+    fn get(&self, id: &str) -> AppResult<Option<Project>>;
+    fn active(&self) -> AppResult<Option<Project>>;
+}
+
+pub struct LocalProjectManager {
     storage: Arc<dyn StorageService>,
     tier: Arc<dyn TierService>,
     templates: Arc<dyn TemplatesService>,
 }
 
-impl ProjectManager {
+impl LocalProjectManager {
     pub fn new(
         storage: Arc<dyn StorageService>,
         tier: Arc<dyn TierService>,
@@ -31,49 +54,6 @@ impl ProjectManager {
             tier,
             templates,
         }
-    }
-
-    /// Create a new project, seeding it from the requested template if known.
-    /// If single-active is enforced (free tier), any currently-active project
-    /// is archived first.
-    pub fn create(&self, input: ProjectInput) -> AppResult<Project> {
-        let structure = self
-            .templates
-            .get(&input.template_id)
-            .map(|t| t.structure)
-            .unwrap_or_default();
-        self.archive_active_if_needed()?;
-        self.storage.create_project_atomic(input, &structure)
-    }
-
-    /// Activate an existing project. Archives the currently-active one
-    /// when single-active is enforced.
-    pub fn activate(&self, id: &str) -> AppResult<Project> {
-        self.archive_active_if_needed_except(Some(id))?;
-        self.storage.set_project_status(id, ProjectStatus::Active)?;
-        self.storage
-            .get_project(id)?
-            .ok_or_else(|| crate::error::AppError::NotFound(format!("project {id}")))
-    }
-
-    pub fn archive(&self, id: &str) -> AppResult<()> {
-        self.storage.set_project_status(id, ProjectStatus::Archived)
-    }
-
-    pub fn delete(&self, id: &str) -> AppResult<()> {
-        self.storage.delete_project(id)
-    }
-
-    pub fn list(&self) -> AppResult<Vec<Project>> {
-        self.storage.list_projects()
-    }
-
-    pub fn get(&self, id: &str) -> AppResult<Option<Project>> {
-        self.storage.get_project(id)
-    }
-
-    pub fn active(&self) -> AppResult<Option<Project>> {
-        self.storage.get_active_project()
     }
 
     fn archive_active_if_needed(&self) -> AppResult<()> {
@@ -91,6 +71,46 @@ impl ProjectManager {
             }
         }
         Ok(())
+    }
+}
+
+impl ProjectManagerService for LocalProjectManager {
+    fn create(&self, input: ProjectInput) -> AppResult<Project> {
+        let structure = self
+            .templates
+            .get(&input.template_id)
+            .map(|t| t.structure)
+            .unwrap_or_default();
+        self.archive_active_if_needed()?;
+        self.storage.create_project_atomic(input, &structure)
+    }
+
+    fn activate(&self, id: &str) -> AppResult<Project> {
+        self.archive_active_if_needed_except(Some(id))?;
+        self.storage.set_project_status(id, ProjectStatus::Active)?;
+        self.storage
+            .get_project(id)?
+            .ok_or_else(|| crate::error::AppError::NotFound(format!("project {id}")))
+    }
+
+    fn archive(&self, id: &str) -> AppResult<()> {
+        self.storage.set_project_status(id, ProjectStatus::Archived)
+    }
+
+    fn delete(&self, id: &str) -> AppResult<()> {
+        self.storage.delete_project(id)
+    }
+
+    fn list(&self) -> AppResult<Vec<Project>> {
+        self.storage.list_projects()
+    }
+
+    fn get(&self, id: &str) -> AppResult<Option<Project>> {
+        self.storage.get_project(id)
+    }
+
+    fn active(&self) -> AppResult<Option<Project>> {
+        self.storage.get_active_project()
     }
 }
 
@@ -164,11 +184,15 @@ mod tests {
         }
     }
 
-    fn pm(tpl: StubTemplates) -> ProjectManager {
-        let storage =
-            LocalStorageService::open_in_memory().expect("in-memory SQLite should always open");
+    /// Returns a tuple so tests can reach `storage` (for `list_documents`
+    /// assertions) without having to expose the field on `LocalProjectManager`.
+    fn pm(tpl: StubTemplates) -> (LocalProjectManager, Arc<dyn StorageService>) {
+        let storage: Arc<dyn StorageService> = Arc::new(
+            LocalStorageService::open_in_memory().expect("in-memory SQLite should always open"),
+        );
         storage.migrate().expect("fresh DB migrate should succeed");
-        ProjectManager::new(Arc::new(storage), Arc::new(FreeTier), Arc::new(tpl))
+        let m = LocalProjectManager::new(storage.clone(), Arc::new(FreeTier), Arc::new(tpl));
+        (m, storage)
     }
 
     fn input(title: &str, template_id: &str) -> ProjectInput {
@@ -181,7 +205,7 @@ mod tests {
 
     #[test]
     fn first_project_becomes_active() {
-        let m = pm(StubTemplates::empty());
+        let (m, _) = pm(StubTemplates::empty());
         let p = m.create(input("A", "anything")).unwrap();
         assert_eq!(p.status, ProjectStatus::Active);
         assert_eq!(m.active().unwrap().unwrap().id, p.id);
@@ -189,7 +213,7 @@ mod tests {
 
     #[test]
     fn second_project_archives_first_in_free_tier() {
-        let m = pm(StubTemplates::empty());
+        let (m, _) = pm(StubTemplates::empty());
         let a = m.create(input("A", "x")).unwrap();
         let b = m.create(input("B", "x")).unwrap();
 
@@ -209,7 +233,7 @@ mod tests {
 
     #[test]
     fn activate_archives_previous_active() {
-        let m = pm(StubTemplates::empty());
+        let (m, _) = pm(StubTemplates::empty());
         let a = m.create(input("A", "x")).unwrap();
         let b = m.create(input("B", "x")).unwrap();
 
@@ -221,7 +245,7 @@ mod tests {
 
     #[test]
     fn activate_same_project_is_noop_no_double_archive() {
-        let m = pm(StubTemplates::empty());
+        let (m, _) = pm(StubTemplates::empty());
         let a = m.create(input("A", "x")).unwrap();
         let still_a = m.activate(&a.id).unwrap();
         assert_eq!(still_a.status, ProjectStatus::Active);
@@ -230,7 +254,7 @@ mod tests {
 
     #[test]
     fn delete_removes_project() {
-        let m = pm(StubTemplates::empty());
+        let (m, _) = pm(StubTemplates::empty());
         let a = m.create(input("A", "x")).unwrap();
         m.delete(&a.id).unwrap();
         assert!(m.get(&a.id).unwrap().is_none());
@@ -238,10 +262,10 @@ mod tests {
 
     #[test]
     fn create_with_known_template_seeds_documents() {
-        let m = pm(StubTemplates::with_seed());
+        let (m, storage) = pm(StubTemplates::with_seed());
         let p = m.create(input("Mi novela", "novela")).unwrap();
         // Storage list_documents should include the seeded folder + chapter.
-        let docs = m.storage.list_documents(&p.id).unwrap();
+        let docs = storage.list_documents(&p.id).unwrap();
         assert_eq!(docs.len(), 2);
         assert!(docs.iter().any(|d| d.title == "Acto 1"));
         assert!(docs.iter().any(|d| d.title == "Capítulo 1"));
@@ -249,9 +273,9 @@ mod tests {
 
     #[test]
     fn create_with_unknown_template_creates_empty_project() {
-        let m = pm(StubTemplates::with_seed());
+        let (m, storage) = pm(StubTemplates::with_seed());
         let p = m.create(input("Sin plantilla", "does-not-exist")).unwrap();
-        let docs = m.storage.list_documents(&p.id).unwrap();
+        let docs = storage.list_documents(&p.id).unwrap();
         assert!(docs.is_empty());
     }
 }

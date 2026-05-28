@@ -24,7 +24,7 @@ pub use exporter::{
     PageSize, SceneSeparator,
 };
 pub use factory::{ServiceBundle, ServiceFactory};
-pub use project_manager::ProjectManager;
+pub use project_manager::{LocalProjectManager, ProjectManagerService};
 pub use storage::{CitationUpsert, LocalStorageService, StorageService};
 pub use sync::{CloudSyncService, NoOpSync};
 pub use templates::{BuiltInTemplates, LayeredTemplatesService, TemplatesService};

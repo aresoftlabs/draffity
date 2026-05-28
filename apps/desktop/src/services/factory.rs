@@ -16,8 +16,8 @@ use crate::error::{AppError, AppResult};
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
     ExportService, FreeTier, LayeredTemplatesService, LocalBackupService, LocalBibliographyService,
-    LocalExporter, LocalStorageService, NoOpAI, NoOpASR, NoOpSync, ProjectManager, StorageService,
-    TemplatesService, TierService, UserTemplatesLoader,
+    LocalExporter, LocalProjectManager, LocalStorageService, NoOpAI, NoOpASR, NoOpSync,
+    ProjectManagerService, StorageService, TemplatesService, TierService, UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -25,7 +25,7 @@ use crate::services::{
 pub struct ServiceBundle {
     pub storage: Arc<dyn StorageService>,
     pub tier: Arc<dyn TierService>,
-    pub project_manager: Arc<ProjectManager>,
+    pub project_manager: Arc<dyn ProjectManagerService>,
     pub templates: Arc<dyn TemplatesService>,
     pub user_templates: Arc<UserTemplatesLoader>,
     pub ai: Arc<dyn AIService>,
@@ -48,7 +48,7 @@ impl ServiceFactory {
             app_data_dir.join("templates").join("user"),
         ));
         let templates: Arc<dyn TemplatesService> = Self::build_templates(user_templates.clone())?;
-        let project_manager = Arc::new(ProjectManager::new(
+        let project_manager: Arc<dyn ProjectManagerService> = Arc::new(LocalProjectManager::new(
             storage.clone(),
             tier_service.clone(),
             templates.clone(),

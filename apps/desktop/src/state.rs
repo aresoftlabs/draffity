@@ -8,14 +8,14 @@ use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, CloudSyncService, ExportService,
-    ProjectManager, ServiceBundle, StorageService, TemplatesService, TierService,
+    ProjectManagerService, ServiceBundle, StorageService, TemplatesService, TierService,
     UserTemplatesLoader,
 };
 
 pub struct AppState {
     pub storage: Arc<dyn StorageService>,
     pub tier: Arc<dyn TierService>,
-    pub project_manager: Arc<ProjectManager>,
+    pub project_manager: Arc<dyn ProjectManagerService>,
     pub templates: Arc<dyn TemplatesService>,
     pub user_templates: Arc<UserTemplatesLoader>,
     #[allow(dead_code)] // wired up in Phase 1+; consumed by premium impls

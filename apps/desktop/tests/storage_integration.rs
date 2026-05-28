@@ -7,16 +7,21 @@ use std::sync::Arc;
 use draffity_desktop_lib as app;
 
 use app::services::{
-    BuiltInTemplates, FreeTier, LocalStorageService, ProjectManager, StorageService,
+    BuiltInTemplates, FreeTier, LocalProjectManager, LocalStorageService, ProjectManagerService,
+    StorageService,
 };
 
-fn build() -> ProjectManager {
+fn build() -> Box<dyn ProjectManagerService> {
     let dir = tempdir();
     let path = dir.join("draffity.db");
     let storage = LocalStorageService::open(&path).expect("open tempdir SQLite");
     storage.migrate().expect("apply migrations on fresh DB");
     let templates = BuiltInTemplates::load().expect("load built-in templates from embedded JSON");
-    ProjectManager::new(Arc::new(storage), Arc::new(FreeTier), Arc::new(templates))
+    Box::new(LocalProjectManager::new(
+        Arc::new(storage),
+        Arc::new(FreeTier),
+        Arc::new(templates),
+    ))
 }
 
 fn tempdir() -> std::path::PathBuf {

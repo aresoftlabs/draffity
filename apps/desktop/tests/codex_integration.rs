@@ -16,17 +16,21 @@ use draffity_desktop_lib::domain::{
 };
 use draffity_desktop_lib::services::{
     BuiltInTemplates, ExportConfig, ExportFormat, ExportService, FreeTier, LocalExporter,
-    LocalStorageService, ProjectManager, StorageService,
+    LocalProjectManager, LocalStorageService, ProjectManagerService, StorageService,
 };
 
-fn build() -> (ProjectManager, Arc<LocalStorageService>) {
+fn build() -> (Box<dyn ProjectManagerService>, Arc<LocalStorageService>) {
     let dir = tempdir();
     let path = dir.join("draffity.db");
     let storage = LocalStorageService::open(&path).expect("open tempdir SQLite");
     storage.migrate().expect("apply migrations on fresh DB");
     let templates = BuiltInTemplates::load().expect("load built-in templates from embedded JSON");
     let storage = Arc::new(storage);
-    let pm = ProjectManager::new(storage.clone(), Arc::new(FreeTier), Arc::new(templates));
+    let pm: Box<dyn ProjectManagerService> = Box::new(LocalProjectManager::new(
+        storage.clone(),
+        Arc::new(FreeTier),
+        Arc::new(templates),
+    ));
     (pm, storage)
 }
 
