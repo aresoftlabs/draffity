@@ -12,12 +12,19 @@ use crate::error::AppResult;
 
 use super::config::ExportConfig;
 use super::docx_helpers::{append_codex, render_html_blocks};
+use super::media_bundle::MediaBundle;
 use super::util::flatten_in_order;
 
+/// Export the project to a `.docx`. Image embedding via `docx-rs::Pic`
+/// needs PNG/JPEG dimension parsing; for now we accept the `MediaBundle`
+/// in the signature to keep the trait surface uniform but skip actual
+/// embedding — images render as their alt text. Follow-up will pull
+/// image dimensions and emit proper inline pictures.
 pub fn render(
     project: &Project,
     documents: &[DocNode],
     codex: &[CodexEntry],
+    _media: &MediaBundle,
     config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
     let mut docx = Docx::new();
@@ -143,7 +150,14 @@ mod tests {
             ),
             0,
         )];
-        let bytes = render(&p, &docs, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(
+            &p,
+            &docs,
+            &[],
+            &MediaBundle::new(),
+            &ExportConfig::default(),
+        )
+        .unwrap();
         // ZIP local file header signature
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
         // Should contain at least the standard word/document.xml entry name.
@@ -154,7 +168,7 @@ mod tests {
     #[test]
     fn empty_project_still_produces_zip() {
         let p = project("X");
-        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &ExportConfig::default()).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 
@@ -165,7 +179,7 @@ mod tests {
     #[test]
     fn toc_is_emitted_when_include_toc_is_true() {
         let p = project("Con TOC");
-        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &ExportConfig::default()).unwrap();
         let s = String::from_utf8_lossy(&bytes);
         assert!(s.contains("TOC"), "expected TOC field in DOCX output");
     }
@@ -178,7 +192,7 @@ mod tests {
             include_title_page: false,
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap();
         let s = String::from_utf8_lossy(&bytes);
         assert!(
             !s.contains("TOC \\"),
@@ -197,7 +211,7 @@ mod tests {
             include_toc: false,
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 
@@ -212,6 +226,6 @@ mod tests {
         };
         // Whitespace-only override falls back to project title — the build
         // doesn't panic and we trust the resolver branch coverage.
-        render(&p, &[], &[], &cfg).unwrap();
+        render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap();
     }
 }

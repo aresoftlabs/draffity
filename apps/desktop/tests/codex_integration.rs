@@ -14,6 +14,7 @@ use draffity_desktop_lib as app;
 use draffity_desktop_lib::domain::{
     CodexInput, CodexKind, DocumentInput, DocumentType, ProjectInput,
 };
+use draffity_desktop_lib::services::exporter::MediaBundle;
 use draffity_desktop_lib::services::{
     BuiltInTemplates, ExportConfig, ExportFormat, ExportService, FreeTier, LocalExporter,
     LocalProjectManager, LocalStorageService, ProjectManagerService, StorageService,
@@ -125,7 +126,14 @@ fn cross_refs_survive_export_and_codex_appendix_lists_every_entry() {
     };
     let exporter = LocalExporter;
     let bytes = exporter
-        .export(&project, &docs, &codex, ExportFormat::Epub, &config)
+        .export(
+            &project,
+            &docs,
+            &codex,
+            &MediaBundle::new(),
+            ExportFormat::Epub,
+            &config,
+        )
         .expect("render EPUB");
 
     // EPUB is a ZIP: magic bytes + the codex.xhtml entry in the central
@@ -142,7 +150,14 @@ fn cross_refs_survive_export_and_codex_appendix_lists_every_entry() {
     // the way. Both renderers share `config.include_codex`, so this
     // proves the flow for the whole exporter family.
     let md_bytes = exporter
-        .export(&project, &docs, &codex, ExportFormat::Markdown, &config)
+        .export(
+            &project,
+            &docs,
+            &codex,
+            &MediaBundle::new(),
+            ExportFormat::Markdown,
+            &config,
+        )
         .expect("render markdown");
     let md = String::from_utf8(md_bytes).expect("markdown is utf-8");
     for entry in [&aragorn, &frodo, &mordor] {
@@ -184,6 +199,7 @@ fn codex_appendix_is_skipped_when_include_codex_is_false() {
             &project,
             &docs,
             &codex,
+            &MediaBundle::new(),
             ExportFormat::Epub,
             &ExportConfig::default(),
         )

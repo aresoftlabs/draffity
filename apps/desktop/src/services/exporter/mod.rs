@@ -6,7 +6,10 @@ mod docx;
 mod docx_helpers;
 mod epub;
 mod markdown;
+mod media_bundle;
 mod util;
+
+pub use media_bundle::{extract_media_ids, MediaBundle};
 
 pub use config::{
     settings_key as export_config_settings_key, ExportConfig, Margins, PageSize, SceneSeparator,
@@ -60,6 +63,7 @@ pub trait ExportService: Send + Sync {
         project: &Project,
         documents: &[DocNode],
         codex: &[CodexEntry],
+        media: &MediaBundle,
         format: ExportFormat,
         config: &ExportConfig,
     ) -> AppResult<Vec<u8>>;
@@ -82,13 +86,14 @@ impl ExportService for LocalExporter {
         project: &Project,
         documents: &[DocNode],
         codex: &[CodexEntry],
+        media: &MediaBundle,
         format: ExportFormat,
         config: &ExportConfig,
     ) -> AppResult<Vec<u8>> {
         match format {
-            ExportFormat::Markdown => markdown::render(project, documents, codex, config),
-            ExportFormat::Docx => docx::render(project, documents, codex, config),
-            ExportFormat::Epub => epub::render(project, documents, codex, config),
+            ExportFormat::Markdown => markdown::render(project, documents, codex, media, config),
+            ExportFormat::Docx => docx::render(project, documents, codex, media, config),
+            ExportFormat::Epub => epub::render(project, documents, codex, media, config),
             ExportFormat::Pdf => Err(AppError::Unsupported(
                 "PDF export not implemented yet".into(),
             )),

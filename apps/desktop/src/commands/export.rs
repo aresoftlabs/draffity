@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use tauri::State;
 
+use std::collections::HashSet;
+
 use crate::error::{AppError, AppResult};
+use crate::services::exporter::{extract_media_ids, MediaBundle};
 use crate::services::{export_config_settings_key, ExportConfig, ExportFormat};
 use crate::state::AppState;
 
@@ -34,9 +37,29 @@ pub fn export_project(
         None => load_config(&state, &project_id)?,
     };
 
+    // Pre-resolve every `data-media-id` referenced by the documents into
+    // a `MediaBundle` so the renderers don't depend on `MediaService`.
+    // Missing/orphaned ids are simply dropped — the renderer will leave
+    // the placeholder visible to the reader.
+    let mut wanted: HashSet<String> = HashSet::new();
+    for doc in &documents {
+        if let Some(html) = &doc.content {
+            wanted.extend(extract_media_ids(html));
+        }
+    }
+    let mut media = MediaBundle::new();
+    for id in wanted {
+        let Some(asset) = state.storage.get_media(&id)? else {
+            continue;
+        };
+        if let Ok(bytes) = state.media.read(&id) {
+            media.insert(id, asset.mime, bytes);
+        }
+    }
+
     let bytes = state
         .exporter
-        .export(&project, &documents, &codex, format, &effective)?;
+        .export(&project, &documents, &codex, &media, format, &effective)?;
 
     let path = PathBuf::from(&output_path);
     if let Some(parent) = path.parent() {

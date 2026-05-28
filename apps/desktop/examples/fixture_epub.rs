@@ -9,8 +9,8 @@ use std::env;
 use draffity_desktop_lib::{
     domain::{DocumentInput, DocumentType, ProjectInput},
     services::{
-        ExportConfig, ExportFormat, ExportService, LocalExporter, LocalStorageService,
-        StorageService,
+        exporter::MediaBundle, ExportConfig, ExportFormat, ExportService, LocalExporter,
+        LocalStorageService, StorageService,
     },
 };
 
@@ -56,6 +56,7 @@ fn main() {
             &project,
             &docs,
             &[],
+            &MediaBundle::new(),
             ExportFormat::Epub,
             &ExportConfig::default(),
         )

@@ -1,16 +1,20 @@
 //! Markdown export. Single-file Markdown with YAML frontmatter at the top.
 //! Uses `html2md` to convert TipTap HTML content to Markdown.
 
+use base64::Engine;
+
 use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
 use crate::error::AppResult;
 
 use super::config::ExportConfig;
+use super::media_bundle::MediaBundle;
 use super::util::{flatten_in_order, yaml_quote};
 
 pub fn render(
     project: &Project,
     documents: &[DocNode],
     codex: &[CodexEntry],
+    media: &MediaBundle,
     config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
     let mut out = String::new();
@@ -46,7 +50,8 @@ pub fn render(
 
         if let Some(html) = &doc.content {
             if !html.trim().is_empty() {
-                let md = html2md::parse_html(html);
+                let resolved = inline_media_as_data_uris(html, media);
+                let md = html2md::parse_html(&resolved);
                 out.push_str(md.trim());
                 out.push_str("\n\n");
             }
@@ -102,6 +107,53 @@ fn section_heading(kind: CodexKind) -> &'static str {
     }
 }
 
+/// Rewrite `<img data-media-id="X" alt="…">` to
+/// `<img src="data:<mime>;base64,<data>" alt="…">` so `html2md` produces
+/// a portable `![alt](data-uri)` Markdown image. Unknown ids are left
+/// untouched so the reader can spot dangling references.
+fn inline_media_as_data_uris(html: &str, media: &MediaBundle) -> String {
+    if media.is_empty() || !html.contains("data-media-id=\"") {
+        return html.to_string();
+    }
+    let mut out = String::with_capacity(html.len());
+    let mut cursor = 0usize;
+    while let Some(start) = html[cursor..].find("<img") {
+        let abs_start = cursor + start;
+        out.push_str(&html[cursor..abs_start]);
+        // Find the tag end `>` (we assume no inline `>` inside attributes
+        // — TipTap output is well-formed).
+        let Some(end_off) = html[abs_start..].find('>') else {
+            out.push_str(&html[abs_start..]);
+            return out;
+        };
+        let tag_end = abs_start + end_off + 1;
+        let tag = &html[abs_start..tag_end];
+
+        // Pull the media id if present.
+        let mut replaced = tag.to_string();
+        if let Some(id) = extract_attr(tag, "data-media-id") {
+            if let Some((mime, bytes)) = media.get(&id) {
+                let b64 = base64::engine::general_purpose::STANDARD.encode(bytes);
+                let data_uri = format!("data:{mime};base64,{b64}");
+                // Inject `src="<data_uri>"` right after `<img`.
+                replaced = tag.replacen("<img", &format!("<img src=\"{data_uri}\""), 1);
+            }
+        }
+        out.push_str(&replaced);
+        cursor = tag_end;
+    }
+    out.push_str(&html[cursor..]);
+    out
+}
+
+fn extract_attr(tag: &str, name: &str) -> Option<String> {
+    let needle = format!("{name}=\"");
+    let start = tag.find(&needle)? + needle.len();
+    let rest = &tag[start..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,7 +176,14 @@ mod tests {
                 0,
             ),
         ];
-        let bytes = render(&p, &docs, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(
+            &p,
+            &docs,
+            &[],
+            &MediaBundle::new(),
+            &ExportConfig::default(),
+        )
+        .unwrap();
         let text = String::from_utf8(bytes).unwrap();
 
         assert!(text.starts_with("---\n"));
@@ -139,7 +198,7 @@ mod tests {
     #[test]
     fn empty_project_still_has_frontmatter() {
         let p = project("X");
-        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &ExportConfig::default()).unwrap();
         let text = String::from_utf8(bytes).unwrap();
         assert!(text.starts_with("---\n"));
         assert!(text.contains("# X"));

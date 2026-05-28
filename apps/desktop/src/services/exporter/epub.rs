@@ -7,16 +7,18 @@ use std::path::Path;
 
 use epub_builder::{EpubBuilder, EpubContent, ReferenceType, ZipLibrary};
 
-use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
+use crate::domain::{extension_for_mime, CodexEntry, CodexKind, DocNode, Project};
 use crate::error::{AppError, AppResult};
 
 use super::config::ExportConfig;
+use super::media_bundle::MediaBundle;
 use super::util::{flatten_in_order, xml_escape};
 
 pub fn render(
     project: &Project,
     documents: &[DocNode],
     codex: &[CodexEntry],
+    media: &MediaBundle,
     config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
     let zip = ZipLibrary::new().map_err(|e| AppError::Unexpected(format!("epub zip init: {e}")))?;
@@ -69,10 +71,17 @@ pub fn render(
             .map_err(|e| AppError::Unexpected(format!("epub title page: {e}")))?;
     }
 
+    // Resolve every media id referenced anywhere in the manuscript to a
+    // stable filename, add the bytes as EPUB resources, and remember the
+    // mapping so we can rewrite the chapter `src` attributes.
+    let media_paths = embed_media_resources(&mut builder, documents, media)?;
+
     let ordered = flatten_in_order(documents);
     for (idx, (_depth, doc)) in ordered.iter().enumerate() {
         let filename = format!("ch{:03}.xhtml", idx + 1);
-        let xhtml = chapter_xhtml(&doc.title, doc.content.as_deref().unwrap_or(""));
+        let body = doc.content.as_deref().unwrap_or("");
+        let body = rewrite_media_src(body, &media_paths);
+        let xhtml = chapter_xhtml(&doc.title, &body);
         builder
             .add_content(
                 EpubContent::new(filename, xhtml.as_bytes())
@@ -213,6 +222,80 @@ fn codex_appendix_xhtml(codex: &[CodexEntry]) -> String {
     )
 }
 
+/// Add every media asset referenced by the documents as an EPUB resource
+/// (filename `media/<id>.<ext>`) and return the `id → filename` map so
+/// chapter `<img>` rewrites can swap `data-media-id` for `src`.
+fn embed_media_resources(
+    builder: &mut EpubBuilder<ZipLibrary>,
+    documents: &[DocNode],
+    media: &MediaBundle,
+) -> AppResult<std::collections::HashMap<String, String>> {
+    let mut paths = std::collections::HashMap::new();
+    if media.is_empty() {
+        return Ok(paths);
+    }
+    let mut seen = std::collections::HashSet::new();
+    for doc in documents {
+        let Some(html) = &doc.content else {
+            continue;
+        };
+        for id in super::media_bundle::extract_media_ids(html) {
+            if !seen.insert(id.clone()) {
+                continue;
+            }
+            let Some((mime, bytes)) = media.get(&id) else {
+                continue;
+            };
+            let ext = extension_for_mime(mime);
+            let filename = format!("media/{id}.{ext}");
+            builder
+                .add_resource(&filename, std::io::Cursor::new(bytes.to_vec()), mime)
+                .map_err(|e| AppError::Unexpected(format!("epub media resource: {e}")))?;
+            paths.insert(id, filename);
+        }
+    }
+    Ok(paths)
+}
+
+/// Replace `<img data-media-id="X">` with `<img src="media/X.ext">` for
+/// every id we managed to embed. Untouched ids stay as
+/// `data-media-id="…"` so a stale reference is still visible in the source.
+fn rewrite_media_src(html: &str, paths: &std::collections::HashMap<String, String>) -> String {
+    if paths.is_empty() || !html.contains("data-media-id=\"") {
+        return html.to_string();
+    }
+    let mut out = String::with_capacity(html.len());
+    let mut cursor = 0usize;
+    while let Some(start) = html[cursor..].find("<img") {
+        let abs_start = cursor + start;
+        out.push_str(&html[cursor..abs_start]);
+        let Some(end_off) = html[abs_start..].find('>') else {
+            out.push_str(&html[abs_start..]);
+            return out;
+        };
+        let tag_end = abs_start + end_off + 1;
+        let tag = &html[abs_start..tag_end];
+        let mut replaced = tag.to_string();
+        if let Some(id) = extract_attr(tag, "data-media-id") {
+            if let Some(filename) = paths.get(&id) {
+                replaced = tag.replacen("<img", &format!("<img src=\"{filename}\""), 1);
+            }
+        }
+        out.push_str(&replaced);
+        cursor = tag_end;
+    }
+    out.push_str(&html[cursor..]);
+    out
+}
+
+fn extract_attr(tag: &str, name: &str) -> Option<String> {
+    let needle = format!("{name}=\"");
+    let start = tag.find(&needle)? + needle.len();
+    let rest = &tag[start..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}
+
 fn codex_section_name(kind: CodexKind) -> &'static str {
     match kind {
         CodexKind::Character => "Characters",
@@ -253,7 +336,14 @@ mod tests {
             Some("<p>Hola.</p>"),
             0,
         )];
-        let bytes = render(&p, &docs, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(
+            &p,
+            &docs,
+            &[],
+            &MediaBundle::new(),
+            &ExportConfig::default(),
+        )
+        .unwrap();
         // ZIP magic
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
         // EPUB requires the mimetype file as the first entry, uncompressed.
@@ -265,7 +355,7 @@ mod tests {
     #[test]
     fn empty_project_still_renders() {
         let p = project("X");
-        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &ExportConfig::default()).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 
@@ -286,7 +376,7 @@ mod tests {
             include_title_page: false,
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap();
         let lossy = String::from_utf8_lossy(&bytes);
         assert!(!lossy.contains("title.xhtml"));
     }
@@ -298,7 +388,7 @@ mod tests {
             cover_image_path: Some("/tmp/missing.bmp".into()),
             ..ExportConfig::default()
         };
-        let err = render(&p, &[], &[], &cfg).unwrap_err();
+        let err = render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap_err();
         match err {
             crate::error::AppError::Unsupported(msg) => {
                 assert!(msg.contains("bmp"));
@@ -340,7 +430,7 @@ mod tests {
             cover_image_path: Some(cover.to_string_lossy().to_string()),
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap();
         // EPUB ZIP central directory lists the file name; "cover.jpg" must
         // appear somewhere in the package.
         let lossy = String::from_utf8_lossy(&bytes);
