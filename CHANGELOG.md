@@ -10,12 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03).
-  Decisión consciente de no abordarlo en Sprint 6: la opción
-  técnica entre `WebviewWindow` embebido vs iframe sandbox no
-  estaba investigada y el riesgo era alto. Queda en backlog para
-  un sprint dedicado cuando lo retomemos.
+  Decisión consciente: la opción técnica entre `WebviewWindow`
+  embebido vs iframe sandbox no estaba investigada y el riesgo era
+  alto. Queda en backlog para un sprint dedicado.
 
-### Deferred to v0.8
+### Deferred to v0.9
 
 - **Custom fonts** (S6-10, P2). Dropdown con fuentes del sistema
   más upload de TTF/OTF guardado en una tabla `media`. Depende de
@@ -40,6 +39,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PDF export** (S1-02 originalmente Sprint 1).
 - **Stats históricas con gráfico de 30 días** (S2-08).
 - **Split editor** (S3-06).
+
+## [0.8.0-beta] — 2026-05-28
+
+Sprint 7 cerrado al 100%: codex (worldbuilding/personajes) llega en
+free y diferencia a Draffity de la competencia. La app ahora suma un
+catálogo de personajes/lugares/objetos/notas por proyecto, con
+cross-references `[[Nombre]]` desde el editor que sobreviven renombrados
+(la resolución es por id, no por nombre) y un apéndice opcional en el
+export.
+
+### Added — Sprint 7
+
+- **Backend codex** (S7-01..04): migración 009_codex.sql con
+  tabla `codex_entries` (columnas id, project_id, kind, name, body,
+  tags_json, created_at, updated_at) + FK cascade + tres índices
+  (project, project+kind, project+name) para los lookups del picker.
+  Dominio
+  `CodexEntry` + `CodexKind` (character/place/object/note) +
+  `CodexInput` con `validate()` y `normalised()` (trim de nombre,
+  dedupe de tags preservando orden first-seen). Storage submodule con
+  CRUD + `LIKE` search escapado sobre name/body/tags_json + filtro
+  opcional por kind. IPC: `create_codex_entry`, `list_codex_entries`,
+  `get_codex_entry`, `update_codex_entry`, `delete_codex_entry`,
+  `search_codex_entries`. shared-types añade `CodexEntry`,
+  `CodexKind`, `CodexInput`, `CodexUpdate`.
+- **Decisión arquitectónica**: codex vive en `StorageService` igual
+  que citations, en lugar del trait separado que pedía el backlog. La
+  justificación es evitar duplicar conexiones SQLite por puro
+  adapter; cuando aparezca un `CodexService` premium (auto-detección
+  con IA, sync remoto) se extrae el trait sin tocar consumidoras.
+- **Vista Codex como cuarto modo del project view toggle** (S7-05,
+  S7-06): `ProjectViewMode` suma `'codex'` al lado de
+  editor/corkboard/outliner. `CodexView` arma una grilla responsive
+  de `CodexEntryCard` (ícono y color por kind, body preview clampeado
+  a 220 caracteres, tags). Header con filtros: search libre por
+  name/body/tags + select por kind + select por tag (sourced del
+  store). Botón "nueva entrada" abre `CodexEntryDialog` reutilizable
+  para crear/editar con name + kind + body (Textarea auto-resize) +
+  tags via AutoComplete que sugiere del set de tags ya usados.
+  Borrado vía `useConfirm`. Store `useCodexStore` cachea por proyecto
+  con helpers `byId`, `byNameLower` (para el cross-ref picker) y
+  `allTags`.
+- **Cross-refs `[[Nombre]]` en editor** (S7-07, S7-08): nuevo node
+  `codexRef` inline-atom con attrs `entryId` + `entryName`. HTML
+  serializado: `<span data-codex-ref="<id>">[[Name]]</span>`. El id
+  es la fuente de verdad — renombrar `Aragorn` → `Strider` no rompe
+  los manuscritos existentes; el name visible es el que quedó al
+  insertar. `addProseMirrorPlugins` añade un Plugin con
+  `handleClickOn` que despacha un `CustomEvent` `draffity:open-codex`
+  con el id en `detail` sobre `window`. `ProjectView` registra el
+  listener en
+  `onMounted`/`onBeforeUnmount`: al recibirlo cambia view a `'codex'`
+  y carga el store si hace falta. Toolbar suma botón "insertar
+  referencia codex" (pi-link) que abre `CodexRefPickerDialog`
+  (filtro libre por name/body/tags). Estilos del node: subrayado
+  punteado + tinte ámbar para distinguirlo de las citations azules.
+- **Codex como apéndice opcional en export** (S7-09): nuevo flag
+  `ExportConfig.include_codex` (default false). `ExportService::export`
+  ahora recibe `&[CodexEntry]` adicional; `export_project` carga
+  `storage.list_codex_entries` y se lo pasa. Cada renderer
+  (markdown, docx, epub) emite la sección al final cuando el flag
+  está activo: heading "Codex" + sub-secciones por kind
+  (Characters/Places/Objects/Notes) con name + tags + body HTML.
+  EPUB lo agrega como `codex.xhtml` separado; DOCX abre con page
+  break antes; Markdown anexa al archivo final. `ExportDialog` suma
+  checkbox "incluir codex como apéndice" en la sección Maquetación.
+
+### Tests — Sprint 7
+
+- **S7-10 integración codex** (`tests/codex_integration.rs`, 3 tests):
+  - `cross_refs_survive_export_and_codex_appendix_lists_every_entry`:
+    crea proyecto + 3 entries + chapter con `[[cross-refs]]`
+    embebidas, exporta EPUB + Markdown, verifica que `codex.xhtml`
+    está en el zip y que Markdown contiene los nombres de las
+    entries y las subsecciones por kind.
+  - `codex_appendix_is_skipped_when_include_codex_is_false`: export
+    sin el flag no incluye `codex.xhtml`.
+  - `rename_keeps_cross_refs_pointing_to_the_same_entry`: rename de
+    entry mantiene los cross-refs estables porque la resolución es
+    por id, no por nombre — el contrato clave del sprint.
+- Rust: 147 verdes (144 lib previas + 12 codex storage + 6 codex
+  dominio + 3 integración, repartidas como 144 lib + 4 integración).
+- Vitest: 30 verdes.
 
 ## [0.7.0-beta] — 2026-05-28
 
@@ -544,7 +626,8 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.7.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.8.0-beta...HEAD
+[0.8.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.8.0-beta
 [0.7.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.7.0-beta
 [0.6.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.6.0-beta
 [0.5.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.5.0-beta
