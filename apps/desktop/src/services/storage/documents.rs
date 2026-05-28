@@ -1,0 +1,197 @@
+//! Document CRUD + tree reordering.
+
+use rusqlite::{params, Connection, OptionalExtension};
+
+use crate::domain::{new_id, now_ms, DocNode, DocumentInput};
+use crate::error::{AppError, AppResult};
+
+use super::row_mappers::row_to_document;
+
+pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
+    input.validate()?;
+
+    // Verify parent project exists.
+    let exists: Option<i64> = conn
+        .query_row(
+            "SELECT 1 FROM projects WHERE id=?1",
+            params![input.project_id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    if exists.is_none() {
+        return Err(AppError::NotFound(format!("project {}", input.project_id)));
+    }
+
+    // Compute next position within (project, parent).
+    let next_pos: i64 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(position), -1) + 1 FROM documents
+             WHERE project_id=?1 AND IFNULL(parent_id, '')=IFNULL(?2, '')",
+            params![input.project_id, input.parent_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let now = now_ms();
+    let doc = DocNode {
+        id: new_id(),
+        project_id: input.project_id,
+        parent_id: input.parent_id,
+        title: input.title.trim().to_string(),
+        doc_type: input.doc_type,
+        content: input.content,
+        position: next_pos,
+        created_at: now,
+        updated_at: now,
+    };
+
+    conn.execute(
+        "INSERT INTO documents(id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        params![
+            doc.id,
+            doc.project_id,
+            doc.parent_id,
+            doc.title,
+            doc.doc_type.as_str(),
+            doc.content,
+            doc.position,
+            doc.created_at,
+            doc.updated_at,
+        ],
+    )?;
+    Ok(doc)
+}
+
+pub(super) fn list(conn: &Connection, project_id: &str) -> AppResult<Vec<DocNode>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
+         FROM documents
+         WHERE project_id=?1
+         ORDER BY IFNULL(parent_id,''), position ASC",
+    )?;
+    let rows = stmt
+        .query_map(params![project_id], row_to_document)?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(rows)
+}
+
+pub(super) fn get(conn: &Connection, id: &str) -> AppResult<Option<DocNode>> {
+    let d = conn
+        .query_row(
+            "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
+             FROM documents WHERE id=?1",
+            params![id],
+            row_to_document,
+        )
+        .optional()?;
+    Ok(d)
+}
+
+pub(super) fn update(
+    conn: &Connection,
+    id: &str,
+    title: Option<&str>,
+    content: Option<&str>,
+) -> AppResult<DocNode> {
+    if let Some(t) = title {
+        if t.trim().is_empty() {
+            return Err(AppError::Invariant("title cannot be empty".into()));
+        }
+    }
+    let now = now_ms();
+    let updated = conn.execute(
+        "UPDATE documents
+         SET title = COALESCE(?2, title),
+             content = COALESCE(?3, content),
+             updated_at = ?4
+         WHERE id=?1",
+        params![id, title, content, now],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    let doc = conn
+        .query_row(
+            "SELECT id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at
+             FROM documents WHERE id=?1",
+            params![id],
+            row_to_document,
+        )?;
+    Ok(doc)
+}
+
+pub(super) fn move_to(
+    conn: &Connection,
+    id: &str,
+    parent_id: Option<&str>,
+    position: i64,
+) -> AppResult<()> {
+    let updated = conn.execute(
+        "UPDATE documents SET parent_id=?2, position=?3, updated_at=?4 WHERE id=?1",
+        params![id, parent_id, position, now_ms()],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    Ok(())
+}
+
+pub(super) fn delete(conn: &Connection, id: &str) -> AppResult<()> {
+    let removed = conn.execute("DELETE FROM documents WHERE id=?1", params![id])?;
+    if removed == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::test_helpers::fresh;
+    use super::super::StorageService;
+    use crate::domain::{DocumentInput, DocumentType, ProjectInput};
+
+    #[test]
+    fn document_crud_round_trip() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = s
+            .create_document(DocumentInput {
+                project_id: p.id.clone(),
+                parent_id: None,
+                title: "Cap 1".into(),
+                doc_type: DocumentType::Chapter,
+                content: Some("hola".into()),
+            })
+            .unwrap();
+        assert_eq!(d.position, 0);
+
+        let d2 = s
+            .create_document(DocumentInput {
+                project_id: p.id.clone(),
+                parent_id: None,
+                title: "Cap 2".into(),
+                doc_type: DocumentType::Chapter,
+                content: None,
+            })
+            .unwrap();
+        assert_eq!(d2.position, 1);
+
+        let updated = s
+            .update_document(&d.id, Some("Cap 1 — bis"), Some("nuevo"))
+            .unwrap();
+        assert_eq!(updated.title, "Cap 1 — bis");
+        assert_eq!(updated.content.as_deref(), Some("nuevo"));
+
+        s.delete_document(&d2.id).unwrap();
+        let docs = s.list_documents(&p.id).unwrap();
+        assert_eq!(docs.len(), 1);
+        assert_eq!(docs[0].id, d.id);
+    }
+}
