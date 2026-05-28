@@ -6,6 +6,7 @@ import Button from 'primevue/button';
 import { useUiStore } from '@/stores/ui';
 import { useDocumentStore } from '@/stores/document';
 import GoalProgress from '@/components/GoalProgress.vue';
+import PomodoroWidget from '@/components/PomodoroWidget.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -58,6 +59,8 @@ function cycleTheme() {
         @update:goal="ui.setSessionGoal"
       />
     </div>
+
+    <PomodoroWidget />
 
     <Button
       :icon="isDark() ? 'pi pi-sun' : 'pi pi-moon'"

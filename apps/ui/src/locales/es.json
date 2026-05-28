@@ -102,6 +102,19 @@
     "label": "Sesión",
     "tooltip": "Palabras escritas desde que abriste el proyecto"
   },
+  "pomodoro": {
+    "title": "Temporizador de escritura",
+    "idle": "Listo",
+    "work": "Foco",
+    "break": "Descanso",
+    "paused": "Pausa",
+    "focusMin": "Foco (min)",
+    "breakMin": "Descanso (min)",
+    "skip": "Saltar fase",
+    "reset": "Reiniciar",
+    "settings": "Ajustes del temporizador",
+    "completed": "Sesiones completadas: {n}"
+  },
   "save": {
     "idle": "",
     "saving": "Guardando…",

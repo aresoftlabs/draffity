@@ -102,6 +102,19 @@
     "label": "Session",
     "tooltip": "Words written since you opened the project"
   },
+  "pomodoro": {
+    "title": "Writing timer",
+    "idle": "Ready",
+    "work": "Focus",
+    "break": "Break",
+    "paused": "Paused",
+    "focusMin": "Focus (min)",
+    "breakMin": "Break (min)",
+    "skip": "Skip phase",
+    "reset": "Reset",
+    "settings": "Timer settings",
+    "completed": "Sessions completed: {n}"
+  },
   "save": {
     "idle": "",
     "saving": "Saving…",
