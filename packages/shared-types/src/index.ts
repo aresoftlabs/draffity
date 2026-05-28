@@ -192,6 +192,10 @@ export interface CodexUpdate {
 
 export type ExportFormat = 'markdown' | 'docx' | 'epub' | 'pdf';
 
+/** Format the local importer can read. Matches the Rust enum
+ *  `ImportFormat` (lowercase serde). */
+export type ImportFormat = 'markdown' | 'docx';
+
 export type PageSize =
   | 'a4'
   | 'letter'

@@ -5,10 +5,13 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
 import { useConfirm } from 'primevue/useconfirm';
-import type { ProjectInput } from '@draffity/shared-types';
+import { open } from '@tauri-apps/plugin-dialog';
+import { readFile } from '@tauri-apps/plugin-fs';
+import type { ImportFormat, ProjectInput } from '@draffity/shared-types';
 import { useProjectStore } from '@/stores/project';
 import { useUiStore } from '@/stores/ui';
 import { useIpcError } from '@/composables/useIpcError';
+import { ipc } from '@/services/ipc';
 import ProjectCard from '@/components/ProjectCard.vue';
 import NewProjectWizard from '@/components/NewProjectWizard.vue';
 import SwitchProjectDialog from '@/components/SwitchProjectDialog.vue';
@@ -41,6 +44,37 @@ onMounted(async () => {
 async function onCreate(input: ProjectInput) {
   const project = await run(t('errors.createProject'), () => projectStore.create(input));
   if (project) router.push({ name: 'project', params: { id: project.id } });
+}
+
+const importing = ref(false);
+
+async function onImport() {
+  const picked = await open({
+    multiple: false,
+    directory: false,
+    filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
+    title: t('dashboard.importProject'),
+  });
+  if (typeof picked !== 'string') return;
+  importing.value = true;
+  try {
+    const bytes = await readFile(picked);
+    const filenameHint =
+      picked
+        .split(/[\\/]/)
+        .pop()
+        ?.replace(/\.[^.]+$/, '') ?? 'imported';
+    const format: ImportFormat = 'markdown';
+    const project = await run(t('errors.importProject'), () =>
+      ipc.importProject({ format, bytes: Array.from(bytes), filenameHint }),
+    );
+    if (project) {
+      await projectStore.loadAll();
+      router.push({ name: 'project', params: { id: project.id } });
+    }
+  } finally {
+    importing.value = false;
+  }
 }
 
 async function onOpenActive(id: string) {
@@ -92,7 +126,17 @@ function onDelete(id: string) {
         <h1 class="text-3xl font-serif font-bold">{{ t('dashboard.title') }}</h1>
         <p class="text-sm opacity-70 mt-1">{{ t('dashboard.subtitle') }}</p>
       </div>
-      <Button :label="t('dashboard.newProject')" icon="pi pi-plus" @click="showNew = true" />
+      <div class="flex items-center gap-2">
+        <Button
+          :label="t('dashboard.importProject')"
+          icon="pi pi-upload"
+          severity="secondary"
+          outlined
+          :loading="importing"
+          @click="onImport"
+        />
+        <Button :label="t('dashboard.newProject')" icon="pi pi-plus" @click="showNew = true" />
+      </div>
     </header>
 
     <div v-if="loading" class="text-sm opacity-60">…</div>

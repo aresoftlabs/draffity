@@ -5,8 +5,10 @@ use rusqlite::{params, Connection, OptionalExtension};
 use crate::domain::{new_id, now_ms, Project, ProjectInput, ProjectStatus, TemplateNode};
 use crate::error::{AppError, AppResult};
 
+use super::import_seed::insert_import_nodes;
 use super::row_mappers::row_to_project;
 use super::template_seed::insert_template_nodes;
+use crate::services::importer::ImportTree;
 
 /// Column list for `SELECT` against `projects`. Mirrors the documents.rs
 /// pattern so adding columns (e.g. `goal_words`) is a one-line change.
@@ -85,6 +87,50 @@ pub(super) fn create_atomic(
 
     insert_template_nodes(&tx, &project.id, None, structure, now)?;
 
+    tx.commit()?;
+    Ok(project)
+}
+
+/// Create a project + its document tree from an importer's output in a
+/// single transaction. The project's title comes from the import tree's
+/// `project_title` and the imported nodes are seeded under the new
+/// project's root. `template_id` is "generic" because an imported tree
+/// owns its structure outright — there's no template to honour.
+pub(super) fn create_from_import(
+    conn: &mut Connection,
+    tree: &ImportTree,
+    template_id: &str,
+) -> AppResult<Project> {
+    let trimmed_title = tree.project_title.trim();
+    if trimmed_title.is_empty() {
+        return Err(AppError::Invariant("project title cannot be empty".into()));
+    }
+    let tx = conn.transaction()?;
+    let now = now_ms();
+    let project = Project {
+        id: new_id(),
+        title: trimmed_title.to_string(),
+        template_id: template_id.to_string(),
+        status: ProjectStatus::Active,
+        metadata: None,
+        goal_words: None,
+        created_at: now,
+        updated_at: now,
+    };
+    tx.execute(
+        "INSERT INTO projects(id, title, template_id, status, metadata, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            project.id,
+            project.title,
+            project.template_id,
+            project.status.as_str(),
+            None::<String>,
+            project.created_at,
+            project.updated_at,
+        ],
+    )?;
+    insert_import_nodes(&tx, &project.id, None, &tree.nodes, now)?;
     tx.commit()?;
     Ok(project)
 }

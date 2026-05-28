@@ -18,6 +18,7 @@ use crate::domain::{
     TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
+use crate::services::importer::ImportTree;
 
 pub use citations::UpsertEntry as CitationUpsert;
 
@@ -26,6 +27,7 @@ mod codex;
 mod document_positions;
 mod document_tags;
 mod documents;
+mod import_seed;
 mod media;
 mod projects;
 mod row_mappers;
@@ -62,6 +64,15 @@ pub trait StorageService: Send + Sync {
         &self,
         input: ProjectInput,
         structure: &[TemplateNode],
+    ) -> AppResult<Project>;
+    /// Create a project and seed its document tree from an importer's
+    /// `ImportTree` in a single transaction. Use this instead of
+    /// `create_project_atomic` when the source is a file import (the tree
+    /// already comes with rendered HTML content per node).
+    fn create_project_from_import(
+        &self,
+        tree: &ImportTree,
+        template_id: &str,
     ) -> AppResult<Project>;
     fn list_projects(&self) -> AppResult<Vec<Project>>;
     fn get_project(&self, id: &str) -> AppResult<Option<Project>>;
@@ -285,6 +296,14 @@ impl StorageService for LocalStorageService {
         structure: &[TemplateNode],
     ) -> AppResult<Project> {
         projects::create_atomic(&mut self.conn.lock().unwrap(), input, structure)
+    }
+
+    fn create_project_from_import(
+        &self,
+        tree: &ImportTree,
+        template_id: &str,
+    ) -> AppResult<Project> {
+        projects::create_from_import(&mut self.conn.lock().unwrap(), tree, template_id)
     }
 
     fn list_projects(&self) -> AppResult<Vec<Project>> {

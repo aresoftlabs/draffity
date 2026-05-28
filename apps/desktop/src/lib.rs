@@ -89,6 +89,9 @@ pub fn run() {
             commands::supported_export_formats,
             commands::get_export_config,
             commands::set_export_config,
+            // import
+            commands::import_project,
+            commands::supported_import_formats,
             // bibliography
             commands::import_bibliography,
             commands::list_citations,

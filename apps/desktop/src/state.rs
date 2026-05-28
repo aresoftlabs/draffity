@@ -8,8 +8,8 @@ use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, CloudSyncService, ExportService,
-    MediaService, ProjectManagerService, ServiceBundle, StorageService, TemplatesService,
-    TierService, UserTemplatesLoader,
+    ImportService, MediaService, ProjectManagerService, ServiceBundle, StorageService,
+    TemplatesService, TierService, UserTemplatesLoader,
 };
 
 pub struct AppState {
@@ -25,6 +25,7 @@ pub struct AppState {
     #[allow(dead_code)]
     pub asr: Arc<dyn ASRService>,
     pub exporter: Arc<dyn ExportService>,
+    pub importer: Arc<dyn ImportService>,
     pub bibliography: Arc<dyn BibliographyService>,
     pub backup: Arc<dyn BackupService>,
     pub media: Arc<dyn MediaService>,
@@ -46,6 +47,7 @@ impl AppState {
             sync: bundle.sync,
             asr: bundle.asr,
             exporter: bundle.exporter,
+            importer: bundle.importer,
             bibliography: bundle.bibliography,
             backup: bundle.backup,
             media: bundle.media,

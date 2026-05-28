@@ -13,6 +13,7 @@ import type {
   DocumentStatus,
   ExportConfig,
   ExportFormat,
+  ImportFormat,
   MediaAsset,
   Project,
   ProjectInput,
@@ -107,6 +108,11 @@ export const ipc = {
   getExportConfig: (projectId: string) => invoke<ExportConfig>('get_export_config', { projectId }),
   setExportConfig: (params: { projectId: string; config: ExportConfig }) =>
     invoke<void>('set_export_config', params),
+
+  // Import
+  importProject: (params: { format: ImportFormat; bytes: number[]; filenameHint: string }) =>
+    invoke<Project>('import_project', params),
+  supportedImportFormats: () => invoke<ImportFormat[]>('supported_import_formats'),
 
   // Bibliography
   importBibliography: (params: { projectId: string; bibText: string }) =>

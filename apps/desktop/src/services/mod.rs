@@ -7,6 +7,7 @@ pub mod backup;
 pub mod bibliography;
 pub mod exporter;
 pub mod factory;
+pub mod importer;
 pub mod media;
 pub mod project_manager;
 mod retention_policy;
@@ -25,6 +26,9 @@ pub use exporter::{
     PageSize, SceneSeparator,
 };
 pub use factory::{ServiceBundle, ServiceFactory};
+pub use importer::{
+    ImportFormat, ImportNode, ImportService, ImportTree, LocalImporter, LocalMarkdownImporter,
+};
 pub use media::{LocalMediaService, MediaService, NoOpMedia};
 pub use project_manager::{LocalProjectManager, ProjectManagerService};
 pub use storage::{CitationUpsert, LocalStorageService, StorageService};
