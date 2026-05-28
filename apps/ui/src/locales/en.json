@@ -92,6 +92,11 @@
     "label": "Synopsis",
     "placeholder": "Short summary of this document (shown in corkboard and outliner)…"
   },
+  "viewMode": {
+    "editor": "Editor",
+    "corkboard": "Corkboard",
+    "outliner": "Outliner"
+  },
   "goal": {
     "documentLabel": "Document goal",
     "projectLabel": "Project goal",

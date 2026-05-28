@@ -11,7 +11,7 @@ import type { DocumentStatus, DocumentType } from '@draffity/shared-types';
 
 import { useProjectStore } from '@/stores/project';
 import { useDocumentStore, type ReorderOp } from '@/stores/document';
-import { useUiStore } from '@/stores/ui';
+import { useUiStore, type ProjectViewMode } from '@/stores/ui';
 import { useIpcError } from '@/composables/useIpcError';
 import { useAutoSave } from '@/composables/useAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -24,6 +24,7 @@ import ExportDialog from '@/components/ExportDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
+import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -37,9 +38,16 @@ const { run } = useIpcError();
 
 const focusMode = computed(() => uiStore.focusMode);
 const typewriterEnabled = computed(() => uiStore.typewriterMode);
+const viewMode = computed<ProjectViewMode>(() =>
+  project.value ? uiStore.getProjectView(project.value.id) : 'editor',
+);
 
 function toggleFocus() {
   uiStore.toggleFocusMode();
+}
+
+function changeViewMode(mode: ProjectViewMode) {
+  if (project.value) uiStore.setProjectView(project.value.id, mode);
 }
 
 function navigateDoc(delta: 1 | -1) {
@@ -224,6 +232,7 @@ onMounted(loadProject);
       />
       <h2 class="text-sm font-semibold truncate">{{ project.title }}</h2>
       <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
+      <ProjectViewToggle :model-value="viewMode" @update:model-value="changeViewMode" />
       <div class="flex items-center gap-2 min-w-[12rem] max-w-[20rem]">
         <GoalProgress
           :current="totalWordCount"

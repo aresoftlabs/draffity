@@ -92,6 +92,11 @@
     "label": "Sinopsis",
     "placeholder": "Resumen corto del documento (visible en corkboard y outliner)…"
   },
+  "viewMode": {
+    "editor": "Editor",
+    "corkboard": "Corcho",
+    "outliner": "Esquema"
+  },
   "goal": {
     "documentLabel": "Objetivo del documento",
     "projectLabel": "Objetivo del proyecto",

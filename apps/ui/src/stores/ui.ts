@@ -32,6 +32,24 @@ function saveNumber(key: string, value: number | null) {
   else localStorage.setItem(STORAGE_PREFIX + key, String(value));
 }
 
+function loadJson<T>(key: string, fallback: T): T {
+  if (typeof localStorage === 'undefined') return fallback;
+  const raw = localStorage.getItem(STORAGE_PREFIX + key);
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJson<T>(key: string, value: T) {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
+}
+
+export type ProjectViewMode = 'editor' | 'corkboard' | 'outliner';
+
 export const useUiStore = defineStore('ui', () => {
   const theme = ref<ThemeMode>(getStoredTheme());
   const binderCollapsed = ref(loadBool('binderCollapsed', false));
@@ -49,10 +67,15 @@ export const useUiStore = defineStore('ui', () => {
   const sessionGoal = ref<number | null>(loadNumber('sessionGoal'));
   const sessionStartTotal = ref<number | null>(null);
 
+  // View mode per project: Editor / Corkboard / Outliner. Keyed by
+  // projectId so each project remembers how the user left it.
+  const projectViewModes = ref<Record<string, ProjectViewMode>>(loadJson('projectViewModes', {}));
+
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
   watch(typewriterMode, (v) => saveBool('typewriterMode', v));
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
+  watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
 
   function setTheme(mode: ThemeMode) {
     theme.value = mode;
@@ -103,6 +126,15 @@ export const useUiStore = defineStore('ui', () => {
     sessionStartTotal.value = null;
   }
 
+  function getProjectView(projectId: string): ProjectViewMode {
+    return projectViewModes.value[projectId] ?? 'editor';
+  }
+
+  function setProjectView(projectId: string, mode: ProjectViewMode) {
+    // Re-assign so the deep watcher picks it up.
+    projectViewModes.value = { ...projectViewModes.value, [projectId]: mode };
+  }
+
   return {
     theme,
     binderCollapsed,
@@ -112,6 +144,7 @@ export const useUiStore = defineStore('ui', () => {
     pendingNewProject,
     sessionGoal,
     sessionStartTotal,
+    projectViewModes,
     setTheme,
     setLocale,
     toggleBinder,
@@ -123,5 +156,7 @@ export const useUiStore = defineStore('ui', () => {
     captureSessionStart,
     setSessionGoal,
     clearSession,
+    getProjectView,
+    setProjectView,
   };
 });
