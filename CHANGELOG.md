@@ -9,36 +9,145 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deferred to backlog futuro
 
-- **Research browser embebido + bookmarks + captura web** (S6-01..03).
-  Decisión consciente: la opción técnica entre `WebviewWindow`
+- **Research browser embebido + bookmarks + captura web** (S6-01..03 →
+  E-03). Decisión consciente: la opción técnica entre `WebviewWindow`
   embebido vs iframe sandbox no estaba investigada y el riesgo era
   alto. Queda en backlog para un sprint dedicado.
 
-### Deferred to v0.9
-
-- **Custom fonts** (S6-10, P2). Dropdown con fuentes del sistema
-  más upload de TTF/OTF guardado en una tabla `media`. Depende de
-  cómo resolvamos imágenes inline (S4-02), que también necesita
-  storage de blobs — los hacemos juntos.
-
 ### Deferred (arrastres de Sprint 5)
 
-- **`specta` para autogenerar tipos Rust↔TS** (S5-07). El payoff
-  llega cuando tengamos ~30+ types. Cuando aterrice también cierra
-  F1-12 del v1.
-- **Pool de conexiones SQLite** (S5-08+09). Contención hipotética
-  con un único usuario; sin benchmark que muestre cuello, es churn.
-  Cuando aparezca storage premium o sync remoto.
-- **Hot-swap de tier** (S5-10, P1). Sólo gana valor con un tier
-  premium real al que swapear.
+- **`specta` para autogenerar tipos Rust↔TS** (S5-07 → D-01). El
+  payoff llega cuando tengamos ~30+ types; Sprint D lo activa con
+  gate de CI.
+- **Pool de conexiones SQLite** (S5-08+09 → E-01). Contención
+  hipotética con un único usuario; sin benchmark que muestre cuello,
+  es churn. Cuando aparezca storage premium o sync remoto.
+- **Hot-swap de tier** (S5-10, P1 → E-02). Sólo gana valor con un
+  tier premium real al que swapear.
 
 ### Deferred (arrastres anteriores)
 
-- **Footnotes** (S4-03), **imágenes inline** (S4-02), **diff visual**
-  (S4-05), **MD/DOCX import** (S4-06/07), **round-trip tests** (S4-09).
-- **PDF export** (S1-02 originalmente Sprint 1).
-- **Stats históricas con gráfico de 30 días** (S2-08).
-- **Split editor** (S3-06).
+- **Diff visual entre snapshots** (S4-05 → C-04), **MD/DOCX import**
+  (S4-06/07 → C-01/02), **round-trip tests** (S4-09 → C-03).
+- **PDF export** (S1-02 → C-05).
+
+## [0.10.0-beta] — 2026-05-28
+
+Sprint B cerrado al 100% (5 historias). Primer sprint del backlog v3
+con foco en **features de editor** acumuladas como arrastres de
+Sprints 2-6 originales: imágenes inline, fuentes personalizadas,
+notas al pie, gráfico de hábito de escritura y editor partido. Toda
+nueva funcionalidad se asienta sobre el patrón premium-ready (trait +
+impl) consolidado en Sprint A.
+
+### Added — Imágenes inline (B-01, S4-02)
+
+- **Trait `MediaService` + `LocalMediaService` + `NoOpMedia`** con
+  storage de blobs en `<app_data>/media/<project>/<sha256>.<ext>`.
+  Dedupe por `(project_id, sha256)`: pegar la misma imagen dos veces
+  reusa un único archivo. Migración 010 con tabla `media(id,
+project_id, path_relative, mime, sha256, bytes, created_at)` +
+  cascada delete desde proyectos.
+- **Editor TipTap**: nodo `Image` con NodeView Vue que resuelve la
+  Blob URL desde el `useMediaStore` (cache + in-flight dedupe +
+  revoke en `reset()`). La HTML persistida nunca lleva `src` — solo
+  `data-media-id` —, así el documento es portable y resistente a
+  reinicio.
+- **Export**: pre-pass `MediaBundle` lazy-resuelto en el comando
+  `export_project`. Markdown emite `![alt](data:URI;base64,…)`; EPUB
+  agrega los bytes como recursos + reescribe `src`; DOCX acepta el
+  bundle pero queda con TODO explícito para emitir Pic (necesita
+  parsing de dimensiones PNG/JPEG).
+- **Tests**: 5 unit de `MediaBundle` + 7 de storage + 7 de servicio +
+  integración real round-trip de imagen pegada → export → bytes
+  decodificables en MD/EPUB.
+
+### Added — Stats UI con gráfico 30 días (B-04, S2-08)
+
+- **Migración 011** con tabla `daily_writing(date PK, words,
+sessions, updated_at)` que acumula deltas positivos de palabras
+  por día (las eliminaciones no restan — el chart mide progreso, no
+  net change) más conteo de sesiones de save.
+- **Domain helper** `count_words_in_html` (strip tags + tokens
+  whitespace) y servicio `record_daily_writing` / `list_recent_daily_writing`
+  con padding de días vacíos para que el chart siempre reciba
+  exactamente N entradas.
+- **Sparkline SVG puro** (`SparklineChart.vue`) sin librería externa
+  en Settings junto al panel de rachas. Tooltips por barra +
+  resumen "X palabras · Y días activos".
+- **Pipeline**: `update_document` captura word-count previo de la
+  doc, computa el delta tras el save (`saturating_sub` para no
+  contabilizar bordes negativos) y delega a
+  `record_daily_writing`. La persistencia es best-effort: un fallo
+  de stats nunca bloquea el save del documento.
+
+### Added — Footnotes con numeración automática (B-03, S4-03)
+
+- **Nodo TipTap** inline atómico que persiste el cuerpo como
+  atributo (`data-footnote-content`), así el HTML sigue siendo
+  autocontenido. Marker visible en el editor es un dagger
+  clickeable; al clickear dispatch `draffity:open-footnote` y
+  ProjectView abre el `FootnoteDialog` para insertar/editar/eliminar.
+- **Numeración a tiempo de export**: módulo
+  `services/exporter/footnotes.rs` con `collect_footnotes` que
+  recorre el HTML reemplazando cada `<sup data-footnote-content>`
+  por un marcador específico del formato (1-indexado por capítulo
+  en EPUB, por documento en Markdown) y devuelve las notas
+  ordenadas para emitir la sección al pie.
+- **Markdown**: `[^N]` inline + bloque `[^N]: contenido` al final del
+  capítulo. **EPUB**: `<a epub:type="noteref">` + `<aside
+epub:type="footnote">` con back-link `↩` por nota. **DOCX**:
+  emite footnote references nativos vía `docx-rs::Footnote`, así
+  Word renumera y maqueta al pie automáticamente.
+- **Toolbar**: botón "Insertar nota al pie" (`pi pi-asterisk`) +
+  aria-label.
+
+### Added — Custom fonts (B-02, S6-10)
+
+- **Picker en Settings** con dropdown agrupado: built-ins (Lora,
+  Inter, JetBrains Mono), fuentes del sistema más comunes
+  (Georgia, Garamond, Palatino, Helvetica, Verdana, Courier) y
+  fuentes personalizadas subidas por el usuario al proyecto activo.
+  Quick-toggle de 3 botones mantenido como atajo rápido.
+- **Upload TTF/OTF**: reutiliza el `MediaService` de B-01 (mime
+  `font/ttf` y `font/otf` ya soportados). El picker filtra por
+  `mime.startsWith('font/')` los media del proyecto activo.
+- **Aplicación runtime**: el editor expone `--editor-font-family`
+  como variable CSS; para fuentes custom se inyecta `@font-face`
+  con la Blob URL resuelta por `useMediaStore`. Al cambiar la
+  fuente, el editor intercambia el blob sin recargar el documento.
+- **Persistencia**: setting `editor.font_family` (CSS family string
+  libre) + `editor.font_custom_id` opcional. El ajuste legacy
+  `editor.font` (serif/sans/mono) migra al primer load.
+
+### Added — Split editor (B-05, S3-06)
+
+- **Toggle en cabecera de proyecto** (`pi pi-clone`) que envuelve
+  el editor primario en un Splitter horizontal junto a un
+  `SplitSecondaryPane`. El panel secundario incluye su propio
+  `Select` para elegir cualquier documento del proyecto (excepto el
+  primario) y se cierra desde dentro del panel.
+- **Autosave coordinado**: el panel primario sigue usando el
+  document store (selección compartida con binder e inspector), el
+  secundario hace fetch directo (`ipc.getDocument`) + save sin
+  tocar el estado del primario. Indicador "Saving" propio.
+- **Persistencia** por proyecto: `splitSecondaryIds` en `uiStore`
+  guarda el doc id del panel secundario para que cada proyecto
+  recuerde el último layout al volver.
+
+### Changed — Export signature
+
+- `ExportService::export` ahora acepta `&MediaBundle` después de
+  `&[CodexEntry]`. El comando `export_project` pre-resuelve el bundle
+  walking docs + llamando a `MediaService::read` antes de despachar
+  al renderer.
+
+### Fixed — Editor font realmente aplicado
+
+- El editor traía Lora hardcodeado en CSS, ignorando el setting
+  `editor.font` que la UI guardaba. Sprint B lo conecta vía variable
+  CSS — los presets viejos siguen funcionando, pero ahora sí
+  cambian la tipografía visible.
 
 ## [0.9.0-beta] — 2026-05-28
 
