@@ -30,10 +30,22 @@ Draffity gratuito permite **un proyecto activo** a la vez. Los demás quedan **a
 
 - Tres paneles: **Binder** (estructura) · **Editor** (texto) · **Inspector** (metadatos + versiones).
 - Auto-guardado tras dejar de escribir (configurable en Ajustes, por defecto 500 ms).
+- **Binder con drag&drop**: arrastra capítulos y escenas para reordenarlos o moverlos entre carpetas. Los cambios se guardan al soltar.
+- **Modo enfoque**: oculta el binder y el inspector para escribir sin distracciones. Botón en la cabecera o `F11`.
 - Atajos:
   - `Ctrl+S` — forzar guardado inmediato
   - `Ctrl+N` — nuevo capítulo
   - `Ctrl+B` / `Ctrl+I` / `Ctrl+U` — formato (negrita / cursiva / subrayado)
+  - `Ctrl+F` — buscar en el documento actual
+  - `Ctrl+H` — buscar y reemplazar en el documento actual
+  - `Ctrl+Shift+F` — buscar en todo el proyecto (full-text)
+  - `F11` — modo enfoque on/off
+
+## Búsqueda
+
+- **En el documento (Ctrl+F)**: barra encima del editor con campo de búsqueda. `Enter` salta al siguiente match, `Shift+Enter` al anterior, `Esc` cierra.
+- **Reemplazo (Ctrl+H)**: la misma barra con campo extra "Reemplazar con…" más los botones `Reemplazar` y `Reemplazar todo`.
+- **Cross-proyecto (Ctrl+Shift+F)**: diálogo modal que busca en títulos y contenido de todos los documentos del proyecto activo, con snippets resaltados. Click en un resultado salta al documento.
 
 ## Versiones (snapshots)
 

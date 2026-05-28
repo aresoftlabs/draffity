@@ -9,7 +9,9 @@ Draffity es una aplicación desktop ligera y rápida para escritores que trabaja
 
 ## Estado
 
-**Fase 0 — Foundations** (scaffolding inicial). Ver [`backlog.md`](./backlog.md) para el plan completo.
+**v0.2.0-beta — Sprint 1 cerrado.** Drag&drop en binder, búsqueda full-text por proyecto (FTS5), find & replace en documento, modo enfoque (F11), onboarding integrado con creación de proyecto. Ver [`backlog.md`](./backlog.md) y `CHANGELOG.md` para el detalle.
+
+Guía de usuario: [ES](./docs/USER-GUIDE.md) · [EN](./docs/USER-GUIDE.en.md).
 
 ## Requisitos
 
@@ -60,7 +62,7 @@ Ver [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). Patrones clave:
 
 - **Service traits Rust** (`StorageService`, `ExportService`, `AIService`, `CloudSyncService`, `ASRService`) con implementaciones NoOp en MVP — premium se añade como nuevas implementaciones, sin tocar el core.
 - **Capability gates centralizados** en `apps/desktop/src/capabilities.rs`. La UI consulta vía `useCapability()`.
-- **SQLite por proyecto** con migraciones versionadas. Tablas premium reservadas para migraciones futuras.
+- **SQLite canónica única** (`<app_data>/draffity.db`) con migraciones versionadas. Tablas premium reservadas para migraciones futuras. FTS5 sobre `documents` para búsqueda cross-proyecto. Razonamiento detallado en [ADR 0002](./docs/ADR/0002-sqlite-canonico-vs-por-proyecto.md).
 - **Plantillas como plugins** descriptas en JSON, descubiertas en `packages/templates/`.
 
 ## Modelo del producto
