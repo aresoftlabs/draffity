@@ -21,9 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-beta] — 2026-05-28
 
 Sprint 2 cerrado: productividad del escritor. La app pasa de "editor
-
-- binder" a un entorno de trabajo con pipeline de status, tags,
-  objetivos de palabras y temporizador Pomodoro.
+con binder al lado" a un entorno de trabajo con pipeline de status,
+tags, objetivos de palabras y temporizador Pomodoro.
 
 ### Added — Sprint 2
 
