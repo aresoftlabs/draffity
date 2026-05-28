@@ -49,6 +49,15 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
             _ => DocumentStatus::Draft,
         })
         .unwrap_or(DocumentStatus::Draft);
+    // `tags_json` is a JSON array string provided by a correlated subquery
+    // in the SELECT. Queries that don't include it (e.g. legacy SELECTs)
+    // get an empty tag list instead of failing.
+    let tags = r
+        .get::<_, Option<String>>("tags_json")
+        .ok()
+        .flatten()
+        .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
+        .unwrap_or_default();
     Ok(DocNode {
         id: r.get("id")?,
         project_id: r.get("project_id")?,
@@ -58,9 +67,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         content: r.get("content")?,
         position: r.get("position")?,
         status,
-        // Tags live in `document_tags`; populated by storage::documents when
-        // needed. Mapper-level default is empty.
-        tags: Vec::new(),
+        tags,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
     })

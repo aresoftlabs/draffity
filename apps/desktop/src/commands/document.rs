@@ -88,6 +88,23 @@ pub fn set_document_status(
 }
 
 #[tauri::command]
+pub fn set_document_tags(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    id: String,
+    tags: Vec<String>,
+) -> CmdResult<DocNode> {
+    let doc = state.storage.set_document_tags(&id, &tags)?;
+    let _ = app.emit(events::DOCUMENT_SAVED, &doc);
+    Ok(doc)
+}
+
+#[tauri::command]
+pub fn list_project_tags(state: State<'_, AppState>, project_id: String) -> CmdResult<Vec<String>> {
+    state.storage.list_project_tags(&project_id)
+}
+
+#[tauri::command]
 pub fn delete_document(state: State<'_, AppState>, app: AppHandle, id: String) -> CmdResult<()> {
     state.storage.delete_document(&id)?;
     let _ = app.emit(events::DOCUMENT_DELETED, &id);

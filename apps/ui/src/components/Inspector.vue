@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Select from 'primevue/select';
+import Chips from 'primevue/chips';
 import type { DocNode, DocumentStatus } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
 
@@ -16,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   snapshotRestored: [];
   statusChange: [status: DocumentStatus];
+  tagsChange: [tags: string[]];
 }>();
 
 const { t, d, locale } = useI18n();
@@ -42,6 +44,21 @@ function onStatusChange(value: DocumentStatus) {
   if (!props.doc || props.readOnly) return;
   if (value === props.doc.status) return;
   emit('statusChange', value);
+}
+
+function onTagsChange(next: string[]) {
+  if (!props.doc || props.readOnly) return;
+  // Normalise: trim + dedupe + drop empties so the UI mirrors what the
+  // backend stores. Order is preserved.
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+  for (const raw of next) {
+    const t = String(raw).trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    cleaned.push(t);
+  }
+  emit('tagsChange', cleaned);
 }
 </script>
 
@@ -109,6 +126,20 @@ function onStatusChange(value: DocumentStatus) {
             <dd class="font-mono">{{ sessionWordCount }}</dd>
           </div>
         </dl>
+      </section>
+
+      <section>
+        <h4 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2">
+          {{ t('tags.label') }}
+        </h4>
+        <Chips
+          :model-value="doc.tags"
+          :placeholder="t('tags.placeholder')"
+          :disabled="readOnly"
+          separator=","
+          class="w-full"
+          @update:model-value="onTagsChange"
+        />
       </section>
 
       <SnapshotsList

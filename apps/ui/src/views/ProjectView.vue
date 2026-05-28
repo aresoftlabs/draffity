@@ -144,6 +144,11 @@ async function onStatusChange(status: DocumentStatus) {
   await run(t('errors.saveDocument'), () => docStore.setStatus(selected.value!.id, status));
 }
 
+async function onTagsChange(tags: string[]) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setTags(selected.value!.id, tags));
+}
+
 useShortcuts({
   'ctrl+s': () => {
     void auto.flush();
@@ -278,6 +283,7 @@ onMounted(loadProject);
           :read-only="readOnly"
           @snapshot-restored="onSnapshotRestored"
           @status-change="onStatusChange"
+          @tags-change="onTagsChange"
         />
       </SplitterPanel>
     </Splitter>

@@ -83,6 +83,11 @@
     "final": "Final",
     "trashed": "Descartado"
   },
+  "tags": {
+    "label": "Etiquetas",
+    "placeholder": "Añadir etiqueta y pulsar Enter…",
+    "filterPlaceholder": "Filtrar por etiqueta"
+  },
   "save": {
     "idle": "",
     "saving": "Guardando…",

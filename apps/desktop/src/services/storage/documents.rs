@@ -9,8 +9,11 @@ use super::row_mappers::row_to_document;
 
 /// Column list for `SELECT` against `documents`. Kept in one place so adding
 /// columns (e.g. `goal_words` in the goals sprint) is a single-line change.
-const COLS: &str =
-    "id, project_id, parent_id, title, doc_type, content, position, status, created_at, updated_at";
+/// The trailing correlated subquery returns the document's tag set as a JSON
+/// array; an empty array (not NULL) when the document has no tags.
+const COLS: &str = "id, project_id, parent_id, title, doc_type, content, position, status, \
+     created_at, updated_at, \
+     (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json";
 
 pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
     input.validate()?;
@@ -135,6 +138,68 @@ pub(super) fn set_status(
     let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
     let doc = conn.query_row(&sql, params![id], row_to_document)?;
     Ok(doc)
+}
+
+/// Atomically replace the tag set of a document. Empty / blank tags are
+/// silently dropped; duplicates are deduped (the PK enforces this anyway).
+/// Tags are stored as case-sensitive strings.
+pub(super) fn set_tags(conn: &mut Connection, id: &str, tags: &[String]) -> AppResult<DocNode> {
+    // Verify the document exists before mutating.
+    let exists: Option<i64> = conn
+        .query_row("SELECT 1 FROM documents WHERE id=?1", params![id], |r| {
+            r.get(0)
+        })
+        .optional()?;
+    if exists.is_none() {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+
+    let tx = conn.transaction()?;
+    tx.execute(
+        "DELETE FROM document_tags WHERE document_id=?1",
+        params![id],
+    )?;
+
+    let mut seen: std::collections::HashSet<&str> = std::collections::HashSet::new();
+    for raw in tags {
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if !seen.insert(trimmed) {
+            continue;
+        }
+        tx.execute(
+            "INSERT INTO document_tags(document_id, tag) VALUES (?1, ?2)",
+            params![id, trimmed],
+        )?;
+    }
+    let now = now_ms();
+    tx.execute(
+        "UPDATE documents SET updated_at=?2 WHERE id=?1",
+        params![id, now],
+    )?;
+    tx.commit()?;
+
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
+    let doc = conn.query_row(&sql, params![id], row_to_document)?;
+    Ok(doc)
+}
+
+/// Distinct tags in use across all documents of a project, in alphabetical
+/// order. Empty when the project has no tagged documents.
+pub(super) fn list_project_tags(conn: &Connection, project_id: &str) -> AppResult<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT t.tag
+         FROM document_tags t
+         JOIN documents d ON d.id = t.document_id
+         WHERE d.project_id = ?1
+         ORDER BY t.tag COLLATE NOCASE ASC",
+    )?;
+    let rows = stmt
+        .query_map(params![project_id], |r| r.get::<_, String>(0))?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(rows)
 }
 
 pub(super) fn move_to(
@@ -365,6 +430,82 @@ mod tests {
             .set_document_status("ghost", DocumentStatus::Final)
             .unwrap_err();
         assert!(matches!(err, AppError::NotFound(_)));
+    }
+
+    #[test]
+    fn set_document_tags_replaces_existing_set() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = make_chapter(&s, &p.id, "A");
+
+        let after = s
+            .set_document_tags(
+                &d,
+                &[
+                    "fantasy".into(),
+                    "draft".into(),
+                    "  ".into(),      // dropped (blank)
+                    "fantasy".into(), // dropped (duplicate)
+                ],
+            )
+            .unwrap();
+        let mut tags = after.tags.clone();
+        tags.sort();
+        assert_eq!(tags, vec!["draft".to_string(), "fantasy".to_string()]);
+
+        // Replace with a different set — old tags are gone.
+        let after2 = s.set_document_tags(&d, &["mystery".into()]).unwrap();
+        assert_eq!(after2.tags, vec!["mystery".to_string()]);
+    }
+
+    #[test]
+    fn set_document_tags_missing_id_is_not_found() {
+        let s = fresh();
+        let err = s.set_document_tags("ghost", &["x".into()]).unwrap_err();
+        assert!(matches!(err, AppError::NotFound(_)));
+    }
+
+    #[test]
+    fn list_project_tags_returns_sorted_distinct() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d1 = make_chapter(&s, &p.id, "A");
+        let d2 = make_chapter(&s, &p.id, "B");
+        s.set_document_tags(&d1, &["fantasy".into(), "epic".into()])
+            .unwrap();
+        s.set_document_tags(&d2, &["fantasy".into(), "draft".into()])
+            .unwrap();
+
+        let tags = s.list_project_tags(&p.id).unwrap();
+        assert_eq!(tags, vec!["draft", "epic", "fantasy"]);
+    }
+
+    #[test]
+    fn deleting_document_cascades_its_tags() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = make_chapter(&s, &p.id, "A");
+        s.set_document_tags(&d, &["x".into(), "y".into()]).unwrap();
+        s.delete_document(&d).unwrap();
+        assert!(s.list_project_tags(&p.id).unwrap().is_empty());
     }
 
     #[test]

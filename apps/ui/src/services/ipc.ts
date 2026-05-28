@@ -48,6 +48,9 @@ export const ipc = {
   }) => invoke<void>('reorder_documents', params),
   setDocumentStatus: (params: { id: string; status: DocumentStatus }) =>
     invoke<DocNode>('set_document_status', params),
+  setDocumentTags: (params: { id: string; tags: string[] }) =>
+    invoke<DocNode>('set_document_tags', params),
+  listProjectTags: (projectId: string) => invoke<string[]>('list_project_tags', { projectId }),
   deleteDocument: (id: string) => invoke<void>('delete_document', { id }),
 
   // Snapshots

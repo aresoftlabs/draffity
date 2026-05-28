@@ -5,6 +5,7 @@ import Tree, { type TreeNodeDropEvent } from 'primevue/tree';
 import type { TreeNode } from 'primevue/treenode';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
+import Select from 'primevue/select';
 import { ref } from 'vue';
 import type { DocNode, DocumentStatus, DocumentType } from '@draffity/shared-types';
 import type { ReorderOp } from '@/stores/document';
@@ -22,11 +23,46 @@ const emit = defineEmits<{
   reorder: [ops: ReorderOp[]];
 }>();
 
+const tagFilter = ref<string | null>(null);
+
+const availableTags = computed(() => {
+  const set = new Set<string>();
+  for (const d of props.documents) {
+    for (const t of d.tags) set.add(t);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+});
+
+/** Docs that pass the current tag filter. When a tag is selected we also
+ * keep its ancestors so the tree can render the path (folders without the
+ * tag stay visible as scaffolding). */
+const visibleIds = computed(() => {
+  if (!tagFilter.value) return null;
+  const direct = new Set<string>();
+  for (const d of props.documents) {
+    if (d.tags.includes(tagFilter.value!)) direct.add(d.id);
+  }
+  // Walk ancestors of each matching doc and add them.
+  const byId = new Map(props.documents.map((d) => [d.id, d] as const));
+  const out = new Set<string>(direct);
+  for (const id of direct) {
+    let cursor = byId.get(id)?.parentId ?? null;
+    while (cursor) {
+      if (out.has(cursor)) break;
+      out.add(cursor);
+      cursor = byId.get(cursor)?.parentId ?? null;
+    }
+  }
+  return out;
+});
+
 const { t } = useI18n();
 
 function buildNodes(parentId: string | null): TreeNode[] {
+  const allowed = visibleIds.value;
   return props.documents
     .filter((d) => (d.parentId ?? null) === parentId)
+    .filter((d) => allowed === null || allowed.has(d.id))
     .sort((a, b) => a.position - b.position)
     .map((d) => {
       const children = buildNodes(d.id);
@@ -184,6 +220,20 @@ const newMenuItems = computed(() => [
         <Menu ref="newMenu" :model="newMenuItems" popup />
       </div>
     </header>
+
+    <div
+      v-if="availableTags.length > 0"
+      class="px-3 py-2 border-b border-surface-200 dark:border-surface-700"
+    >
+      <Select
+        v-model="tagFilter"
+        :options="availableTags"
+        :placeholder="t('tags.filterPlaceholder')"
+        :show-clear="true"
+        class="w-full !text-xs"
+        size="small"
+      />
+    </div>
 
     <div v-if="documents.length === 0" class="p-4 text-sm opacity-60">
       {{ t('project.noDocuments') }}

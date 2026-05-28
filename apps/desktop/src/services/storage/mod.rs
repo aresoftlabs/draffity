@@ -77,6 +77,10 @@ pub trait StorageService: Send + Sync {
     /// Update the writing-pipeline `status` of a document and return the
     /// refreshed `DocNode`.
     fn set_document_status(&self, id: &str, status: DocumentStatus) -> AppResult<DocNode>;
+    /// Replace the entire tag set of a document atomically.
+    fn set_document_tags(&self, id: &str, tags: &[String]) -> AppResult<DocNode>;
+    /// Distinct tags in use across all documents of a project (sorted).
+    fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>>;
 
     // Snapshots
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot>;
@@ -265,6 +269,14 @@ impl StorageService for LocalStorageService {
 
     fn set_document_status(&self, id: &str, status: DocumentStatus) -> AppResult<DocNode> {
         documents::set_status(&self.conn.lock().unwrap(), id, status)
+    }
+
+    fn set_document_tags(&self, id: &str, tags: &[String]) -> AppResult<DocNode> {
+        documents::set_tags(&mut self.conn.lock().unwrap(), id, tags)
+    }
+
+    fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>> {
+        documents::list_project_tags(&self.conn.lock().unwrap(), project_id)
     }
 
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot> {
