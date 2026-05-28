@@ -7,16 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Deferred to v0.4
+### Deferred to v0.5
 
-- **PDF export** (S1-02 del Sprint 1). Sigue pendiente: la integración
-  con `WebviewWindow::print()` necesita un preview en ventana propia
-  con auto-print que en Tauri 2 requiere asset protocol + cleanup
-  cuidadoso. Bloque dedicado en Sprint 3.
-- **Stats históricas con gráfico de 30 días** (S2-08 del Sprint 2).
-  Bloqueado por decisión de librería de charts (Chart.js vs ECharts
-  vs custom SVG). El backend de `daily_writing` y el endpoint llegan
-  primero; el gráfico, después.
+- **PDF export** (S1-02 originalmente Sprint 1). Sigue pendiente.
+  Próximo sprint con bloque dedicado.
+- **Stats históricas con gráfico de 30 días** (S2-08 originalmente
+  Sprint 2). Pendiente la decisión de librería de charts.
+- **Split editor** (S3-06 originalmente Sprint 3). Implementar dos
+  TipTap instances independientes con autosaves coordinados requiere
+  cuidado con el ciclo de vida de cada editor y la inevitable
+  segunda selección — merece su sesión dedicada.
+
+## [0.4.0-beta] — 2026-05-29
+
+Sprint 3 cerrado: vistas tipo Scrivener. La app deja de ser solo
+editor + binder y suma corkboard (cards con sinopsis), outliner
+(tabla edit-in-place) y scrivenings (concat read-only de folder).
+
+### Added — Sprint 3
+
+- **Synopsis como campo de primera clase** (S3-01): migración 005
+  agrega `synopsis TEXT` nullable a documents. El template_seed
+  ahora lo popula ahí (antes lo metía en content como `<p>...</p>`).
+  Inspector tiene Textarea auto-resize con debounce 400ms.
+  IPC `set_document_synopsis` normaliza trim + empty→null.
+- **Toggle de vista Editor/Corkboard/Outliner** (S3-02): ui store
+  `projectViewModes` persiste el modo por proyecto en localStorage.
+  `ProjectViewToggle.vue` SelectButton con 3 iconos en el header.
+- **Composable useDocumentSummary** (S3-05): derivaciones
+  compartidas (wordCount, progress, hasSynopsis, isFolder, etc.)
+  para que card y row no dupliquen lógica.
+- **CorkboardView** (S3-03): grid responsive de cards con title +
+  synopsis (line-clamp 4) + word count + progress + tags + status
+  dot. Click selecciona el doc. Sin drag-reorder en esta entrega —
+  los usuarios reordenan vía drag&drop del binder (S1-01 sigue
+  vigente). Drag-reorder en corkboard llega como follow-up cuando
+  evaluemos sortablejs vs alternativa.
+- **OutlinerView** (S3-04): DataTable PrimeVue con 5 columnas
+  (title, synopsis, words+goal, status select, tags). Title y
+  synopsis editan in-place (InputText / Textarea). Status edita
+  inline con Select. Row click selecciona.
+- **Scrivenings mode** (S3-07): cuando el documento seleccionado es
+  folder, el panel central muestra `ScriveningsView` con DFS
+  pre-order de descendientes concatenados read-only (folders como
+  sub-headings, leafs como secciones con HR separador). Sale del
+  storage HTML de TipTap vía v-html (fuente confiable).
+
+### Added — Tests
+
+- **S3-08 E2E**: spec `project-views.spec.ts` verifica que el toggle
+  Editor → Corkboard → Outliner renderiza los componentes
+  correctos y que la lista de documentos persiste cross-vista.
+  Selectores aria-label tolerantes a locale ES/EN.
+
+### Architecture / migrations
+
+- Migración 005 aditiva: `ALTER TABLE documents ADD COLUMN synopsis
+TEXT`. Documents pre-existentes se quedan con content
+  HTML-escapado (no se migra de vuelta) — solo afecta a templates
+  nuevos. row_to_document tolera la columna ausente con fallback.
+- `useDocumentSummary` es el patrón canónico para nuevas vistas
+  derivadas: composable que toma `Ref<DocNode|null>` y expone
+  computeds.
+
+### Tests
+
+- Rust: 87 verdes (85 previos + 2 nuevos: synopsis round-trip y
+  seed test actualizado).
+- Vitest: 30 verdes (sin cambio).
+- Playwright: 3 specs (dashboard, onboarding, project-views).
 
 ## [0.3.0-beta] — 2026-05-28
 
@@ -225,7 +284,8 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.3.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.4.0-beta...HEAD
+[0.4.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.4.0-beta
 [0.3.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.3.0-beta
 [0.2.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.2.0-beta
 [0.1.0-alpha]: https://github.com/OWNER/draffity/releases/tag/v0.1.0-alpha
