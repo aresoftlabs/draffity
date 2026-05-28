@@ -27,6 +27,21 @@
 - **`apps/desktop/src/capabilities.rs`** — única fuente de verdad de feature gates.
 - **`apps/ui/src/composables/useCapability.ts`** — única forma en que la UI consulta capabilities.
 
+## Cobertura de tests
+
+La cobertura **no es gating** en CI todavía (llega en Sprint 8 del backlog v2), pero se publica para tracking.
+
+- **Rust** (`domain` + `services`): requiere `cargo-llvm-cov` (`cargo install cargo-llvm-cov`).
+  - HTML report local: `pnpm coverage:rs` → abrir `apps/desktop/target/llvm-cov/html/index.html`
+  - Resumen en consola: `pnpm coverage:rs:summary`
+- **TypeScript** (`composables` + `stores`): `pnpm coverage:ts`
+
+Objetivos (target Sprint 8): Rust ≥80% en `domain`+`services`, TS ≥70% en `composables`+`stores`.
+
+## Architecture Decision Records
+
+Decisiones arquitectónicas importantes van en `docs/ADR/`. Usar la plantilla [`docs/ADR/0000-template.md`](./docs/ADR/0000-template.md). Ver criterios de "cuándo escribir un ADR" en [`docs/ADR/README.md`](./docs/ADR/README.md).
+
 ## Issues
 
-Etiqueta tus issues con `phase-0`...`phase-5`, `bug`, `enhancement`, `premium-ready` (cuando toca abstracciones que premium reutilizará).
+Etiqueta tus issues con `sprint-0`...`sprint-8`, `bug`, `enhancement`, `premium-ready` (cuando toca abstracciones que premium reutilizará), `arch` (cuando toca límites de módulos).

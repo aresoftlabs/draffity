@@ -13,16 +13,16 @@ use app::services::{
 fn build() -> ProjectManager {
     let dir = tempdir();
     let path = dir.join("draffity.db");
-    let storage = LocalStorageService::open(&path).unwrap();
-    storage.migrate().unwrap();
-    let templates = BuiltInTemplates::load().unwrap();
+    let storage = LocalStorageService::open(&path).expect("open tempdir SQLite");
+    storage.migrate().expect("apply migrations on fresh DB");
+    let templates = BuiltInTemplates::load().expect("load built-in templates from embedded JSON");
     ProjectManager::new(Arc::new(storage), Arc::new(FreeTier), Arc::new(templates))
 }
 
 fn tempdir() -> std::path::PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("draffity-test-{}", uuid_like()));
-    std::fs::create_dir_all(&p).unwrap();
+    std::fs::create_dir_all(&p).expect("create tempdir for integration test");
     p
 }
 

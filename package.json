@@ -23,6 +23,9 @@
     "fmt": "prettier --write . && cargo fmt --manifest-path apps/desktop/Cargo.toml",
     "fmt:check": "prettier --check . && cargo fmt --manifest-path apps/desktop/Cargo.toml -- --check",
     "typecheck": "pnpm --filter @draffity/ui typecheck",
+    "coverage:rs": "cargo llvm-cov --manifest-path apps/desktop/Cargo.toml --all --html",
+    "coverage:rs:summary": "cargo llvm-cov --manifest-path apps/desktop/Cargo.toml --all --summary-only",
+    "coverage:ts": "pnpm --filter @draffity/ui test -- --coverage",
     "prepare": "husky"
   },
   "devDependencies": {

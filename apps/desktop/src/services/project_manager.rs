@@ -165,8 +165,9 @@ mod tests {
     }
 
     fn pm(tpl: StubTemplates) -> ProjectManager {
-        let storage = LocalStorageService::open_in_memory().unwrap();
-        storage.migrate().unwrap();
+        let storage =
+            LocalStorageService::open_in_memory().expect("in-memory SQLite should always open");
+        storage.migrate().expect("fresh DB migrate should succeed");
         ProjectManager::new(Arc::new(storage), Arc::new(FreeTier), Arc::new(tpl))
     }
 

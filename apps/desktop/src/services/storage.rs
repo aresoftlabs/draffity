@@ -787,8 +787,8 @@ mod tests {
     use crate::domain::TemplateNode;
 
     fn fresh() -> LocalStorageService {
-        let s = LocalStorageService::open_in_memory().unwrap();
-        s.migrate().unwrap();
+        let s = LocalStorageService::open_in_memory().expect("in-memory SQLite should always open");
+        s.migrate().expect("fresh DB migrate should succeed");
         s
     }
 
