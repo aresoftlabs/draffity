@@ -12,6 +12,7 @@ import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Citation } from './extensions/citation';
 import { CodexRef } from './extensions/codex-ref';
+import { Image } from './extensions/image';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 
 const props = withDefaults(
@@ -69,6 +70,9 @@ const editor = useEditor({
     // Inline codex cross-references `[[Name]]` resolved to an entry id.
     // Clicking dispatches `draffity:open-codex` on `window`.
     CodexRef,
+    // Images stored as `<img data-media-id="…">` with a Vue NodeView that
+    // resolves a Blob URL from the media store at render time.
+    Image,
   ],
   editorProps: {
     attributes: {

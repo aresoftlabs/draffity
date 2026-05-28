@@ -178,6 +178,7 @@
     "tableDelete": "Eliminar tabla",
     "insertCitation": "Insertar cita",
     "insertCodexRef": "Insertar referencia al codex",
+    "insertImage": "Insertar imagen…",
     "undo": "Deshacer",
     "redo": "Rehacer"
   },
@@ -399,6 +400,12 @@
     "exportProject": "No se pudo exportar el proyecto",
     "loadSnapshots": "No se pudieron cargar las versiones",
     "createSnapshot": "No se pudo guardar la versión",
-    "restoreSnapshot": "No se pudo restaurar la versión"
+    "restoreSnapshot": "No se pudo restaurar la versión",
+    "uploadImage": "No se pudo subir la imagen"
+  },
+  "editor": {
+    "image": {
+      "missing": "Imagen no disponible"
+    }
   }
 }

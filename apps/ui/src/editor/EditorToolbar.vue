@@ -12,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'open-citation-picker': [];
   'open-codex-picker': [];
+  'insert-image': [];
 }>();
 
 const { t } = useI18n();
@@ -230,6 +231,15 @@ const isInTable = computed(() => isActive('table'));
       severity="secondary"
       :disabled="!isReady"
       @click="emit('open-codex-picker')"
+    />
+    <Button
+      v-tooltip.bottom="t('toolbar.insertImage')"
+      :aria-label="t('toolbar.insertImage')"
+      icon="pi pi-image"
+      text
+      severity="secondary"
+      :disabled="!isReady"
+      @click="emit('insert-image')"
     />
 
     <span class="flex-1" aria-hidden="true" />

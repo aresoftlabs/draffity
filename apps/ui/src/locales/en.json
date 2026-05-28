@@ -178,6 +178,7 @@
     "tableDelete": "Delete table",
     "insertCitation": "Insert citation",
     "insertCodexRef": "Insert codex reference",
+    "insertImage": "Insert image…",
     "undo": "Undo",
     "redo": "Redo"
   },
@@ -399,6 +400,12 @@
     "exportProject": "Failed to export project",
     "loadSnapshots": "Failed to load versions",
     "createSnapshot": "Failed to save version",
-    "restoreSnapshot": "Failed to restore version"
+    "restoreSnapshot": "Failed to restore version",
+    "uploadImage": "Failed to upload image"
+  },
+  "editor": {
+    "image": {
+      "missing": "Image unavailable"
+    }
   }
 }

@@ -7,6 +7,8 @@ import Splitter from 'primevue/splitter';
 import SplitterPanel from 'primevue/splitterpanel';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
+import { open } from '@tauri-apps/plugin-dialog';
+import { readFile } from '@tauri-apps/plugin-fs';
 import type { DocumentStatus, DocumentType } from '@draffity/shared-types';
 
 import { useProjectStore } from '@/stores/project';
@@ -28,6 +30,8 @@ import SaveAsTemplateDialog from '@/components/SaveAsTemplateDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import { CODEX_REF_EVENT, type CodexRefOpenDetail } from '@/editor/extensions/codex-ref';
 import { useCodexStore } from '@/stores/codex';
+import { useMediaStore } from '@/stores/media';
+import { ipc } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
@@ -138,9 +142,12 @@ watch(selected, () => {
   void auto.flush().then(syncEditorFromSelection);
 });
 
+const mediaStore = useMediaStore();
+
 watch(projectId, async (next, prev) => {
   if (next !== prev) {
     docStore.reset();
+    mediaStore.reset();
     await loadProject();
   }
 });
@@ -164,6 +171,51 @@ function onPickCodexRef(payload: { id: string; name: string }) {
   const ed = editor.value;
   if (!ed) return;
   ed.chain().focus().insertCodexRef({ entryId: payload.id, entryName: payload.name }).run();
+}
+
+/** Opens the OS file picker, reads the picked file, uploads it via the
+ *  media service, and inserts an `<img data-media-id="…">` node. The
+ *  NodeView resolves a Blob URL for display. */
+async function onInsertImage() {
+  if (!project.value || !editor.value) return;
+  const picked = await open({
+    multiple: false,
+    directory: false,
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] }],
+    title: t('toolbar.insertImage'),
+  });
+  if (typeof picked !== 'string') return;
+  const bytes = await readFile(picked);
+  const mime = guessMimeFromPath(picked);
+  const asset = await run(t('errors.uploadImage'), () =>
+    ipc.uploadMedia({ projectId: project.value!.id, mime, bytes: Array.from(bytes) }),
+  );
+  if (!asset) return;
+  const alt =
+    picked
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/\.[^.]+$/, '') ?? '';
+  editor.value.chain().focus().insertImage({ mediaId: asset.id, alt }).run();
+}
+
+function guessMimeFromPath(path: string): string {
+  const ext = path.toLowerCase().split('.').pop();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'svg':
+      return 'image/svg+xml';
+    default:
+      return 'application/octet-stream';
+  }
 }
 
 /** Cross-ref click from the editor: switch to the codex view and ask the
@@ -417,6 +469,7 @@ onBeforeUnmount(() => {
             :disabled="readOnly"
             @open-citation-picker="showCitationPicker = true"
             @open-codex-picker="showCodexPicker = true"
+            @insert-image="onInsertImage"
           />
           <FindReplaceBar
             v-if="selected?.docType !== 'folder'"
