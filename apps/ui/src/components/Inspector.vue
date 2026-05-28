@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Select from 'primevue/select';
 import Chips from 'primevue/chips';
+import Textarea from 'primevue/textarea';
 import type { DocNode, DocumentStatus } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
@@ -20,6 +21,7 @@ const emit = defineEmits<{
   statusChange: [status: DocumentStatus];
   tagsChange: [tags: string[]];
   goalChange: [goal: number | null];
+  synopsisChange: [synopsis: string | null];
 }>();
 
 const { t, d, locale } = useI18n();
@@ -61,6 +63,17 @@ function onTagsChange(next: string[]) {
     cleaned.push(t);
   }
   emit('tagsChange', cleaned);
+}
+
+let synopsisDebounce: ReturnType<typeof setTimeout> | null = null;
+function onSynopsisInput(v: string) {
+  if (!props.doc || props.readOnly) return;
+  if (synopsisDebounce) clearTimeout(synopsisDebounce);
+  // Debounce so we don't fire an IPC roundtrip on every keystroke.
+  synopsisDebounce = setTimeout(() => {
+    const trimmed = v.trim();
+    emit('synopsisChange', trimmed.length === 0 ? null : trimmed);
+  }, 400);
 }
 </script>
 
@@ -111,6 +124,21 @@ function onTagsChange(next: string[]) {
             <dd>{{ formatDate(doc.updatedAt) }}</dd>
           </div>
         </dl>
+      </section>
+
+      <section>
+        <h4 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2">
+          {{ t('synopsis.label') }}
+        </h4>
+        <Textarea
+          :model-value="doc.synopsis ?? ''"
+          :placeholder="t('synopsis.placeholder')"
+          :disabled="readOnly"
+          rows="3"
+          auto-resize
+          class="w-full !text-sm"
+          @update:model-value="onSynopsisInput"
+        />
       </section>
 
       <section>

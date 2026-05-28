@@ -34,6 +34,9 @@ export interface DocNode {
   title: string;
   docType: DocumentType;
   content?: string | null;
+  /** Short description surfaced in Corkboard / Outliner views. Independent
+   *  of `content`. `null` means no synopsis. */
+  synopsis?: string | null;
   position: number;
   status: DocumentStatus;
   tags: string[];

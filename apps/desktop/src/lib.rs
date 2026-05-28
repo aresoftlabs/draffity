@@ -65,6 +65,7 @@ pub fn run() {
             commands::set_document_tags,
             commands::list_project_tags,
             commands::set_document_goal,
+            commands::set_document_synopsis,
             commands::delete_document,
             commands::create_snapshot,
             commands::list_snapshots,

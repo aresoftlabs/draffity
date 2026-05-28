@@ -16,6 +16,7 @@ function makeDoc(over: Partial<DocNode> = {}): DocNode {
     title: over.title ?? 'Doc',
     docType: over.docType ?? 'chapter',
     content: over.content ?? null,
+    synopsis: over.synopsis ?? null,
     position: over.position ?? 0,
     status: over.status ?? 'draft',
     tags: over.tags ?? [],

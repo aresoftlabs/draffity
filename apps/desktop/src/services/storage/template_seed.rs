@@ -11,8 +11,9 @@ use crate::domain::{new_id, TemplateNode};
 use crate::error::AppResult;
 
 /// Recursively insert a template's structure as documents. Position is
-/// per (project, parent) starting at 0. Synopsis becomes seed content
-/// wrapped in a `<p>` so it round-trips through TipTap.
+/// per (project, parent) starting at 0. The template's `synopsis` is
+/// stored in the dedicated `synopsis` column (it's metadata about the
+/// document, not its editable content).
 pub(super) fn insert_template_nodes(
     tx: &Transaction<'_>,
     project_id: &str,
@@ -22,21 +23,23 @@ pub(super) fn insert_template_nodes(
 ) -> AppResult<()> {
     for (idx, node) in nodes.iter().enumerate() {
         let id = new_id();
-        let content = node
+        let synopsis = node
             .synopsis
             .as_ref()
-            .filter(|s| !s.trim().is_empty())
-            .map(|s| format!("<p>{}</p>", escape_html(s)));
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
         tx.execute(
-            "INSERT INTO documents(id, project_id, parent_id, title, doc_type, content, position, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            "INSERT INTO documents(id, project_id, parent_id, title, doc_type, content, synopsis, position, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 id,
                 project_id,
                 parent_id,
                 node.title.trim(),
                 node.doc_type.as_str(),
-                content,
+                None::<String>,
+                synopsis,
                 idx as i64,
                 now,
                 now,
@@ -47,19 +50,4 @@ pub(super) fn insert_template_nodes(
         }
     }
     Ok(())
-}
-
-fn escape_html(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for ch in s.chars() {
-        match ch {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&#39;"),
-            c => out.push(c),
-        }
-    }
-    out
 }

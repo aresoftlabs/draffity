@@ -34,6 +34,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (2, include_str!("../../migrations/002_fts.sql")),
     (3, include_str!("../../migrations/003_status_tags.sql")),
     (4, include_str!("../../migrations/004_goals.sql")),
+    (5, include_str!("../../migrations/005_synopsis.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -86,6 +87,9 @@ pub trait StorageService: Send + Sync {
     fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode>;
     /// Set or clear a project's target word count.
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project>;
+    /// Set or clear a document's synopsis (short description surfaced in
+    /// Corkboard / Outliner views, independent of content).
+    fn set_document_synopsis(&self, id: &str, synopsis: Option<&str>) -> AppResult<DocNode>;
 
     // Snapshots
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot>;
@@ -290,6 +294,10 @@ impl StorageService for LocalStorageService {
 
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project> {
         projects::set_goal(&self.conn.lock().unwrap(), id, goal)
+    }
+
+    fn set_document_synopsis(&self, id: &str, synopsis: Option<&str>) -> AppResult<DocNode> {
+        documents::set_synopsis(&self.conn.lock().unwrap(), id, synopsis)
     }
 
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot> {

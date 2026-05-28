@@ -120,6 +120,7 @@ pub(crate) mod test_support {
             title: title.into(),
             doc_type,
             content: content.map(|s| s.into()),
+            synopsis: None,
             position,
             status: DocumentStatus::Draft,
             tags: Vec::new(),

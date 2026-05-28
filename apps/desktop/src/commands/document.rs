@@ -117,6 +117,21 @@ pub fn set_document_goal(
 }
 
 #[tauri::command]
+pub fn set_document_synopsis(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    id: String,
+    synopsis: Option<String>,
+) -> CmdResult<DocNode> {
+    // Normalise: trim + treat empty/whitespace as None so the column is
+    // either NULL or a meaningful string.
+    let cleaned = synopsis.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let doc = state.storage.set_document_synopsis(&id, cleaned)?;
+    let _ = app.emit(events::DOCUMENT_SAVED, &doc);
+    Ok(doc)
+}
+
+#[tauri::command]
 pub fn delete_document(state: State<'_, AppState>, app: AppHandle, id: String) -> CmdResult<()> {
     state.storage.delete_document(&id)?;
     let _ = app.emit(events::DOCUMENT_DELETED, &id);

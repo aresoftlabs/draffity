@@ -88,6 +88,10 @@
     "placeholder": "Añadir etiqueta y pulsar Enter…",
     "filterPlaceholder": "Filtrar por etiqueta"
   },
+  "synopsis": {
+    "label": "Sinopsis",
+    "placeholder": "Resumen corto del documento (visible en corkboard y outliner)…"
+  },
   "goal": {
     "documentLabel": "Objetivo del documento",
     "projectLabel": "Objetivo del proyecto",

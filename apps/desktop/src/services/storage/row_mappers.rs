@@ -61,6 +61,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
         .unwrap_or_default();
     let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
+    let synopsis: Option<String> = r.get("synopsis").ok().flatten();
     Ok(DocNode {
         id: r.get("id")?,
         project_id: r.get("project_id")?,
@@ -68,6 +69,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         title: r.get("title")?,
         doc_type,
         content: r.get("content")?,
+        synopsis,
         position: r.get("position")?,
         status,
         tags,

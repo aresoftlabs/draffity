@@ -88,6 +88,10 @@
     "placeholder": "Add a tag and press Enter…",
     "filterPlaceholder": "Filter by tag"
   },
+  "synopsis": {
+    "label": "Synopsis",
+    "placeholder": "Short summary of this document (shown in corkboard and outliner)…"
+  },
   "goal": {
     "documentLabel": "Document goal",
     "projectLabel": "Project goal",

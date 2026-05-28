@@ -89,6 +89,10 @@ pub struct DocNode {
     pub doc_type: DocumentType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    /// Short description surfaced in Corkboard / Outliner views.
+    /// Independent of `content`: changing one doesn't touch the other.
+    #[serde(default)]
+    pub synopsis: Option<String>,
     pub position: i64,
     #[serde(default)]
     pub status: DocumentStatus,

@@ -55,6 +55,8 @@ export const ipc = {
   listProjectTags: (projectId: string) => invoke<string[]>('list_project_tags', { projectId }),
   setDocumentGoal: (params: { id: string; goal: number | null }) =>
     invoke<DocNode>('set_document_goal', params),
+  setDocumentSynopsis: (params: { id: string; synopsis: string | null }) =>
+    invoke<DocNode>('set_document_synopsis', params),
   deleteDocument: (id: string) => invoke<void>('delete_document', { id }),
 
   // Snapshots

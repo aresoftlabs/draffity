@@ -286,11 +286,14 @@ mod tests {
         assert_eq!(children[0].position, 0);
         assert_eq!(children[1].position, 1);
 
-        // Synopsis is escaped and wrapped as a paragraph
+        // Synopsis lives on its own column now (no HTML wrapping). Content
+        // stays NULL for seeded docs; the user fills it in afterwards.
         let cap2 = children.iter().find(|d| d.title == "Capítulo 2").unwrap();
-        let content = cap2.content.as_deref().unwrap();
-        assert!(content.contains("<p>"));
-        assert!(content.contains("&lt;con HTML&gt;"));
+        assert_eq!(
+            cap2.synopsis.as_deref(),
+            Some("Inciting incident <con HTML>")
+        );
+        assert!(cap2.content.is_none());
     }
 
     #[test]

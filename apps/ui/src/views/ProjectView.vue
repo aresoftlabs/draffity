@@ -166,6 +166,11 @@ async function onDocGoalChange(goal: number | null) {
   await run(t('errors.saveDocument'), () => docStore.setGoal(selected.value!.id, goal));
 }
 
+async function onSynopsisChange(synopsis: string | null) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setSynopsis(selected.value!.id, synopsis));
+}
+
 async function onProjectGoalChange(goal: number | null) {
   if (!project.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => projectStore.setGoal(project.value!.id, goal));
@@ -320,6 +325,7 @@ onMounted(loadProject);
           @status-change="onStatusChange"
           @tags-change="onTagsChange"
           @goal-change="onDocGoalChange"
+          @synopsis-change="onSynopsisChange"
         />
       </SplitterPanel>
     </Splitter>

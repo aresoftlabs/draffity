@@ -11,8 +11,8 @@ use super::row_mappers::row_to_document;
 /// columns is a single-line change. The trailing correlated subquery returns
 /// the document's tag set as a JSON array; an empty array (not NULL) when
 /// the document has no tags.
-const COLS: &str = "id, project_id, parent_id, title, doc_type, content, position, status, \
-     goal_words, created_at, updated_at, \
+const COLS: &str = "id, project_id, parent_id, title, doc_type, content, synopsis, position, \
+     status, goal_words, created_at, updated_at, \
      (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json";
 
 pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
@@ -48,6 +48,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         title: input.title.trim().to_string(),
         doc_type: input.doc_type,
         content: input.content,
+        synopsis: None,
         position: next_pos,
         status: DocumentStatus::Draft,
         tags: Vec::new(),
@@ -185,6 +186,24 @@ pub(super) fn set_tags(conn: &mut Connection, id: &str, tags: &[String]) -> AppR
     let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
     let doc = conn.query_row(&sql, params![id], row_to_document)?;
     Ok(doc)
+}
+
+/// Set or clear a document's synopsis. Trimming and empty-as-None is the
+/// caller's responsibility — we store exactly what arrives.
+pub(super) fn set_synopsis(
+    conn: &Connection,
+    id: &str,
+    synopsis: Option<&str>,
+) -> AppResult<DocNode> {
+    let updated = conn.execute(
+        "UPDATE documents SET synopsis=?2, updated_at=?3 WHERE id=?1",
+        params![id, synopsis, now_ms()],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
+    Ok(conn.query_row(&sql, params![id], row_to_document)?)
 }
 
 /// Set or clear a document's target word count. `None` removes the goal.
@@ -504,6 +523,66 @@ mod tests {
 
         let tags = s.list_project_tags(&p.id).unwrap();
         assert_eq!(tags, vec!["draft", "epic", "fantasy"]);
+    }
+
+    #[test]
+    fn set_document_synopsis_persists_and_clears() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = make_chapter(&s, &p.id, "A");
+        assert!(s.get_document(&d).unwrap().unwrap().synopsis.is_none());
+
+        let after = s
+            .set_document_synopsis(&d, Some("Cuando el héroe llega al desierto"))
+            .unwrap();
+        assert_eq!(
+            after.synopsis.as_deref(),
+            Some("Cuando el héroe llega al desierto")
+        );
+        // Round-trip
+        assert_eq!(
+            s.get_document(&d).unwrap().unwrap().synopsis.as_deref(),
+            Some("Cuando el héroe llega al desierto")
+        );
+
+        let cleared = s.set_document_synopsis(&d, None).unwrap();
+        assert!(cleared.synopsis.is_none());
+    }
+
+    #[test]
+    fn template_seed_populates_synopsis_column_not_content() {
+        use crate::domain::TemplateNode;
+        let s = fresh();
+        let structure = vec![TemplateNode {
+            title: "Acto 1".into(),
+            doc_type: DocumentType::Folder,
+            synopsis: Some("Planteamiento del conflicto".into()),
+            children: vec![],
+        }];
+        let p = s
+            .create_project_atomic(
+                ProjectInput {
+                    title: "Novela".into(),
+                    template_id: "novela-tres-actos".into(),
+                    metadata: None,
+                },
+                &structure,
+            )
+            .unwrap();
+        let docs = s.list_documents(&p.id).unwrap();
+        let acto = &docs[0];
+        assert_eq!(
+            acto.synopsis.as_deref(),
+            Some("Planteamiento del conflicto")
+        );
+        // Content should NOT carry the synopsis anymore.
+        assert!(acto.content.is_none());
     }
 
     #[test]
