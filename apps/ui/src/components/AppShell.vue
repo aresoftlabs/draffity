@@ -1,12 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { useUiStore } from '@/stores/ui';
+import { useDocumentStore } from '@/stores/document';
+import GoalProgress from '@/components/GoalProgress.vue';
 
 const { t } = useI18n();
 const router = useRouter();
 const ui = useUiStore();
+const docs = useDocumentStore();
+
+const sessionActive = computed(() => ui.sessionStartTotal !== null && docs.documents.length > 0);
+const sessionWords = computed(() =>
+  ui.sessionStartTotal === null ? 0 : Math.max(0, docs.totalWordCount - ui.sessionStartTotal),
+);
 
 function isDark() {
   return (
@@ -35,6 +44,20 @@ function cycleTheme() {
     </button>
 
     <span class="flex-1" />
+
+    <div
+      v-if="sessionActive"
+      class="hidden md:flex items-center gap-2 min-w-[10rem] max-w-[18rem] text-xs opacity-90"
+      :title="t('session.tooltip')"
+    >
+      <span class="opacity-60 shrink-0">{{ t('session.label') }}</span>
+      <GoalProgress
+        :current="sessionWords"
+        :goal="ui.sessionGoal"
+        compact
+        @update:goal="ui.setSessionGoal"
+      />
+    </div>
 
     <Button
       :icon="isDark() ? 'pi pi-sun' : 'pi pi-moon'"

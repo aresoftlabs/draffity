@@ -98,6 +98,10 @@
     "clear": "Clear goal",
     "notSet": "No goal set"
   },
+  "session": {
+    "label": "Session",
+    "tooltip": "Words written since you opened the project"
+  },
   "save": {
     "idle": "",
     "saving": "Saving…",

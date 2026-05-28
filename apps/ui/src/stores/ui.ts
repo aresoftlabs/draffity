@@ -18,6 +18,20 @@ function saveBool(key: string, value: boolean) {
   localStorage.setItem(STORAGE_PREFIX + key, value ? '1' : '0');
 }
 
+function loadNumber(key: string): number | null {
+  if (typeof localStorage === 'undefined') return null;
+  const raw = localStorage.getItem(STORAGE_PREFIX + key);
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function saveNumber(key: string, value: number | null) {
+  if (typeof localStorage === 'undefined') return;
+  if (value == null) localStorage.removeItem(STORAGE_PREFIX + key);
+  else localStorage.setItem(STORAGE_PREFIX + key, String(value));
+}
+
 export const useUiStore = defineStore('ui', () => {
   const theme = ref<ThemeMode>(getStoredTheme());
   const binderCollapsed = ref(loadBool('binderCollapsed', false));
@@ -27,8 +41,16 @@ export const useUiStore = defineStore('ui', () => {
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
 
+  // Writing session — words written since the current project was opened.
+  // `sessionStartTotal` is captured by ProjectView on load; the live count
+  // comes from the document store. `sessionGoal` is persisted so it
+  // survives restarts.
+  const sessionGoal = ref<number | null>(loadNumber('sessionGoal'));
+  const sessionStartTotal = ref<number | null>(null);
+
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
+  watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
 
   function setTheme(mode: ThemeMode) {
     theme.value = mode;
@@ -63,12 +85,26 @@ export const useUiStore = defineStore('ui', () => {
     return false;
   }
 
+  function captureSessionStart(currentTotal: number) {
+    sessionStartTotal.value = currentTotal;
+  }
+
+  function setSessionGoal(value: number | null) {
+    sessionGoal.value = value && value > 0 ? Math.floor(value) : null;
+  }
+
+  function clearSession() {
+    sessionStartTotal.value = null;
+  }
+
   return {
     theme,
     binderCollapsed,
     inspectorCollapsed,
     focusMode,
     pendingNewProject,
+    sessionGoal,
+    sessionStartTotal,
     setTheme,
     setLocale,
     toggleBinder,
@@ -76,5 +112,8 @@ export const useUiStore = defineStore('ui', () => {
     toggleFocusMode,
     requestNewProject,
     consumeNewProjectRequest,
+    captureSessionStart,
+    setSessionGoal,
+    clearSession,
   };
 });

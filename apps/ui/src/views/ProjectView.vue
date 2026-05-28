@@ -54,10 +54,10 @@ const showExport = ref(false);
 const showSearch = ref(false);
 const findVisible = ref(false);
 const findMode = ref<'find' | 'replace'>('find');
-const sessionStartWords = ref(0);
-const sessionWordCount = computed(() =>
-  Math.max(0, totalWordCount.value - sessionStartWords.value),
-);
+const sessionWordCount = computed(() => {
+  const start = uiStore.sessionStartTotal;
+  return start === null ? 0 : Math.max(0, totalWordCount.value - start);
+});
 
 const auto = useAutoSave(async () => {
   if (!selected.value) return;
@@ -76,9 +76,9 @@ async function loadProject() {
     return;
   }
   await run(t('errors.loadDocuments'), () => docStore.loadFor(projectId.value));
-  // Snapshot the word count at load time so the inspector can show
-  // "words written this session" without a roundtrip.
-  sessionStartWords.value = totalWordCount.value;
+  // Snapshot the word count at load time so the inspector + app shell can
+  // show "words written this session" without a roundtrip.
+  uiStore.captureSessionStart(totalWordCount.value);
   syncEditorFromSelection();
 }
 

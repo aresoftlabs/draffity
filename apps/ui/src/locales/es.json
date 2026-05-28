@@ -98,6 +98,10 @@
     "clear": "Quitar objetivo",
     "notSet": "Sin objetivo"
   },
+  "session": {
+    "label": "Sesión",
+    "tooltip": "Palabras escritas desde que abriste el proyecto"
+  },
   "save": {
     "idle": "",
     "saving": "Guardando…",
