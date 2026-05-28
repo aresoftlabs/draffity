@@ -7,37 +7,134 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Deferred to v0.6
+### Deferred to v0.7
 
-Bloques que originalmente estaban planeados para Sprint 4 pero que
-requieren su propia sesión de trabajo por scope o por decisión de
-diseño aún abierta:
+Refactors arquitectónicos del Sprint 5 que no entregan valor de
+usuario directo y cuyo costo/beneficio mejora cuando el codebase
+crezca un poco más:
 
-- **Imágenes inline** (S4-02). Paste/drop → blob en disco + tabla
-  `media(document_id, path, mime, hash)` + custom node con
-  ProseMirror nodeView. Decisión abierta: ¿almacenamos blobs en el
-  app_data_dir junto a la DB o en `<project>/media/`? Afecta backup
-  y portabilidad.
-- **Footnotes** (S4-03). Custom node con nodeView para numeración
-  automática + render como superíndice. Export DOCX/EPUB ya soporta
-  el modelo, falta el nodo en el editor.
-- **Diff visual entre snapshots** (S4-05). Dep `diff-match-patch`
-  o `unified-diff` + componente `SnapshotDiffView`. Requiere
-  decidir si comparamos HTML (rápido pero ruidoso) o texto plano
-  derivado.
-- **Markdown import** (S4-06) y **DOCX import** (S4-07). Strategy
-  paralelo al `LocalExporter`: `LocalImporter` con `import_from`
-  por formato. Necesita normalizar el HTML resultante al subset
-  que TipTap StarterKit + tablas reconoce.
-- **Round-trip tests de exporters** (S4-09). Export → import →
-  comparar AST. Bloqueado por S4-06/07.
+- **`specta` para autogenerar tipos Rust↔TS** (S5-07). Hoy
+  mantenemos ~15 structs en `packages/shared-types` sincronizados
+  a mano — costo real ~1-2 min por sprint. Migrar a specta requiere
+  derivar `Type` en cada struct serializado, validar que la TS
+  generada coincide con la mano, integrar CI que detecte drift y
+  rewritear el flujo de build. El payoff llega cuando tengamos
+  ~30+ types — todavía no estamos ahí. Cuando aterrice también
+  cierra F1-12 del v1.
+- **Pool de conexiones SQLite** (S5-08) y **migrar `Mutex<Connection>`
+  a pool** (S5-09). La contención actual es hipotética: un único
+  usuario, sin escritos concurrentes. Cambiar a `r2d2-sqlite`
+  requiere reescribir los locks y reverificar 112 tests; sin un
+  benchmark que muestre el cuello de botella, es churn. Hacerlo
+  cuando aparezca el primer storage premium o sync remoto.
+- **Hot-swap de tier en `factory.rs`** (S5-10, ya P1). Sólo gana
+  valor cuando exista un tier premium real al que swapear.
 
-Bloques aún pendientes de sprints anteriores:
+Bloques aún pendientes de Sprints anteriores:
 
+- **Footnotes** (S4-03), **imágenes inline** (S4-02), **diff visual**
+  (S4-05), **MD/DOCX import** (S4-06/07), **round-trip tests** (S4-09)
+  — todo del Sprint 4 sin S4-01/04/08.
 - **PDF export** (S1-02 originalmente Sprint 1).
 - **Stats históricas con gráfico de 30 días** (S2-08 originalmente
   Sprint 2). Pendiente decisión de librería de charts.
 - **Split editor** (S3-06 originalmente Sprint 3).
+
+## [0.6.0-beta] — 2026-05-28
+
+Sprint 5 mayormente cerrado (6 de 10 historias): output listo para
+publicar. La app deja de exportar con defaults rígidos y pasa a
+tener un diálogo de export completo, EPUB con portada/imagen,
+DOCX con TOC navegable y title page, e importación BibTeX +
+citas inline con `[@key]` resueltas a `(Apellido, año)`.
+
+Los 4 restantes son refactors de arquitectura/DX (specta, pool,
+hot-swap) que se trasladan a v0.7 con justificación de costo en
+"Deferred to v0.7" — ningún bloque que entregue valor al usuario
+queda fuera del release.
+
+### Added — Sprint 5
+
+- **`ExportConfig` serializable + persistencia por proyecto** (S5-02):
+  struct nuevo en `services/exporter/config.rs` con título override,
+  autor, fuente, tamaño página, márgenes (mm), TOC sí/no, title page
+  sí/no, separador de escena (Stars/Dashes/Blank/Custom) y cover
+  image path. Persiste vía tabla `settings` con clave
+  `export_config:<project_id>` (JSON). Comandos nuevos
+  `get_export_config` / `set_export_config`. El trait
+  `ExportService::export` ahora recibe `&ExportConfig`; defaults
+  preservan la conducta previa.
+- **Diálogo de export extendido** (S5-01): rediseño completo de
+  `ExportDialog.vue` en 3 fieldsets colapsables (Contenido,
+  Apariencia, Maquetación) + sección EPUB condicional cuando se
+  elige ese formato. Carga la config persistida al abrir; al
+  exportar, si está tildado "recordar para este proyecto", la
+  guarda con `setExportConfig`. Todos los textos pasan por
+  vue-i18n (ES + EN).
+- **EPUB con cover image** (S5-03): nuevo file-picker en el dialog
+  acepta jpg/png/gif/webp; el exporter detecta el MIME por
+  extensión y embebe el blob vía `add_cover_image` de
+  `epub-builder`. Además ahora honra `title_override` (sobrescribe
+  `dc:title`), `author` (de config o `project.metadata.author`),
+  `include_toc` (inline TOC) e `include_title_page`
+  (condiciona el `title.xhtml`).
+- **DOCX con TOC autogenerado + title page** (S5-04): el render
+  emite un campo `TableOfContents` (heading levels 1-6, con
+  hyperlinks y flag `dirty()` para que Word actualice al abrir).
+  La portada — antes siempre presente — pasa a gobernarse por
+  `include_title_page` e incorpora autor bajo el título.
+  TOC y title page cierran con page break para que el manuscrito
+  arranque limpio.
+- **BibTeX import + tabla `citations`** (S5-05): migración 007
+  aditiva agrega `citations(id, project_id, key, entry_type,
+fields_json, …)` con `UNIQUE(project_id, key)` para upsert
+  seguro y cascade delete. Nuevo dominio `Citation` con helpers
+  para autor/año, storage submodule que hace upsert batch atómico,
+  `LocalBibliographyService` que parsea con la crate `biblatex`
+  limpiando braces/quotes y normaliza fields a un map plano. IPC
+  `import_bibliography` / `list_citations` / `list_citation_keys` /
+  `delete_citation`. UI: `BibliographyDialog` accesible desde el
+  header del proyecto, con import .bib (vía `tauri-plugin-fs`),
+  DataTable con borrado y conteo de omitidas.
+- **Citas inline como nodo TipTap** (S5-06): nuevo node `citation`
+  inline-atom con attrs `citationKey` + `label`; el label se
+  pre-resuelve al insertar a `(Apellido, año)` usando el store
+  `useCitationsStore`. El HTML serializado lleva el label dentro
+  del `span data-citation-key`, así los 3 exporters (md/docx/epub)
+  lo recogen como texto plano sin lógica nueva. Toolbar suma botón
+  "Insertar cita" que abre `CitationPickerDialog` con búsqueda
+  incremental por clave/autor/título.
+
+### Architecture / migrations
+
+- Migración 007 aditiva: tabla `citations` + índice por
+  `project_id`. Backwards-compatible — proyectos previos siguen
+  funcionando sin entries.
+- Patrón premium-ready aplicado a la bibliografía:
+  `BibliographyService` trait + `LocalBibliographyService` (free).
+  Premium puede sumar `RemoteBibliographyService` (Zotero, etc.)
+  sin tocar core.
+- `ServiceFactory` extendido con `bibliography` — sigue el patrón
+  de `LocalExporter` y queda listo para hot-swap por tier cuando
+  llegue S5-10.
+- Citas se persisten como HTML inline (no como entidad referenciada
+  por id) porque el label es estable y los exporters solo ven HTML.
+  Si la bibliografía se actualiza, el editor ofrece refresh
+  manual (TODO en v0.7).
+
+### Fixed
+
+- Dos lints nuevos de clippy 1.95 (`derivable_impls`,
+  `cloned_ref_to_slice_refs`) que aparecieron al añadir
+  `PageSize`/`SceneSeparator`; usamos `#[derive(Default)]` con
+  `#[default]` y `std::slice::from_ref`.
+
+### Tests
+
+- Rust: 112 verdes (87 previos + 4 ExportConfig + 4 EPUB + 4 DOCX +
+  5 bibliografía + 3 citation storage + 5 citation domain).
+- Vitest: 30 verdes.
+- Playwright: 3 specs sin cambios.
 
 ## [0.5.0-beta] — 2026-05-28
 
@@ -367,7 +464,8 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.5.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.6.0-beta...HEAD
+[0.6.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.6.0-beta
 [0.5.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.5.0-beta
 [0.4.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.4.0-beta
 [0.3.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.3.0-beta
