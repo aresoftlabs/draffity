@@ -1,6 +1,7 @@
 //! Pure domain layer. No SQLite, no Tauri, no I/O.
 //! Entities + invariants + value objects, fully testable in isolation.
 
+pub mod citation;
 pub mod document;
 pub mod project;
 pub mod search;
@@ -8,6 +9,7 @@ pub mod snapshot;
 pub mod stats;
 pub mod template;
 
+pub use citation::Citation;
 pub use document::{DocNode, DocumentInput, DocumentStatus, DocumentType};
 pub use project::{Project, ProjectInput, ProjectStatus};
 pub use search::SearchHit;

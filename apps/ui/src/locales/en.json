@@ -252,6 +252,21 @@
     "coverClear": "Clear",
     "coverPickerTitle": "Select a cover image"
   },
+  "bibliography": {
+    "title": "Project bibliography",
+    "subtitle": "Import a BibTeX file and reference it from the editor with [@key].",
+    "importButton": "Import .bib file…",
+    "importPickerTitle": "Select a BibTeX file",
+    "importSuccess": "{imported} entries imported. Skipped: {skipped}.",
+    "importError": "Could not import bibliography",
+    "empty": "No references imported yet.",
+    "key": "Key",
+    "type": "Type",
+    "author": "Author",
+    "year": "Year",
+    "deleteConfirm": "Delete this reference?",
+    "openButton": "Bibliography"
+  },
   "search": {
     "button": "Search in project (Ctrl+Shift+F)",
     "placeholder": "Search across the whole project…",

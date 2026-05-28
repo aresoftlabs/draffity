@@ -109,6 +109,26 @@ export interface SearchHit {
   excerpt: string;
 }
 
+// Bibliography
+
+/** A bibliographic entry imported from BibTeX. `fields` is a flat
+ *  lowercase map of BibTeX field name → cleaned string value. */
+export interface Citation {
+  id: string;
+  projectId: string;
+  key: string;
+  entryType: string;
+  fields: Record<string, string>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface BibliographyImportSummary {
+  imported: Citation[];
+  /** Entries the parser dropped because they were malformed. */
+  skipped: number;
+}
+
 // Export
 
 export type ExportFormat = 'markdown' | 'docx' | 'epub' | 'pdf';

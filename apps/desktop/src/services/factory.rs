@@ -14,9 +14,9 @@ use std::sync::Arc;
 use crate::capabilities::Tier;
 use crate::error::{AppError, AppResult};
 use crate::services::{
-    AIService, ASRService, BuiltInTemplates, CloudSyncService, ExportService, FreeTier,
-    LocalExporter, LocalStorageService, NoOpAI, NoOpASR, NoOpSync, ProjectManager, StorageService,
-    TemplatesService, TierService,
+    AIService, ASRService, BibliographyService, BuiltInTemplates, CloudSyncService, ExportService,
+    FreeTier, LocalBibliographyService, LocalExporter, LocalStorageService, NoOpAI, NoOpASR,
+    NoOpSync, ProjectManager, StorageService, TemplatesService, TierService,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -30,6 +30,7 @@ pub struct ServiceBundle {
     pub sync: Arc<dyn CloudSyncService>,
     pub asr: Arc<dyn ASRService>,
     pub exporter: Arc<dyn ExportService>,
+    pub bibliography: Arc<dyn BibliographyService>,
 }
 
 /// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
@@ -56,6 +57,7 @@ impl ServiceFactory {
             sync: Self::build_sync(tier),
             asr: Self::build_asr(tier),
             exporter: Arc::new(LocalExporter),
+            bibliography: Arc::new(LocalBibliographyService),
         })
     }
 

@@ -252,6 +252,21 @@
     "coverClear": "Quitar",
     "coverPickerTitle": "Selecciona la imagen de portada"
   },
+  "bibliography": {
+    "title": "Bibliografía del proyecto",
+    "subtitle": "Importa un archivo BibTeX y úsalo desde el editor con [@clave].",
+    "importButton": "Importar archivo .bib…",
+    "importPickerTitle": "Selecciona un archivo BibTeX",
+    "importSuccess": "Importadas {imported} entradas. Omitidas: {skipped}.",
+    "importError": "No se pudo importar la bibliografía",
+    "empty": "Aún no hay referencias importadas.",
+    "key": "Clave",
+    "type": "Tipo",
+    "author": "Autor",
+    "year": "Año",
+    "deleteConfirm": "¿Eliminar esta referencia?",
+    "openButton": "Bibliografía"
+  },
   "search": {
     "button": "Buscar en el proyecto (Ctrl+Shift+F)",
     "placeholder": "Buscar en todo el proyecto…",

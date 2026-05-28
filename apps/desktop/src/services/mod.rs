@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod asr;
+pub mod bibliography;
 pub mod exporter;
 pub mod factory;
 pub mod project_manager;
@@ -13,13 +14,14 @@ pub mod tier;
 
 pub use ai::{AIService, NoOpAI};
 pub use asr::{ASRService, NoOpASR};
+pub use bibliography::{BibliographyService, LocalBibliographyService, ParseSummary};
 pub use exporter::{
     export_config_settings_key, ExportConfig, ExportFormat, ExportService, LocalExporter, Margins,
     PageSize, SceneSeparator,
 };
 pub use factory::{ServiceBundle, ServiceFactory};
 pub use project_manager::ProjectManager;
-pub use storage::{LocalStorageService, StorageService};
+pub use storage::{CitationUpsert, LocalStorageService, StorageService};
 pub use sync::{CloudSyncService, NoOpSync};
 pub use templates::{BuiltInTemplates, TemplatesService};
 pub use tier::{FreeTier, TierService};

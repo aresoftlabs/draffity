@@ -21,6 +21,7 @@ import Binder from '@/components/Binder.vue';
 import Inspector from '@/components/Inspector.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
+import BibliographyDialog from '@/components/BibliographyDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
@@ -74,6 +75,7 @@ const editorRef = ref<InstanceType<typeof TipTapEditor> | null>(null);
 const editor = computed(() => editorRef.value?.editor ?? null);
 
 const showExport = ref(false);
+const showBibliography = ref(false);
 const showSearch = ref(false);
 const findVisible = ref(false);
 const findMode = ref<'find' | 'replace'>('find');
@@ -291,6 +293,14 @@ onMounted(loadProject);
         @click="toggleFocus"
       />
       <Button
+        icon="pi pi-book"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('bibliography.openButton')"
+        @click="showBibliography = true"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -301,6 +311,7 @@ onMounted(loadProject);
     </header>
 
     <ExportDialog v-model:visible="showExport" :project="project" />
+    <BibliographyDialog v-model:visible="showBibliography" :project-id="project.id" />
     <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
 
     <Splitter

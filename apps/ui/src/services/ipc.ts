@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
+  BibliographyImportSummary,
+  Citation,
   DocNode,
   DocumentInput,
   DocumentStatus,
@@ -89,4 +91,11 @@ export const ipc = {
   getExportConfig: (projectId: string) => invoke<ExportConfig>('get_export_config', { projectId }),
   setExportConfig: (params: { projectId: string; config: ExportConfig }) =>
     invoke<void>('set_export_config', params),
+
+  // Bibliography
+  importBibliography: (params: { projectId: string; bibText: string }) =>
+    invoke<BibliographyImportSummary>('import_bibliography', params),
+  listCitations: (projectId: string) => invoke<Citation[]>('list_citations', { projectId }),
+  listCitationKeys: (projectId: string) => invoke<string[]>('list_citation_keys', { projectId }),
+  deleteCitation: (id: string) => invoke<void>('delete_citation', { id }),
 };

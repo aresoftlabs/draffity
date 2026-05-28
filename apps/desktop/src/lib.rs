@@ -80,6 +80,11 @@ pub fn run() {
             commands::supported_export_formats,
             commands::get_export_config,
             commands::set_export_config,
+            // bibliography
+            commands::import_bibliography,
+            commands::list_citations,
+            commands::list_citation_keys,
+            commands::delete_citation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

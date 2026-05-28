@@ -13,11 +13,14 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    DocNode, DocumentInput, DocumentStatus, Project, ProjectInput, ProjectStatus, SearchHit,
-    Snapshot, TemplateNode, WritingStats,
+    Citation, DocNode, DocumentInput, DocumentStatus, Project, ProjectInput, ProjectStatus,
+    SearchHit, Snapshot, TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 
+pub use citations::UpsertEntry as CitationUpsert;
+
+mod citations;
 mod documents;
 mod projects;
 mod row_mappers;
@@ -36,6 +39,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (4, include_str!("../../migrations/004_goals.sql")),
     (5, include_str!("../../migrations/005_synopsis.sql")),
     (6, include_str!("../../migrations/006_doc_json.sql")),
+    (7, include_str!("../../migrations/007_citations.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -113,6 +117,21 @@ pub trait StorageService: Send + Sync {
     /// one day ago the streak is reported as 0 (the broken streak is not
     /// persisted until the next `record_writing_activity`).
     fn get_writing_stats(&self) -> AppResult<WritingStats>;
+
+    // Citations (bibliography)
+    /// List all citations attached to a project, sorted by key.
+    fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>>;
+    /// List only the keys (cheaper than `list_citations`). Used by the
+    /// editor autocomplete and the export rendering passes.
+    fn list_citation_keys(&self, project_id: &str) -> AppResult<Vec<String>>;
+    /// Upsert a batch atomically. Existing `(project_id, key)` pairs are
+    /// overwritten in place (id and created_at preserved).
+    fn upsert_citations(
+        &self,
+        project_id: &str,
+        entries: &[CitationUpsert],
+    ) -> AppResult<Vec<Citation>>;
+    fn delete_citation(&self, id: &str) -> AppResult<()>;
 
     // Search
     /// Full-text search across documents of a single project. Returns up to
@@ -334,11 +353,32 @@ impl StorageService for LocalStorageService {
     fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>> {
         search::search(&self.conn.lock().unwrap(), project_id, query)
     }
+
+    fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {
+        citations::list(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn list_citation_keys(&self, project_id: &str) -> AppResult<Vec<String>> {
+        citations::list_keys(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn upsert_citations(
+        &self,
+        project_id: &str,
+        entries: &[CitationUpsert],
+    ) -> AppResult<Vec<Citation>> {
+        citations::upsert_batch(&mut self.conn.lock().unwrap(), project_id, entries)
+    }
+
+    fn delete_citation(&self, id: &str) -> AppResult<()> {
+        citations::delete_one(&self.conn.lock().unwrap(), id)
+    }
 }
 
 #[cfg(test)]
 pub(super) mod test_helpers {
     use super::{LocalStorageService, StorageService};
+    use crate::domain::{Project, ProjectInput};
 
     /// Fresh in-memory storage with migrations applied. Shared by all
     /// submodule tests so each one stays focused on its operation.
@@ -346,6 +386,17 @@ pub(super) mod test_helpers {
         let s = LocalStorageService::open_in_memory().expect("in-memory SQLite should always open");
         s.migrate().expect("fresh DB migrate should succeed");
         s
+    }
+
+    /// Create a project on a fresh DB without seeding documents — useful for
+    /// tests that only need a `project_id` to scope other tables.
+    pub fn seed_project(s: &LocalStorageService, title: &str) -> Project {
+        s.create_project(ProjectInput {
+            title: title.into(),
+            template_id: "x".into(),
+            metadata: None,
+        })
+        .expect("create project")
     }
 }
 
