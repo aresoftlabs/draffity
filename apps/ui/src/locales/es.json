@@ -88,6 +88,16 @@
     "placeholder": "Añadir etiqueta y pulsar Enter…",
     "filterPlaceholder": "Filtrar por etiqueta"
   },
+  "goal": {
+    "documentLabel": "Objetivo del documento",
+    "projectLabel": "Objetivo del proyecto",
+    "placeholder": "Palabras",
+    "set": "Establecer objetivo",
+    "edit": "Editar objetivo",
+    "save": "Guardar",
+    "clear": "Quitar objetivo",
+    "notSet": "Sin objetivo"
+  },
   "save": {
     "idle": "",
     "saving": "Guardando…",

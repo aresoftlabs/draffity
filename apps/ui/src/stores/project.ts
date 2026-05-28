@@ -52,6 +52,12 @@ export const useProjectStore = defineStore('project', () => {
     if (activeId.value === id) activeId.value = null;
   }
 
+  async function setGoal(id: string, goal: number | null) {
+    const updated = await ipc.setProjectGoal({ id, goal });
+    const idx = projects.value.findIndex((p) => p.id === id);
+    if (idx !== -1) projects.value[idx] = updated;
+  }
+
   function selectLocally(id: string | null) {
     activeId.value = id;
   }
@@ -69,6 +75,7 @@ export const useProjectStore = defineStore('project', () => {
     open,
     archive,
     remove,
+    setGoal,
     selectLocally,
   };
 });

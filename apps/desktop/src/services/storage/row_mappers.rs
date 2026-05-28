@@ -15,12 +15,14 @@ pub(super) fn row_to_project(r: &Row<'_>) -> rusqlite::Result<Project> {
         "active" => ProjectStatus::Active,
         _ => ProjectStatus::Archived,
     };
+    let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
     Ok(Project {
         id: r.get("id")?,
         title: r.get("title")?,
         template_id: r.get("template_id")?,
         status,
         metadata,
+        goal_words,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
     })
@@ -58,6 +60,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         .flatten()
         .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
         .unwrap_or_default();
+    let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
     Ok(DocNode {
         id: r.get("id")?,
         project_id: r.get("project_id")?,
@@ -68,6 +71,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         position: r.get("position")?,
         status,
         tags,
+        goal_words,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
     })

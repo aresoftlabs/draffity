@@ -88,6 +88,16 @@
     "placeholder": "Add a tag and press Enter…",
     "filterPlaceholder": "Filter by tag"
   },
+  "goal": {
+    "documentLabel": "Document goal",
+    "projectLabel": "Project goal",
+    "placeholder": "Words",
+    "set": "Set goal",
+    "edit": "Edit goal",
+    "save": "Save",
+    "clear": "Clear goal",
+    "notSet": "No goal set"
+  },
   "save": {
     "idle": "",
     "saving": "Saving…",

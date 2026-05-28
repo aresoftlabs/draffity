@@ -32,6 +32,8 @@ export const ipc = {
   openProject: (id: string) => invoke<Project>('open_project', { id }),
   archiveProject: (id: string) => invoke<void>('archive_project', { id }),
   deleteProject: (id: string) => invoke<void>('delete_project', { id }),
+  setProjectGoal: (params: { id: string; goal: number | null }) =>
+    invoke<Project>('set_project_goal', params),
 
   // Documents
   createDocument: (input: DocumentInput) => invoke<DocNode>('create_document', { input }),
@@ -51,6 +53,8 @@ export const ipc = {
   setDocumentTags: (params: { id: string; tags: string[] }) =>
     invoke<DocNode>('set_document_tags', params),
   listProjectTags: (projectId: string) => invoke<string[]>('list_project_tags', { projectId }),
+  setDocumentGoal: (params: { id: string; goal: number | null }) =>
+    invoke<DocNode>('set_document_goal', params),
   deleteDocument: (id: string) => invoke<void>('delete_document', { id }),
 
   // Snapshots

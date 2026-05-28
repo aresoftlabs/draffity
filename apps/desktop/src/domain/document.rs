@@ -94,6 +94,9 @@ pub struct DocNode {
     pub status: DocumentStatus,
     #[serde(default)]
     pub tags: Vec<String>,
+    /// Target word count for this document. `None` means no goal set.
+    #[serde(default)]
+    pub goal_words: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }

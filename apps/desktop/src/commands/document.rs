@@ -105,6 +105,18 @@ pub fn list_project_tags(state: State<'_, AppState>, project_id: String) -> CmdR
 }
 
 #[tauri::command]
+pub fn set_document_goal(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    id: String,
+    goal: Option<i64>,
+) -> CmdResult<DocNode> {
+    let doc = state.storage.set_document_goal(&id, goal)?;
+    let _ = app.emit(events::DOCUMENT_SAVED, &doc);
+    Ok(doc)
+}
+
+#[tauri::command]
 pub fn delete_document(state: State<'_, AppState>, app: AppHandle, id: String) -> CmdResult<()> {
     state.storage.delete_document(&id)?;
     let _ = app.emit(events::DOCUMENT_DELETED, &id);

@@ -53,6 +53,7 @@ pub fn run() {
             commands::open_project,
             commands::archive_project,
             commands::delete_project,
+            commands::set_project_goal,
             // documents
             commands::create_document,
             commands::list_documents,
@@ -63,6 +64,7 @@ pub fn run() {
             commands::set_document_status,
             commands::set_document_tags,
             commands::list_project_tags,
+            commands::set_document_goal,
             commands::delete_document,
             commands::create_snapshot,
             commands::list_snapshots,

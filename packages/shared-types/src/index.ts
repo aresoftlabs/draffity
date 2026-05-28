@@ -10,6 +10,8 @@ export interface Project {
   templateId: string;
   status: ProjectStatus;
   metadata?: Record<string, unknown> | null;
+  /** Target word count for the whole project. `null` means no goal set. */
+  goalWords?: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -35,6 +37,8 @@ export interface DocNode {
   position: number;
   status: DocumentStatus;
   tags: string[];
+  /** Target word count for this document. `null` means no goal set. */
+  goalWords?: number | null;
   createdAt: number;
   updatedAt: number;
 }

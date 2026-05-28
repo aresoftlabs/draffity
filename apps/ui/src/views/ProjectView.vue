@@ -22,6 +22,7 @@ import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
+import GoalProgress from '@/components/GoalProgress.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 
@@ -149,6 +150,16 @@ async function onTagsChange(tags: string[]) {
   await run(t('errors.saveDocument'), () => docStore.setTags(selected.value!.id, tags));
 }
 
+async function onDocGoalChange(goal: number | null) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setGoal(selected.value!.id, goal));
+}
+
+async function onProjectGoalChange(goal: number | null) {
+  if (!project.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => projectStore.setGoal(project.value!.id, goal));
+}
+
 useShortcuts({
   'ctrl+s': () => {
     void auto.flush();
@@ -193,6 +204,15 @@ onMounted(loadProject);
       />
       <h2 class="text-sm font-semibold truncate">{{ project.title }}</h2>
       <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
+      <div class="flex items-center gap-2 min-w-[12rem] max-w-[20rem]">
+        <GoalProgress
+          :current="totalWordCount"
+          :goal="project.goalWords ?? null"
+          :read-only="readOnly"
+          compact
+          @update:goal="onProjectGoalChange"
+        />
+      </div>
       <span class="flex-1" />
       <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
       <Button
@@ -284,6 +304,7 @@ onMounted(loadProject);
           @snapshot-restored="onSnapshotRestored"
           @status-change="onStatusChange"
           @tags-change="onTagsChange"
+          @goal-change="onDocGoalChange"
         />
       </SplitterPanel>
     </Splitter>

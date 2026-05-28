@@ -97,6 +97,7 @@ pub(crate) mod test_support {
             template_id: "novela-tres-actos".into(),
             status: ProjectStatus::Active,
             metadata: None,
+            goal_words: None,
             created_at: now,
             updated_at: now,
         }
@@ -122,6 +123,7 @@ pub(crate) mod test_support {
             position,
             status: DocumentStatus::Draft,
             tags: Vec::new(),
+            goal_words: None,
             created_at: now,
             updated_at: now,
         }

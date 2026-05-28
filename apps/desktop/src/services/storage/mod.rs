@@ -33,6 +33,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (1, include_str!("../../migrations/001_init.sql")),
     (2, include_str!("../../migrations/002_fts.sql")),
     (3, include_str!("../../migrations/003_status_tags.sql")),
+    (4, include_str!("../../migrations/004_goals.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -81,6 +82,10 @@ pub trait StorageService: Send + Sync {
     fn set_document_tags(&self, id: &str, tags: &[String]) -> AppResult<DocNode>;
     /// Distinct tags in use across all documents of a project (sorted).
     fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>>;
+    /// Set or clear a document's target word count.
+    fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode>;
+    /// Set or clear a project's target word count.
+    fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project>;
 
     // Snapshots
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot>;
@@ -277,6 +282,14 @@ impl StorageService for LocalStorageService {
 
     fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>> {
         documents::list_project_tags(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode> {
+        documents::set_goal(&self.conn.lock().unwrap(), id, goal)
+    }
+
+    fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project> {
+        projects::set_goal(&self.conn.lock().unwrap(), id, goal)
     }
 
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot> {

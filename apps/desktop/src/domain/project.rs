@@ -37,6 +37,9 @@ pub struct Project {
     pub status: ProjectStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
+    /// Target word count for the whole project. `None` means no goal set.
+    #[serde(default)]
+    pub goal_words: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }

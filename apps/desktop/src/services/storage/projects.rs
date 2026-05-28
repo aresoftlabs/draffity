@@ -8,6 +8,10 @@ use crate::error::{AppError, AppResult};
 use super::row_mappers::row_to_project;
 use super::template_seed::insert_template_nodes;
 
+/// Column list for `SELECT` against `projects`. Mirrors the documents.rs
+/// pattern so adding columns (e.g. `goal_words`) is a one-line change.
+const COLS: &str = "id, title, template_id, status, metadata, goal_words, created_at, updated_at";
+
 pub(super) fn create(conn: &Connection, input: ProjectInput) -> AppResult<Project> {
     input.validate()?;
     let now = now_ms();
@@ -17,6 +21,7 @@ pub(super) fn create(conn: &Connection, input: ProjectInput) -> AppResult<Projec
         template_id: input.template_id,
         status: ProjectStatus::Active,
         metadata: input.metadata,
+        goal_words: None,
         created_at: now,
         updated_at: now,
     };
@@ -55,6 +60,7 @@ pub(super) fn create_atomic(
         template_id: input.template_id,
         status: ProjectStatus::Active,
         metadata: input.metadata,
+        goal_words: None,
         created_at: now,
         updated_at: now,
     };
@@ -84,10 +90,8 @@ pub(super) fn create_atomic(
 }
 
 pub(super) fn list(conn: &Connection) -> AppResult<Vec<Project>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, title, template_id, status, metadata, created_at, updated_at
-         FROM projects ORDER BY status='active' DESC, updated_at DESC",
-    )?;
+    let sql = format!("SELECT {COLS} FROM projects ORDER BY status='active' DESC, updated_at DESC");
+    let mut stmt = conn.prepare(&sql)?;
     let rows = stmt
         .query_map([], row_to_project)?
         .collect::<Result<Vec<_>, _>>()?;
@@ -95,26 +99,16 @@ pub(super) fn list(conn: &Connection) -> AppResult<Vec<Project>> {
 }
 
 pub(super) fn get(conn: &Connection, id: &str) -> AppResult<Option<Project>> {
+    let sql = format!("SELECT {COLS} FROM projects WHERE id=?1");
     let p = conn
-        .query_row(
-            "SELECT id, title, template_id, status, metadata, created_at, updated_at
-             FROM projects WHERE id=?1",
-            params![id],
-            row_to_project,
-        )
+        .query_row(&sql, params![id], row_to_project)
         .optional()?;
     Ok(p)
 }
 
 pub(super) fn get_active(conn: &Connection) -> AppResult<Option<Project>> {
-    let p = conn
-        .query_row(
-            "SELECT id, title, template_id, status, metadata, created_at, updated_at
-             FROM projects WHERE status='active' LIMIT 1",
-            [],
-            row_to_project,
-        )
-        .optional()?;
+    let sql = format!("SELECT {COLS} FROM projects WHERE status='active' LIMIT 1");
+    let p = conn.query_row(&sql, [], row_to_project).optional()?;
     Ok(p)
 }
 
@@ -127,6 +121,19 @@ pub(super) fn set_status(conn: &Connection, id: &str, status: ProjectStatus) -> 
         return Err(AppError::NotFound(format!("project {id}")));
     }
     Ok(())
+}
+
+/// Set or clear the project's target word count. `None` removes the goal.
+pub(super) fn set_goal(conn: &Connection, id: &str, goal: Option<i64>) -> AppResult<Project> {
+    let updated = conn.execute(
+        "UPDATE projects SET goal_words=?2, updated_at=?3 WHERE id=?1",
+        params![id, goal, now_ms()],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("project {id}")));
+    }
+    let sql = format!("SELECT {COLS} FROM projects WHERE id=?1");
+    Ok(conn.query_row(&sql, params![id], row_to_project)?)
 }
 
 pub(super) fn delete(conn: &Connection, id: &str) -> AppResult<()> {

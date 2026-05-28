@@ -8,11 +8,11 @@ use crate::error::{AppError, AppResult};
 use super::row_mappers::row_to_document;
 
 /// Column list for `SELECT` against `documents`. Kept in one place so adding
-/// columns (e.g. `goal_words` in the goals sprint) is a single-line change.
-/// The trailing correlated subquery returns the document's tag set as a JSON
-/// array; an empty array (not NULL) when the document has no tags.
+/// columns is a single-line change. The trailing correlated subquery returns
+/// the document's tag set as a JSON array; an empty array (not NULL) when
+/// the document has no tags.
 const COLS: &str = "id, project_id, parent_id, title, doc_type, content, position, status, \
-     created_at, updated_at, \
+     goal_words, created_at, updated_at, \
      (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json";
 
 pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNode> {
@@ -51,6 +51,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         position: next_pos,
         status: DocumentStatus::Draft,
         tags: Vec::new(),
+        goal_words: None,
         created_at: now,
         updated_at: now,
     };
@@ -184,6 +185,19 @@ pub(super) fn set_tags(conn: &mut Connection, id: &str, tags: &[String]) -> AppR
     let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
     let doc = conn.query_row(&sql, params![id], row_to_document)?;
     Ok(doc)
+}
+
+/// Set or clear a document's target word count. `None` removes the goal.
+pub(super) fn set_goal(conn: &Connection, id: &str, goal: Option<i64>) -> AppResult<DocNode> {
+    let updated = conn.execute(
+        "UPDATE documents SET goal_words=?2, updated_at=?3 WHERE id=?1",
+        params![id, goal, now_ms()],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    let sql = format!("SELECT {COLS} FROM documents WHERE id=?1");
+    Ok(conn.query_row(&sql, params![id], row_to_document)?)
 }
 
 /// Distinct tags in use across all documents of a project, in alphabetical
@@ -490,6 +504,44 @@ mod tests {
 
         let tags = s.list_project_tags(&p.id).unwrap();
         assert_eq!(tags, vec!["draft", "epic", "fantasy"]);
+    }
+
+    #[test]
+    fn set_document_goal_persists_and_clears() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = make_chapter(&s, &p.id, "A");
+        // Default = None.
+        assert!(s.get_document(&d).unwrap().unwrap().goal_words.is_none());
+        // Set a goal.
+        let after = s.set_document_goal(&d, Some(2500)).unwrap();
+        assert_eq!(after.goal_words, Some(2500));
+        // Clear it.
+        let cleared = s.set_document_goal(&d, None).unwrap();
+        assert!(cleared.goal_words.is_none());
+    }
+
+    #[test]
+    fn set_project_goal_persists_and_clears() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        assert!(p.goal_words.is_none());
+        let after = s.set_project_goal(&p.id, Some(80_000)).unwrap();
+        assert_eq!(after.goal_words, Some(80_000));
+        let cleared = s.set_project_goal(&p.id, None).unwrap();
+        assert!(cleared.goal_words.is_none());
     }
 
     #[test]

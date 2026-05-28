@@ -5,6 +5,7 @@ import Select from 'primevue/select';
 import Chips from 'primevue/chips';
 import type { DocNode, DocumentStatus } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
+import GoalProgress from '@/components/GoalProgress.vue';
 
 const props = defineProps<{
   doc: DocNode | null;
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   snapshotRestored: [];
   statusChange: [status: DocumentStatus];
   tagsChange: [tags: string[]];
+  goalChange: [goal: number | null];
 }>();
 
 const { t, d, locale } = useI18n();
@@ -109,6 +111,18 @@ function onTagsChange(next: string[]) {
             <dd>{{ formatDate(doc.updatedAt) }}</dd>
           </div>
         </dl>
+      </section>
+
+      <section>
+        <h4 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2">
+          {{ t('goal.documentLabel') }}
+        </h4>
+        <GoalProgress
+          :current="wordCountHere"
+          :goal="doc.goalWords ?? null"
+          :read-only="readOnly"
+          @update:goal="(v) => emit('goalChange', v)"
+        />
       </section>
 
       <section>

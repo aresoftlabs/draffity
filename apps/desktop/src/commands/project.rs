@@ -54,3 +54,12 @@ pub fn delete_project(state: State<'_, AppState>, app: AppHandle, id: String) ->
     let _ = app.emit(events::PROJECT_DELETED, &id);
     Ok(())
 }
+
+#[tauri::command]
+pub fn set_project_goal(
+    state: State<'_, AppState>,
+    id: String,
+    goal: Option<i64>,
+) -> CmdResult<Project> {
+    state.storage.set_project_goal(&id, goal)
+}

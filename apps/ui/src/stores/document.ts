@@ -101,6 +101,12 @@ export const useDocumentStore = defineStore('document', () => {
     if (idx !== -1) documents.value[idx] = updated;
   }
 
+  async function setGoal(id: string, goal: number | null) {
+    const updated = await ipc.setDocumentGoal({ id, goal });
+    const idx = documents.value.findIndex((d) => d.id === id);
+    if (idx !== -1) documents.value[idx] = updated;
+  }
+
   /** Persist a binder reorder. Apply ops sequentially (1-2 in practice:
    * the new parent and, if the node changed parents, also the old one).
    * Reloads documents after to converge with the server's view. */
@@ -140,6 +146,7 @@ export const useDocumentStore = defineStore('document', () => {
     reorder,
     setStatus,
     setTags,
+    setGoal,
     reset,
   };
 });
