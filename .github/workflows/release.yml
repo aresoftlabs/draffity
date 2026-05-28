@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build & publish (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: ''
+          - os: ubuntu-latest
+            args: ''
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file libxdo-dev \
+            libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build & publish with tauri-action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Draffity ${{ github.ref_name }}'
+          releaseBody: 'See CHANGELOG.md for details. Manual sanity-check before publishing.'
+          releaseDraft: true
+          prerelease: true
+          projectPath: apps/desktop
+          args: ${{ matrix.args }}
