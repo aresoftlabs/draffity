@@ -35,6 +35,7 @@ scraper = { version = "0.20", default-features = false }
 ego-tree = "0.6"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 biblatex = "0.10"
+sha2 = "0.10"
 
 [features]
 # this feature is used for production builds where `devUrl` points to the filesystem

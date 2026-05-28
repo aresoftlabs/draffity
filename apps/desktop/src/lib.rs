@@ -105,6 +105,12 @@ pub fn run() {
             commands::update_codex_entry,
             commands::delete_codex_entry,
             commands::search_codex_entries,
+            // media
+            commands::upload_media,
+            commands::read_media_bytes,
+            commands::get_media_asset,
+            commands::list_project_media,
+            commands::delete_media,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

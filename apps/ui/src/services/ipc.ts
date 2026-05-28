@@ -12,6 +12,7 @@ import type {
   DocumentStatus,
   ExportConfig,
   ExportFormat,
+  MediaAsset,
   Project,
   ProjectInput,
   SearchHit,
@@ -116,6 +117,15 @@ export const ipc = {
   createManualBackup: () => invoke<BackupRecord>('create_manual_backup'),
   restoreBackup: (id: string) => invoke<void>('restore_backup', { id }),
   pruneBackups: () => invoke<number>('prune_backups'),
+
+  // Media
+  uploadMedia: (params: { projectId: string; mime: string; bytes: number[] }) =>
+    invoke<MediaAsset>('upload_media', params),
+  readMediaBytes: (id: string) => invoke<number[]>('read_media_bytes', { id }),
+  getMediaAsset: (id: string) => invoke<MediaAsset | null>('get_media_asset', { id }),
+  listProjectMedia: (projectId: string) =>
+    invoke<MediaAsset[]>('list_project_media', { projectId }),
+  deleteMedia: (id: string) => invoke<void>('delete_media', { id }),
 
   // Codex
   createCodexEntry: (input: CodexInput) => invoke<CodexEntry>('create_codex_entry', { input }),

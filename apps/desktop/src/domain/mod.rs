@@ -4,6 +4,7 @@
 pub mod citation;
 pub mod codex;
 pub mod document;
+pub mod media;
 pub mod project;
 pub mod search;
 pub mod snapshot;
@@ -13,6 +14,7 @@ pub mod template;
 pub use citation::Citation;
 pub use codex::{CodexEntry, CodexInput, CodexKind, CodexUpdate};
 pub use document::{DocNode, DocumentInput, DocumentStatus, DocumentType};
+pub use media::{extension_for_mime, MediaAsset};
 pub use project::{Project, ProjectInput, ProjectStatus};
 pub use search::SearchHit;
 pub use snapshot::Snapshot;

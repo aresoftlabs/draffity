@@ -16,8 +16,9 @@ use crate::error::{AppError, AppResult};
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
     ExportService, FreeTier, LayeredTemplatesService, LocalBackupService, LocalBibliographyService,
-    LocalExporter, LocalProjectManager, LocalStorageService, NoOpAI, NoOpASR, NoOpSync,
-    ProjectManagerService, StorageService, TemplatesService, TierService, UserTemplatesLoader,
+    LocalExporter, LocalMediaService, LocalProjectManager, LocalStorageService, MediaService,
+    NoOpAI, NoOpASR, NoOpSync, ProjectManagerService, StorageService, TemplatesService,
+    TierService, UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -34,6 +35,7 @@ pub struct ServiceBundle {
     pub exporter: Arc<dyn ExportService>,
     pub bibliography: Arc<dyn BibliographyService>,
     pub backup: Arc<dyn BackupService>,
+    pub media: Arc<dyn MediaService>,
 }
 
 /// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
@@ -54,6 +56,9 @@ impl ServiceFactory {
             templates.clone(),
         ));
 
+        let media: Arc<dyn MediaService> =
+            Arc::new(LocalMediaService::new(storage.clone(), app_data_dir));
+
         Ok(ServiceBundle {
             storage,
             tier: tier_service,
@@ -66,6 +71,7 @@ impl ServiceFactory {
             exporter: Arc::new(LocalExporter),
             bibliography: Arc::new(LocalBibliographyService),
             backup: Self::build_backup(app_data_dir),
+            media,
         })
     }
 

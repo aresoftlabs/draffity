@@ -14,8 +14,8 @@ use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
     Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DocNode, DocumentInput,
-    DocumentStatus, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot, TemplateNode,
-    WritingStats,
+    DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
+    TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 
@@ -26,6 +26,7 @@ mod codex;
 mod document_positions;
 mod document_tags;
 mod documents;
+mod media;
 mod projects;
 mod row_mappers;
 mod search;
@@ -45,6 +46,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (6, include_str!("../../migrations/006_doc_json.sql")),
     (7, include_str!("../../migrations/007_citations.sql")),
     (9, include_str!("../../migrations/009_codex.sql")),
+    (10, include_str!("../../migrations/010_media.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -157,6 +159,24 @@ pub trait StorageService: Send + Sync {
         query: &str,
         kind: Option<CodexKind>,
     ) -> AppResult<Vec<CodexEntry>>;
+
+    // Media registry. The bytes themselves live on disk; this trait only
+    // tracks the catalogue row. Callers (the MediaService) own the file
+    // write + sha256 computation before calling `insert_media_row`.
+    fn find_media_by_hash(&self, project_id: &str, sha256: &str) -> AppResult<Option<MediaAsset>>;
+    fn insert_media_row(
+        &self,
+        project_id: &str,
+        path_relative: &str,
+        mime: &str,
+        sha256: &str,
+        bytes: i64,
+    ) -> AppResult<MediaAsset>;
+    fn get_media(&self, id: &str) -> AppResult<Option<MediaAsset>>;
+    fn list_media(&self, project_id: &str) -> AppResult<Vec<MediaAsset>>;
+    /// Returns the deleted row so the `MediaService` knows which file to
+    /// unlink on disk; `None` when the id was already gone.
+    fn delete_media_row(&self, id: &str) -> AppResult<Option<MediaAsset>>;
 
     // Search
     /// Full-text search across documents of a single project. Returns up to
@@ -426,6 +446,40 @@ impl StorageService for LocalStorageService {
         kind: Option<CodexKind>,
     ) -> AppResult<Vec<CodexEntry>> {
         codex::search(&self.conn.lock().unwrap(), project_id, query, kind)
+    }
+
+    fn find_media_by_hash(&self, project_id: &str, sha256: &str) -> AppResult<Option<MediaAsset>> {
+        media::find_by_hash(&self.conn.lock().unwrap(), project_id, sha256)
+    }
+
+    fn insert_media_row(
+        &self,
+        project_id: &str,
+        path_relative: &str,
+        mime: &str,
+        sha256: &str,
+        bytes: i64,
+    ) -> AppResult<MediaAsset> {
+        media::insert(
+            &self.conn.lock().unwrap(),
+            project_id,
+            path_relative,
+            mime,
+            sha256,
+            bytes,
+        )
+    }
+
+    fn get_media(&self, id: &str) -> AppResult<Option<MediaAsset>> {
+        media::get(&self.conn.lock().unwrap(), id)
+    }
+
+    fn list_media(&self, project_id: &str) -> AppResult<Vec<MediaAsset>> {
+        media::list(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn delete_media_row(&self, id: &str) -> AppResult<Option<MediaAsset>> {
+        media::delete(&self.conn.lock().unwrap(), id)
     }
 }
 

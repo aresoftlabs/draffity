@@ -8,8 +8,8 @@ use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, CloudSyncService, ExportService,
-    ProjectManagerService, ServiceBundle, StorageService, TemplatesService, TierService,
-    UserTemplatesLoader,
+    MediaService, ProjectManagerService, ServiceBundle, StorageService, TemplatesService,
+    TierService, UserTemplatesLoader,
 };
 
 pub struct AppState {
@@ -27,6 +27,7 @@ pub struct AppState {
     pub exporter: Arc<dyn ExportService>,
     pub bibliography: Arc<dyn BibliographyService>,
     pub backup: Arc<dyn BackupService>,
+    pub media: Arc<dyn MediaService>,
     /// Keeps the non-blocking log writer alive for the whole app lifecycle.
     /// Dropping this guard flushes any pending log lines.
     #[allow(dead_code)]
@@ -47,6 +48,7 @@ impl AppState {
             exporter: bundle.exporter,
             bibliography: bundle.bibliography,
             backup: bundle.backup,
+            media: bundle.media,
             _log_guard: log_guard,
         }
     }

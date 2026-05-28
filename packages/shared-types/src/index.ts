@@ -129,6 +129,23 @@ export interface BibliographyImportSummary {
   skipped: number;
 }
 
+// Media
+
+/** Catalogue row for a blob stored under `<app_data>/<pathRelative>`. The
+ *  bytes themselves are fetched via `readMediaBytes`. */
+export interface MediaAsset {
+  id: string;
+  projectId: string;
+  /** Relative to `<app_data>` — e.g. `media/<project>/<sha256>.<ext>`. */
+  pathRelative: string;
+  mime: string;
+  sha256: string;
+  /** File size in bytes. `i64` on the Rust side so this is a regular JS number
+   *  for the foreseeable file sizes a writer pastes. */
+  bytes: number;
+  createdAt: number;
+}
+
 // Backups
 
 export type BackupKind = 'daily' | 'monthly' | 'manual';
