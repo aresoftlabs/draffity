@@ -33,3 +33,13 @@ body {
     Roboto,
     sans-serif;
 }
+
+/* Visible keyboard focus ring everywhere. PrimeVue components ship their
+ * own focus styles; this catches the fallback case (custom buttons,
+ * codex/citation cards, tag chips, etc.). `:focus-visible` keeps the ring
+ * out of mouse clicks. */
+*:focus-visible {
+  outline: 2px solid var(--p-primary-500, #3b82f6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
