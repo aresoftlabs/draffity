@@ -2,6 +2,7 @@
 //! Entities + invariants + value objects, fully testable in isolation.
 
 pub mod citation;
+pub mod codex;
 pub mod document;
 pub mod project;
 pub mod search;
@@ -10,6 +11,7 @@ pub mod stats;
 pub mod template;
 
 pub use citation::Citation;
+pub use codex::{CodexEntry, CodexInput, CodexKind, CodexUpdate};
 pub use document::{DocNode, DocumentInput, DocumentStatus, DocumentType};
 pub use project::{Project, ProjectInput, ProjectStatus};
 pub use search::SearchHit;

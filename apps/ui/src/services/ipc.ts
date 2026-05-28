@@ -3,6 +3,10 @@ import type {
   BackupRecord,
   BibliographyImportSummary,
   Citation,
+  CodexEntry,
+  CodexInput,
+  CodexKind,
+  CodexUpdate,
   DocNode,
   DocumentInput,
   DocumentStatus,
@@ -112,4 +116,15 @@ export const ipc = {
   createManualBackup: () => invoke<BackupRecord>('create_manual_backup'),
   restoreBackup: (id: string) => invoke<void>('restore_backup', { id }),
   pruneBackups: () => invoke<number>('prune_backups'),
+
+  // Codex
+  createCodexEntry: (input: CodexInput) => invoke<CodexEntry>('create_codex_entry', { input }),
+  listCodexEntries: (projectId: string) =>
+    invoke<CodexEntry[]>('list_codex_entries', { projectId }),
+  getCodexEntry: (id: string) => invoke<CodexEntry | null>('get_codex_entry', { id }),
+  updateCodexEntry: (params: { id: string; patch: CodexUpdate }) =>
+    invoke<CodexEntry>('update_codex_entry', params),
+  deleteCodexEntry: (id: string) => invoke<void>('delete_codex_entry', { id }),
+  searchCodexEntries: (params: { projectId: string; query: string; kind?: CodexKind }) =>
+    invoke<CodexEntry[]>('search_codex_entries', params),
 };

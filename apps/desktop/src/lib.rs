@@ -98,6 +98,13 @@ pub fn run() {
             commands::create_manual_backup,
             commands::restore_backup,
             commands::prune_backups,
+            // codex
+            commands::create_codex_entry,
+            commands::list_codex_entries,
+            commands::get_codex_entry,
+            commands::update_codex_entry,
+            commands::delete_codex_entry,
+            commands::search_codex_entries,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

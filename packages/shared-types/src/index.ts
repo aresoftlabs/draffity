@@ -141,6 +141,36 @@ export interface BackupRecord {
   kind: BackupKind;
 }
 
+// Codex
+
+export type CodexKind = 'character' | 'place' | 'object' | 'note';
+
+export interface CodexEntry {
+  id: string;
+  projectId: string;
+  kind: CodexKind;
+  name: string;
+  body?: string | null;
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CodexInput {
+  projectId: string;
+  kind: CodexKind;
+  name: string;
+  body?: string | null;
+  tags?: string[];
+}
+
+export interface CodexUpdate {
+  name?: string;
+  kind?: CodexKind;
+  body?: string | null;
+  tags?: string[];
+}
+
 // Export
 
 export type ExportFormat = 'markdown' | 'docx' | 'epub' | 'pdf';

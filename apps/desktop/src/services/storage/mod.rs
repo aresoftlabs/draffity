@@ -13,14 +13,16 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    Citation, DocNode, DocumentInput, DocumentStatus, Project, ProjectInput, ProjectStatus,
-    SearchHit, Snapshot, TemplateNode, WritingStats,
+    Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DocNode, DocumentInput,
+    DocumentStatus, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot, TemplateNode,
+    WritingStats,
 };
 use crate::error::AppResult;
 
 pub use citations::UpsertEntry as CitationUpsert;
 
 mod citations;
+mod codex;
 mod documents;
 mod projects;
 mod row_mappers;
@@ -40,6 +42,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (5, include_str!("../../migrations/005_synopsis.sql")),
     (6, include_str!("../../migrations/006_doc_json.sql")),
     (7, include_str!("../../migrations/007_citations.sql")),
+    (9, include_str!("../../migrations/009_codex.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -132,6 +135,26 @@ pub trait StorageService: Send + Sync {
         entries: &[CitationUpsert],
     ) -> AppResult<Vec<Citation>>;
     fn delete_citation(&self, id: &str) -> AppResult<()>;
+
+    // Codex (worldbuilding)
+    /// Create a new codex entry. `input` is validated and normalised first
+    /// (trimmed name, deduped tags).
+    fn create_codex_entry(&self, input: CodexInput) -> AppResult<CodexEntry>;
+    /// List all entries of a project, alphabetical case-insensitive.
+    fn list_codex_entries(&self, project_id: &str) -> AppResult<Vec<CodexEntry>>;
+    fn get_codex_entry(&self, id: &str) -> AppResult<Option<CodexEntry>>;
+    /// Patch-style update — only the `Some` fields move. An empty `body`
+    /// (whitespace) clears the field, by design (matches the editor UX).
+    fn update_codex_entry(&self, id: &str, patch: CodexUpdate) -> AppResult<CodexEntry>;
+    fn delete_codex_entry(&self, id: &str) -> AppResult<()>;
+    /// `LIKE`-based scan across name + body + tag JSON. Empty `query` lists
+    /// everything (optionally narrowed by `kind`).
+    fn search_codex_entries(
+        &self,
+        project_id: &str,
+        query: &str,
+        kind: Option<CodexKind>,
+    ) -> AppResult<Vec<CodexEntry>>;
 
     // Search
     /// Full-text search across documents of a single project. Returns up to
@@ -372,6 +395,35 @@ impl StorageService for LocalStorageService {
 
     fn delete_citation(&self, id: &str) -> AppResult<()> {
         citations::delete_one(&self.conn.lock().unwrap(), id)
+    }
+
+    fn create_codex_entry(&self, input: CodexInput) -> AppResult<CodexEntry> {
+        codex::create(&self.conn.lock().unwrap(), input)
+    }
+
+    fn list_codex_entries(&self, project_id: &str) -> AppResult<Vec<CodexEntry>> {
+        codex::list(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn get_codex_entry(&self, id: &str) -> AppResult<Option<CodexEntry>> {
+        codex::get(&self.conn.lock().unwrap(), id)
+    }
+
+    fn update_codex_entry(&self, id: &str, patch: CodexUpdate) -> AppResult<CodexEntry> {
+        codex::update(&self.conn.lock().unwrap(), id, patch)
+    }
+
+    fn delete_codex_entry(&self, id: &str) -> AppResult<()> {
+        codex::delete(&self.conn.lock().unwrap(), id)
+    }
+
+    fn search_codex_entries(
+        &self,
+        project_id: &str,
+        query: &str,
+        kind: Option<CodexKind>,
+    ) -> AppResult<Vec<CodexEntry>> {
+        codex::search(&self.conn.lock().unwrap(), project_id, query, kind)
     }
 }
 
