@@ -206,6 +206,9 @@ export interface ExportConfig {
   includeTitlePage: boolean;
   sceneSeparator: SceneSeparator;
   coverImagePath?: string | null;
+  /** When true, exporters append a "Codex" appendix at the end of the
+   *  document listing every entry grouped by kind. */
+  includeCodex: boolean;
 }
 
 /** Defaults mirrored from `services::exporter::config::ExportConfig::default()`. */
@@ -219,6 +222,7 @@ export const DEFAULT_EXPORT_CONFIG: ExportConfig = {
   includeTitlePage: true,
   sceneSeparator: { kind: 'stars' },
   coverImagePath: null,
+  includeCodex: false,
 };
 
 // Writing stats

@@ -7,7 +7,7 @@ use docx_rs::{
 };
 use scraper::{ElementRef, Html, Node};
 
-use crate::domain::{DocNode, Project};
+use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
 use crate::error::AppResult;
 
 use super::config::ExportConfig;
@@ -16,6 +16,7 @@ use super::util::flatten_in_order;
 pub fn render(
     project: &Project,
     documents: &[DocNode],
+    codex: &[CodexEntry],
     config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
     let mut docx = Docx::new();
@@ -92,6 +93,10 @@ pub fn render(
         }
     }
 
+    if config.include_codex && !codex.is_empty() {
+        docx = append_codex(docx, codex);
+    }
+
     let mut buf: Vec<u8> = Vec::new();
     {
         let cursor = std::io::Cursor::new(&mut buf);
@@ -100,6 +105,66 @@ pub fn render(
             .map_err(|e| crate::error::AppError::Unexpected(format!("docx build failed: {e}")))?;
     }
     Ok(buf)
+}
+
+/// Append a Codex appendix to the doc: page break, "Codex" heading and
+/// then sections grouped by kind. Each entry is rendered as a Heading3
+/// plus body HTML reusing the same `render_html_blocks` pipeline the doc
+/// content uses, so formatting stays consistent.
+fn append_codex(mut docx: Docx, codex: &[CodexEntry]) -> Docx {
+    docx = docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)));
+    docx = docx.add_paragraph(
+        Paragraph::new()
+            .style("Heading1")
+            .add_run(Run::new().add_text("Codex").bold().size(48)),
+    );
+
+    for kind in [
+        CodexKind::Character,
+        CodexKind::Place,
+        CodexKind::Object,
+        CodexKind::Note,
+    ] {
+        let mut entries: Vec<&CodexEntry> = codex.iter().filter(|e| e.kind == kind).collect();
+        if entries.is_empty() {
+            continue;
+        }
+        entries.sort_by_key(|a| a.name.to_lowercase());
+        docx = docx.add_paragraph(
+            Paragraph::new()
+                .style("Heading2")
+                .add_run(Run::new().add_text(codex_section_name(kind)).bold()),
+        );
+        for e in entries {
+            docx = docx.add_paragraph(
+                Paragraph::new()
+                    .style("Heading3")
+                    .add_run(Run::new().add_text(e.name.clone()).bold()),
+            );
+            if !e.tags.is_empty() {
+                docx = docx.add_paragraph(
+                    Paragraph::new().add_run(Run::new().add_text(e.tags.join(", ")).italic()),
+                );
+            }
+            if let Some(body) = &e.body {
+                if !body.trim().is_empty() {
+                    for paragraph in render_html_blocks(body) {
+                        docx = docx.add_paragraph(paragraph);
+                    }
+                }
+            }
+        }
+    }
+    docx
+}
+
+fn codex_section_name(kind: CodexKind) -> &'static str {
+    match kind {
+        CodexKind::Character => "Characters",
+        CodexKind::Place => "Places",
+        CodexKind::Object => "Objects",
+        CodexKind::Note => "Notes",
+    }
 }
 
 /// Convert a TipTap HTML fragment to a sequence of `Paragraph`s.
@@ -315,7 +380,7 @@ mod tests {
             ),
             0,
         )];
-        let bytes = render(&p, &docs, &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &docs, &[], &ExportConfig::default()).unwrap();
         // ZIP local file header signature
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
         // Should contain at least the standard word/document.xml entry name.
@@ -326,7 +391,7 @@ mod tests {
     #[test]
     fn empty_project_still_produces_zip() {
         let p = project("X");
-        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 
@@ -337,7 +402,7 @@ mod tests {
     #[test]
     fn toc_is_emitted_when_include_toc_is_true() {
         let p = project("Con TOC");
-        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
         let s = String::from_utf8_lossy(&bytes);
         assert!(s.contains("TOC"), "expected TOC field in DOCX output");
     }
@@ -350,7 +415,7 @@ mod tests {
             include_title_page: false,
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &cfg).unwrap();
         let s = String::from_utf8_lossy(&bytes);
         assert!(
             !s.contains("TOC \\"),
@@ -369,7 +434,7 @@ mod tests {
             include_toc: false,
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &cfg).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 
@@ -384,6 +449,6 @@ mod tests {
         };
         // Whitespace-only override falls back to project title — the build
         // doesn't panic and we trust the resolver branch coverage.
-        render(&p, &[], &cfg).unwrap();
+        render(&p, &[], &[], &cfg).unwrap();
     }
 }

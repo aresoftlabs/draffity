@@ -396,6 +396,10 @@ function coverFilename(path: string | null | undefined): string {
             <Checkbox v-model="config.includeToc" input-id="opt-toc" :binary="true" />
             <label for="opt-toc" class="text-sm">{{ t('export.includeToc') }}</label>
           </div>
+          <div class="flex items-center gap-2">
+            <Checkbox v-model="config.includeCodex" input-id="opt-codex" :binary="true" />
+            <label for="opt-codex" class="text-sm">{{ t('export.includeCodex') }}</label>
+          </div>
           <div class="flex flex-col gap-1">
             <label for="export-scene" class="text-sm font-medium">
               {{ t('export.sceneSeparator') }}

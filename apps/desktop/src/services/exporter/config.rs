@@ -78,6 +78,10 @@ pub struct ExportConfig {
     pub scene_separator: SceneSeparator,
     /// Absolute path to a cover image (EPUB only for now).
     pub cover_image_path: Option<String>,
+    /// When true, exporters append a "Codex" appendix at the end of the
+    /// document listing every entry grouped by kind. Defaults to false to
+    /// avoid leaking worldbuilding into reader-facing exports unsought.
+    pub include_codex: bool,
 }
 
 impl Default for ExportConfig {
@@ -92,6 +96,7 @@ impl Default for ExportConfig {
             include_title_page: true,
             scene_separator: SceneSeparator::default(),
             cover_image_path: None,
+            include_codex: false,
         }
     }
 }

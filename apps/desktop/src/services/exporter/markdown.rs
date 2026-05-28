@@ -1,7 +1,7 @@
 //! Markdown export. Single-file Markdown with YAML frontmatter at the top.
 //! Uses `html2md` to convert TipTap HTML content to Markdown.
 
-use crate::domain::{DocNode, Project};
+use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
 use crate::error::AppResult;
 
 use super::config::ExportConfig;
@@ -10,7 +10,8 @@ use super::util::{flatten_in_order, yaml_quote};
 pub fn render(
     project: &Project,
     documents: &[DocNode],
-    _config: &ExportConfig,
+    codex: &[CodexEntry],
+    config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
     let mut out = String::new();
 
@@ -52,7 +53,53 @@ pub fn render(
         }
     }
 
+    if config.include_codex && !codex.is_empty() {
+        render_codex_appendix(&mut out, codex);
+    }
+
     Ok(out.into_bytes())
+}
+
+/// Appendix groups entries by kind, then alphabetical within each group.
+/// Body is rendered as-is (HTML→Markdown) so notes the user typed get
+/// proper formatting in the output.
+fn render_codex_appendix(out: &mut String, codex: &[CodexEntry]) {
+    out.push_str("# Codex\n\n");
+    for kind in [
+        CodexKind::Character,
+        CodexKind::Place,
+        CodexKind::Object,
+        CodexKind::Note,
+    ] {
+        let mut entries: Vec<&CodexEntry> = codex.iter().filter(|e| e.kind == kind).collect();
+        if entries.is_empty() {
+            continue;
+        }
+        entries.sort_by_key(|a| a.name.to_lowercase());
+        out.push_str(&format!("## {}\n\n", section_heading(kind)));
+        for e in entries {
+            out.push_str(&format!("### {}\n\n", e.name));
+            if !e.tags.is_empty() {
+                out.push_str(&format!("_{}_\n\n", e.tags.join(", ")));
+            }
+            if let Some(body) = &e.body {
+                if !body.trim().is_empty() {
+                    let md = html2md::parse_html(body);
+                    out.push_str(md.trim());
+                    out.push_str("\n\n");
+                }
+            }
+        }
+    }
+}
+
+fn section_heading(kind: CodexKind) -> &'static str {
+    match kind {
+        CodexKind::Character => "Characters",
+        CodexKind::Place => "Places",
+        CodexKind::Object => "Objects",
+        CodexKind::Note => "Notes",
+    }
 }
 
 #[cfg(test)]
@@ -77,7 +124,7 @@ mod tests {
                 0,
             ),
         ];
-        let bytes = render(&p, &docs, &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &docs, &[], &ExportConfig::default()).unwrap();
         let text = String::from_utf8(bytes).unwrap();
 
         assert!(text.starts_with("---\n"));
@@ -92,7 +139,7 @@ mod tests {
     #[test]
     fn empty_project_still_has_frontmatter() {
         let p = project("X");
-        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
         let text = String::from_utf8(bytes).unwrap();
         assert!(text.starts_with("---\n"));
         assert!(text.contains("# X"));

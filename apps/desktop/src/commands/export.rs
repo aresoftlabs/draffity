@@ -27,6 +27,7 @@ pub fn export_project(
         .get(&project_id)?
         .ok_or_else(|| AppError::NotFound(format!("project {project_id}")))?;
     let documents = state.storage.list_documents(&project_id)?;
+    let codex = state.storage.list_codex_entries(&project_id)?;
 
     let effective = match config {
         Some(c) => c,
@@ -35,7 +36,7 @@ pub fn export_project(
 
     let bytes = state
         .exporter
-        .export(&project, &documents, format, &effective)?;
+        .export(&project, &documents, &codex, format, &effective)?;
 
     let path = PathBuf::from(&output_path);
     if let Some(parent) = path.parent() {

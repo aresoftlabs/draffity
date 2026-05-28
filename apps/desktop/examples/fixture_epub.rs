@@ -55,6 +55,7 @@ fn main() {
         .export(
             &project,
             &docs,
+            &[],
             ExportFormat::Epub,
             &ExportConfig::default(),
         )

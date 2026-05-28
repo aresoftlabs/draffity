@@ -259,6 +259,7 @@
     "marginLeft": "Left",
     "includeToc": "Include table of contents",
     "includeTitlePage": "Include title page",
+    "includeCodex": "Append codex as an appendix",
     "sceneSeparator": "Scene separator",
     "sepStars": "Stars (* * *)",
     "sepDashes": "Dashes (---)",

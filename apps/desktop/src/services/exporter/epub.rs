@@ -7,7 +7,7 @@ use std::path::Path;
 
 use epub_builder::{EpubBuilder, EpubContent, ReferenceType, ZipLibrary};
 
-use crate::domain::{DocNode, Project};
+use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
 use crate::error::{AppError, AppResult};
 
 use super::config::ExportConfig;
@@ -16,6 +16,7 @@ use super::util::{flatten_in_order, xml_escape};
 pub fn render(
     project: &Project,
     documents: &[DocNode],
+    codex: &[CodexEntry],
     config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
     let zip = ZipLibrary::new().map_err(|e| AppError::Unexpected(format!("epub zip init: {e}")))?;
@@ -79,6 +80,17 @@ pub fn render(
                     .reftype(ReferenceType::Text),
             )
             .map_err(|e| AppError::Unexpected(format!("epub chapter: {e}")))?;
+    }
+
+    if config.include_codex && !codex.is_empty() {
+        let appendix = codex_appendix_xhtml(codex);
+        builder
+            .add_content(
+                EpubContent::new("codex.xhtml", appendix.as_bytes())
+                    .title("Codex")
+                    .reftype(ReferenceType::Text),
+            )
+            .map_err(|e| AppError::Unexpected(format!("epub codex appendix: {e}")))?;
     }
 
     let mut out = Vec::new();
@@ -154,6 +166,62 @@ fn chapter_xhtml(title: &str, content_html: &str) -> String {
     )
 }
 
+fn codex_appendix_xhtml(codex: &[CodexEntry]) -> String {
+    let mut body = String::from("<h1>Codex</h1>\n");
+    for kind in [
+        CodexKind::Character,
+        CodexKind::Place,
+        CodexKind::Object,
+        CodexKind::Note,
+    ] {
+        let mut entries: Vec<&CodexEntry> = codex.iter().filter(|e| e.kind == kind).collect();
+        if entries.is_empty() {
+            continue;
+        }
+        entries.sort_by_key(|a| a.name.to_lowercase());
+        body.push_str(&format!(
+            "<h2>{}</h2>\n",
+            xml_escape(codex_section_name(kind))
+        ));
+        for e in entries {
+            body.push_str(&format!("<h3>{}</h3>\n", xml_escape(&e.name)));
+            if !e.tags.is_empty() {
+                body.push_str(&format!(
+                    "<p><em>{}</em></p>\n",
+                    xml_escape(&e.tags.join(", "))
+                ));
+            }
+            if let Some(b) = &e.body {
+                if !b.trim().is_empty() {
+                    // Body HTML is trusted (came out of TipTap). Wrap in a
+                    // div so the reader scopes structure if we ever style
+                    // codex entries differently.
+                    body.push_str(&format!("<div>{b}</div>\n"));
+                }
+            }
+        }
+    }
+    format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Codex</title></head>
+<body>
+{body}
+</body>
+</html>"#,
+    )
+}
+
+fn codex_section_name(kind: CodexKind) -> &'static str {
+    match kind {
+        CodexKind::Character => "Characters",
+        CodexKind::Place => "Places",
+        CodexKind::Object => "Objects",
+        CodexKind::Note => "Notes",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,7 +253,7 @@ mod tests {
             Some("<p>Hola.</p>"),
             0,
         )];
-        let bytes = render(&p, &docs, &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &docs, &[], &ExportConfig::default()).unwrap();
         // ZIP magic
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
         // EPUB requires the mimetype file as the first entry, uncompressed.
@@ -197,7 +265,7 @@ mod tests {
     #[test]
     fn empty_project_still_renders() {
         let p = project("X");
-        let bytes = render(&p, &[], &ExportConfig::default()).unwrap();
+        let bytes = render(&p, &[], &[], &ExportConfig::default()).unwrap();
         assert_eq!(&bytes[0..4], b"PK\x03\x04");
     }
 
@@ -218,7 +286,7 @@ mod tests {
             include_title_page: false,
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &cfg).unwrap();
         let lossy = String::from_utf8_lossy(&bytes);
         assert!(!lossy.contains("title.xhtml"));
     }
@@ -230,7 +298,7 @@ mod tests {
             cover_image_path: Some("/tmp/missing.bmp".into()),
             ..ExportConfig::default()
         };
-        let err = render(&p, &[], &cfg).unwrap_err();
+        let err = render(&p, &[], &[], &cfg).unwrap_err();
         match err {
             crate::error::AppError::Unsupported(msg) => {
                 assert!(msg.contains("bmp"));
@@ -272,7 +340,7 @@ mod tests {
             cover_image_path: Some(cover.to_string_lossy().to_string()),
             ..ExportConfig::default()
         };
-        let bytes = render(&p, &[], &cfg).unwrap();
+        let bytes = render(&p, &[], &[], &cfg).unwrap();
         // EPUB ZIP central directory lists the file name; "cover.jpg" must
         // appear somewhere in the package.
         let lossy = String::from_utf8_lossy(&bytes);
