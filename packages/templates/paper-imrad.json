@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "paper-imrad",
+  "name": "Paper académico (IMRaD)",
+  "description": "Estructura estándar para artículos científicos: Abstract, Introduction, Methods, Results, Discussion, References.",
+  "kind": "paper",
+  "locale": "es",
+  "tier": "free",
+  "structure": [
+    {
+      "title": "Front matter",
+      "docType": "folder",
+      "children": [
+        {
+          "title": "Abstract",
+          "docType": "note",
+          "synopsis": "Resumen estructurado: contexto, objetivo, métodos, resultados, conclusiones (≤ 250 palabras)."
+        },
+        {
+          "title": "Keywords",
+          "docType": "note",
+          "synopsis": "5-7 palabras clave separadas por comas."
+        }
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "docType": "chapter",
+      "synopsis": "Contexto, gap en la literatura, hipótesis y objetivo del estudio."
+    },
+    {
+      "title": "2. Methods",
+      "docType": "chapter",
+      "synopsis": "Diseño, participantes/materiales, procedimiento, análisis estadístico."
+    },
+    {
+      "title": "3. Results",
+      "docType": "chapter",
+      "synopsis": "Hallazgos en el orden de las hipótesis. Tablas y figuras numeradas."
+    },
+    {
+      "title": "4. Discussion",
+      "docType": "chapter",
+      "synopsis": "Interpretación, implicaciones, limitaciones, líneas futuras."
+    },
+    {
+      "title": "5. References",
+      "docType": "note",
+      "synopsis": "Bibliografía en el estilo correspondiente (APA, IEEE, Vancouver, etc.)."
+    },
+    {
+      "title": "Apéndices",
+      "docType": "folder",
+      "children": [
+        {
+          "title": "Apéndice A",
+          "docType": "note"
+        }
+      ]
+    }
+  ],
+  "metadataFields": [
+    {
+      "key": "authors",
+      "label": "Autores",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "affiliation",
+      "label": "Filiación",
+      "type": "string",
+      "required": false
+    },
+    {
+      "key": "citationStyle",
+      "label": "Estilo de citación",
+      "type": "string",
+      "required": false,
+      "default": "APA 7"
+    }
+  ]
+}

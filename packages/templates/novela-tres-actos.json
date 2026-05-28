@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "novela-tres-actos",
+  "name": "Novela en tres actos",
+  "description": "Estructura clásica: planteamiento, confrontación y resolución, con capítulos seed por acto.",
+  "kind": "novel",
+  "locale": "es",
+  "tier": "free",
+  "structure": [
+    {
+      "title": "Notas",
+      "docType": "folder",
+      "synopsis": "Material de soporte: personajes, ambientación, ideas sueltas.",
+      "children": [
+        {
+          "title": "Personajes",
+          "docType": "note",
+          "synopsis": "Nombres, motivaciones y arcos de los personajes principales."
+        },
+        {
+          "title": "Ambientación",
+          "docType": "note",
+          "synopsis": "Mundo, época, geografía, reglas internas."
+        }
+      ]
+    },
+    {
+      "title": "Acto 1 — Planteamiento",
+      "docType": "folder",
+      "synopsis": "Mundo ordinario, incidente desencadenante y primer punto de giro.",
+      "children": [
+        {
+          "title": "Capítulo 1 — Mundo ordinario",
+          "docType": "chapter",
+          "synopsis": "Presenta a la protagonista en su contexto antes del cambio."
+        },
+        {
+          "title": "Capítulo 2 — Incidente desencadenante",
+          "docType": "chapter",
+          "synopsis": "El evento que pone en marcha la historia."
+        },
+        {
+          "title": "Capítulo 3 — Primer punto de giro",
+          "docType": "chapter",
+          "synopsis": "La protagonista cruza el umbral hacia el nuevo mundo."
+        }
+      ]
+    },
+    {
+      "title": "Acto 2 — Confrontación",
+      "docType": "folder",
+      "synopsis": "Pruebas, aliados y enemigos. Punto medio. Crisis.",
+      "children": [
+        {
+          "title": "Capítulo 4 — Pruebas y aliados",
+          "docType": "chapter"
+        },
+        {
+          "title": "Capítulo 5 — Punto medio",
+          "docType": "chapter",
+          "synopsis": "Revelación o cambio que altera el rumbo."
+        },
+        {
+          "title": "Capítulo 6 — Crisis",
+          "docType": "chapter",
+          "synopsis": "El momento más oscuro. Todo parece perdido."
+        }
+      ]
+    },
+    {
+      "title": "Acto 3 — Resolución",
+      "docType": "folder",
+      "synopsis": "Clímax, resolución, nuevo equilibrio.",
+      "children": [
+        {
+          "title": "Capítulo 7 — Clímax",
+          "docType": "chapter"
+        },
+        {
+          "title": "Capítulo 8 — Resolución",
+          "docType": "chapter"
+        }
+      ]
+    }
+  ],
+  "metadataFields": [
+    {
+      "key": "author",
+      "label": "Autor/a",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "genre",
+      "label": "Género",
+      "type": "string",
+      "required": false
+    },
+    {
+      "key": "logline",
+      "label": "Logline",
+      "type": "text",
+      "required": false
+    }
+  ]
+}

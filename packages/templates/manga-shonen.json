@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "manga-shonen",
+  "name": "Manga (shōnen)",
+  "description": "Capítulos como carpetas, con páginas hijas y notas de paneles. Ideal para guion de manga.",
+  "kind": "manga",
+  "locale": "es",
+  "tier": "free",
+  "structure": [
+    {
+      "title": "Notas",
+      "docType": "folder",
+      "synopsis": "Worldbuilding, personajes, sistema de poderes.",
+      "children": [
+        {
+          "title": "Personajes",
+          "docType": "note"
+        },
+        {
+          "title": "Mundo y reglas",
+          "docType": "note"
+        }
+      ]
+    },
+    {
+      "title": "Capítulo 1",
+      "docType": "folder",
+      "synopsis": "Cold open + introducción al protagonista.",
+      "children": [
+        {
+          "title": "Splash inicial",
+          "docType": "manga_page",
+          "synopsis": "Página de apertura — gran panel con impacto visual."
+        },
+        {
+          "title": "Página 2",
+          "docType": "manga_page"
+        },
+        {
+          "title": "Página 3",
+          "docType": "manga_page"
+        },
+        {
+          "title": "Página 4",
+          "docType": "manga_page"
+        },
+        {
+          "title": "Cliffhanger",
+          "docType": "manga_page",
+          "synopsis": "Última página — gancho para el siguiente capítulo."
+        }
+      ]
+    },
+    {
+      "title": "Capítulo 2",
+      "docType": "folder",
+      "children": [
+        {
+          "title": "Página 1",
+          "docType": "manga_page"
+        }
+      ]
+    }
+  ],
+  "metadataFields": [
+    {
+      "key": "author",
+      "label": "Autor/a",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "artist",
+      "label": "Artista",
+      "type": "string",
+      "required": false
+    },
+    {
+      "key": "format",
+      "label": "Formato (B5, A4, tankōbon...)",
+      "type": "string",
+      "required": false,
+      "default": "B5"
+    }
+  ]
+}

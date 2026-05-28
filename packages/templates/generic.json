@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "generic",
+  "name": "Genérico",
+  "description": "Estructura libre con un único capítulo inicial. Para flujos de escritura no estructurados.",
+  "kind": "generic",
+  "locale": "es",
+  "tier": "free",
+  "structure": [
+    {
+      "title": "Capítulo 1",
+      "docType": "chapter"
+    }
+  ],
+  "metadataFields": [
+    {
+      "key": "author",
+      "label": "Autor/a",
+      "type": "string",
+      "required": false
+    }
+  ]
+}
