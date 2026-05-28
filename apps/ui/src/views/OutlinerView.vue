@@ -66,10 +66,12 @@ function statusDotClass(s: DocumentStatus): string {
   }
 }
 
-function bodyRowPt(ctx: { rowData: DocNode }) {
-  return ctx.rowData.id === props.selectedId
-    ? { class: 'bg-primary-50 dark:bg-primary-900/20' }
-    : {};
+/** Row highlight via the documented `row-class` prop. The previous `pt`
+ *  approach reached `ctx.rowData.id` directly but PrimeVue 4 nests it
+ *  under `ctx.context.rowData`, so the access threw on every cell during
+ *  render and could freeze the panel on larger document trees. */
+function rowClass(d: DocNode): string {
+  return d.id === props.selectedId ? 'bg-primary-50 dark:bg-primary-900/20' : '';
 }
 
 function onCellEditComplete(event: DataTableCellEditCompleteEvent) {
@@ -103,9 +105,9 @@ function onRowClick(event: { data: DocNode }) {
     <DataTable
       :value="rows"
       :edit-mode="readOnly ? undefined : 'cell'"
+      :row-class="rowClass"
       row-hover
       class="text-sm"
-      :pt="{ bodyRow: bodyRowPt }"
       @cell-edit-complete="onCellEditComplete"
       @row-click="onRowClick"
     >
