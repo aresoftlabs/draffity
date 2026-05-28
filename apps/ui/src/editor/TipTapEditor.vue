@@ -11,6 +11,7 @@ import TableHeader from '@tiptap/extension-table-header';
 import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Citation } from './extensions/citation';
+import { CodexRef } from './extensions/codex-ref';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 
 const props = withDefaults(
@@ -65,6 +66,9 @@ const editor = useEditor({
     // Inline bibliographic citations. Pre-rendered label keeps export
     // trivial; the editor surface shows the label inline.
     Citation,
+    // Inline codex cross-references `[[Name]]` resolved to an entry id.
+    // Clicking dispatches `draffity:open-codex` on `window`.
+    CodexRef,
   ],
   editorProps: {
     attributes: {
@@ -285,6 +289,25 @@ defineExpose({ editor, charCount, wordCount });
 }
 .tiptap-host :deep(.tiptap-content .citation.ProseMirror-selectednode) {
   outline: 2px solid var(--p-primary-400, #60a5fa);
+}
+
+.tiptap-host :deep(.tiptap-content .codex-ref) {
+  display: inline;
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--p-amber-50, #fffbeb);
+  color: var(--p-amber-700, #b45309);
+  font-size: 0.95em;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.tiptap-host :deep(.tiptap-content .codex-ref:hover) {
+  background: var(--p-amber-100, #fef3c7);
+}
+.tiptap-host :deep(.tiptap-content .codex-ref.ProseMirror-selectednode) {
+  outline: 2px solid var(--p-amber-400, #fbbf24);
 }
 
 .tiptap-host :deep(.tiptap-content code) {

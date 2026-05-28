@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
@@ -23,8 +23,11 @@ import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import BibliographyDialog from '@/components/BibliographyDialog.vue';
 import CitationPickerDialog from '@/components/CitationPickerDialog.vue';
+import CodexRefPickerDialog from '@/components/CodexRefPickerDialog.vue';
 import SaveAsTemplateDialog from '@/components/SaveAsTemplateDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
+import { CODEX_REF_EVENT, type CodexRefOpenDetail } from '@/editor/extensions/codex-ref';
+import { useCodexStore } from '@/stores/codex';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
@@ -80,6 +83,7 @@ const editor = computed(() => editorRef.value?.editor ?? null);
 const showExport = ref(false);
 const showBibliography = ref(false);
 const showCitationPicker = ref(false);
+const showCodexPicker = ref(false);
 const showSaveAsTemplate = ref(false);
 const showSearch = ref(false);
 const findVisible = ref(false);
@@ -154,6 +158,36 @@ function onPickCitation(payload: { key: string; label: string }) {
   const ed = editor.value;
   if (!ed) return;
   ed.chain().focus().insertCitation({ citationKey: payload.key, label: payload.label }).run();
+}
+
+function onPickCodexRef(payload: { id: string; name: string }) {
+  const ed = editor.value;
+  if (!ed) return;
+  ed.chain().focus().insertCodexRef({ entryId: payload.id, entryName: payload.name }).run();
+}
+
+/** Cross-ref click from the editor: switch to the codex view and ask the
+ *  store to surface the entry. The store may not have loaded yet (first
+ *  visit to the project), so we await `loadFor` first. */
+const codexStore = useCodexStore();
+async function onCodexRefClick(e: Event) {
+  const detail = (e as CustomEvent<CodexRefOpenDetail>).detail;
+  if (!detail?.id || !project.value) return;
+  if (project.value) uiStore.setProjectView(project.value.id, 'codex');
+  await codexStore.loadFor(project.value.id);
+  // The CodexView is bound to `projectId` and reads from the store; just
+  // switching views is enough to surface the entry in the grid. Opening
+  // the edit dialog directly would require coupling we don't need yet —
+  // the user can click the card if they want to edit.
+  const entry = codexStore.byId.get(detail.id);
+  if (!entry) {
+    tracingWarnMissing(detail.id);
+  }
+}
+
+function tracingWarnMissing(id: string) {
+  // Stale ref to a deleted entry — leave a console hint for the user.
+  console.warn(`[codex] cross-ref points to missing entry ${id}`);
 }
 
 async function onCreate(type: DocumentType) {
@@ -254,7 +288,14 @@ function onSearchJump(documentId: string) {
   docStore.select(documentId);
 }
 
-onMounted(loadProject);
+onMounted(() => {
+  loadProject();
+  window.addEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
+});
 </script>
 
 <template>
@@ -336,6 +377,11 @@ onMounted(loadProject);
       :project-id="project.id"
       @pick="onPickCitation"
     />
+    <CodexRefPickerDialog
+      v-model:visible="showCodexPicker"
+      :project-id="project.id"
+      @pick="onPickCodexRef"
+    />
     <SaveAsTemplateDialog v-model:visible="showSaveAsTemplate" :project-id="project.id" />
     <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
 
@@ -370,6 +416,7 @@ onMounted(loadProject);
             :editor="editor"
             :disabled="readOnly"
             @open-citation-picker="showCitationPicker = true"
+            @open-codex-picker="showCodexPicker = true"
           />
           <FindReplaceBar
             v-if="selected?.docType !== 'folder'"

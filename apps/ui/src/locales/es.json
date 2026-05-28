@@ -176,6 +176,7 @@
     "tableAddCol": "Añadir columna",
     "tableDelete": "Eliminar tabla",
     "insertCitation": "Insertar cita",
+    "insertCodexRef": "Insertar referencia al codex",
     "undo": "Deshacer",
     "redo": "Rehacer"
   },
@@ -314,7 +315,11 @@
       "place": "Lugar",
       "object": "Objeto",
       "note": "Nota"
-    }
+    },
+    "refPickerTitle": "Insertar referencia al codex",
+    "refPickerSubtitle": "Elegí una entrada para insertarla como [[Nombre]] en el texto.",
+    "refPickerSearch": "Buscar por nombre, descripción o etiqueta…",
+    "pickerNoMatches": "Sin coincidencias."
   },
   "saveAsTemplate": {
     "openButton": "Guardar como plantilla",

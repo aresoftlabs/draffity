@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'open-citation-picker': [];
+  'open-codex-picker': [];
 }>();
 
 const { t } = useI18n();
@@ -192,6 +193,14 @@ const isInTable = computed(() => isActive('table'));
       severity="secondary"
       :disabled="!isReady"
       @click="emit('open-citation-picker')"
+    />
+    <Button
+      v-tooltip.bottom="t('toolbar.insertCodexRef')"
+      icon="pi pi-link"
+      text
+      severity="secondary"
+      :disabled="!isReady"
+      @click="emit('open-codex-picker')"
     />
 
     <span class="flex-1" />
