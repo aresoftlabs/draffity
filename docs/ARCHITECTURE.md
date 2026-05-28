@@ -19,7 +19,7 @@
 │                       │                                     │
 │   domain/   (Project, Document, Snapshot, Template, Tier)   │
 │                       │                                     │
-│   SQLite (per project) | filesystem | (premium: cloud, IA)  │
+│   SQLite (single canonical DB) | filesystem | (premium: cloud, IA)  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -52,9 +52,11 @@ Tabla central que mapea `Tier → HashSet<Capability>`. La UI nunca decide capab
 
 ## Storage
 
-- **Un archivo SQLite por proyecto** (`~/.draffity/projects/<id>/project.db`).
-- Migraciones versionadas en `apps/desktop/src/migrations/`.
-- Tablas reservadas para premium (no creadas en MVP): `ai_cache`, `sync_state`, `codex_entries`, `voice_takes`.
+- **Un único archivo SQLite canónico** en `<app_data_dir>/draffity.db` (Windows: `%APPDATA%\cl.aresoft.draffity\draffity.db`). Ver [ADR 0002](./ADR/0002-sqlite-canonico-vs-por-proyecto.md) para el razonamiento.
+- Modo WAL + `foreign_keys=ON` + `synchronous=NORMAL`.
+- Migraciones versionadas en `apps/desktop/src/migrations/`, aplicadas en orden por `LocalStorageService::migrate()`.
+- Range `100_*` reservado para migraciones premium (no aplicadas en free).
+- Tablas reservadas para premium: `ai_cache`, `sync_state`, `codex_entries`, `voice_takes`.
 
 ## Frontend
 
@@ -74,15 +76,48 @@ Rust emite eventos con `tauri::Manager::emit`:
 
 La UI se suscribe con `listen()`. **Premium** (cloud sync, AI background) puede suscribirse igual sin tocar el core.
 
-## Por qué Tauri 2 sobre Electron
+## Patrones canónicos
 
-- Bundles ~5–10× más livianos (target MVP: instalable Win < 15 MB, Linux < 20 MB).
-- IPC seguro tipado, sin Node runtime expuesto.
-- Permissions/capabilities granulares en `apps/desktop/capabilities/`.
-- Backend Rust → robustez en procesamiento de texto, exportadores nativos, performance.
+Estos cinco patrones aparecen repetidos en el código y son **el lenguaje arquitectónico del proyecto**. Toda feature nueva debe encajar en alguno o justificar explícitamente por qué inventa uno nuevo.
 
-## Decisiones explícitas
+### 1. Trait + impl NoOp (services premium-ready)
 
-- **No Mac en el MVP.** Post-MVP: Apple Developer ID + notarización.
+Cualquier capa que pueda tener variante premium se define como `trait` con impl local (free) y `NoOp` cuando aplique. Premium = nueva impl del mismo trait, sin tocar nada existente.
+
+**Ejemplos en el código**: [`AIService`](../apps/desktop/src/services/ai.rs), [`CloudSyncService`](../apps/desktop/src/services/sync.rs), [`ASRService`](../apps/desktop/src/services/asr.rs), [`TierService`](../apps/desktop/src/services/tier.rs). Ver [ADR 0003](./ADR/0003-premium-aditivo-via-traits.md).
+
+### 2. Strategy (export, futuro: import)
+
+Cada formato es struct independiente que implementa una operación común. El orquestador despacha por `HashMap<Format, Box<dyn Strategy>>`, **no** por `match format { ... }` inline.
+
+**Ejemplos**: [`exporter/markdown.rs`](../apps/desktop/src/services/exporter/markdown.rs), [`exporter/docx.rs`](../apps/desktop/src/services/exporter/docx.rs), [`exporter/epub.rs`](../apps/desktop/src/services/exporter/epub.rs), orquestados desde [`exporter/mod.rs`](../apps/desktop/src/services/exporter/mod.rs).
+
+### 3. Capability gate central
+
+Único lugar de verdad: [`capabilities.rs`](../apps/desktop/src/capabilities.rs). UI consulta vía `useCapability('name')`. Backend vía `tier.is_enabled("name")`. **Cero chequeos de tier inline** en lógica de negocio.
+
+### 4. Atomic transaction multi-paso
+
+Operaciones que tocan ≥2 tablas o ≥2 rows van en `conn.transaction()`. Un fallo intermedio nunca debe dejar estado inconsistente.
+
+**Ejemplos**: [`create_project_atomic`](../apps/desktop/src/services/storage.rs), [`restore_snapshot`](../apps/desktop/src/services/storage.rs) (que crea auto-snapshot antes de sobrescribir).
+
+### 5. Event bus para desacoplar suscriptores
+
+Si feature B necesita reaccionar a algo que hace feature A, **A emite evento, B se suscribe**. No imports directos cruzados. Esto es lo que permite que cloud sync, AI background y otras features premium se enganchen sin tocar el core.
+
+**Ejemplos**: [`events.rs`](../apps/desktop/src/events.rs) emite `project.opened`, `document.saved`, `snapshot.created`, etc.
+
+## Decisiones registradas (ADRs)
+
+Las decisiones arquitectónicas importantes se documentan en [`docs/ADR/`](./ADR/):
+
+- [ADR 0001 — Tauri 2 sobre Electron](./ADR/0001-tauri-sobre-electron.md)
+- [ADR 0002 — SQLite canónica única vs por proyecto](./ADR/0002-sqlite-canonico-vs-por-proyecto.md)
+- [ADR 0003 — Premium aditivo vía traits](./ADR/0003-premium-aditivo-via-traits.md)
+
+## Decisiones explícitas (alcance del MVP)
+
+- **No Mac en el MVP.** Llega en v1.0.0 (ver `backlog`). Requiere Apple Developer ID + notarización.
 - **No infra propia de IA.** Premium = BYOK. Sin servidores LLM hosted.
 - **No integración con publishers** (KDP/D2D/IngramSpark). Si llega, será como export "ready-for-X".
