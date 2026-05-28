@@ -23,6 +23,7 @@ import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import BibliographyDialog from '@/components/BibliographyDialog.vue';
 import CitationPickerDialog from '@/components/CitationPickerDialog.vue';
+import SaveAsTemplateDialog from '@/components/SaveAsTemplateDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
@@ -78,6 +79,7 @@ const editor = computed(() => editorRef.value?.editor ?? null);
 const showExport = ref(false);
 const showBibliography = ref(false);
 const showCitationPicker = ref(false);
+const showSaveAsTemplate = ref(false);
 const showSearch = ref(false);
 const findVisible = ref(false);
 const findMode = ref<'find' | 'replace'>('find');
@@ -309,6 +311,14 @@ onMounted(loadProject);
         @click="showBibliography = true"
       />
       <Button
+        icon="pi pi-bookmark"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('saveAsTemplate.openButton')"
+        @click="showSaveAsTemplate = true"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -325,6 +335,7 @@ onMounted(loadProject);
       :project-id="project.id"
       @pick="onPickCitation"
     />
+    <SaveAsTemplateDialog v-model:visible="showSaveAsTemplate" :project-id="project.id" />
     <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
 
     <Splitter

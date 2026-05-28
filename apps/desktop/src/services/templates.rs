@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::domain::{Template, TemplateTier};
 use crate::error::{AppError, AppResult};
+use crate::services::user_templates::UserTemplatesLoader;
 
 pub trait TemplatesService: Send + Sync {
     fn list(&self) -> Vec<Template>;
@@ -78,6 +79,41 @@ impl TemplatesService for BuiltInTemplates {
             .get(id)
             .filter(|t| t.tier == TemplateTier::Free)
             .cloned()
+    }
+}
+
+/// Composes built-in + user templates behind the same `TemplatesService`
+/// surface. The wizard sees a single sorted list; lookup tries user first
+/// so a user template whose id collides with a built-in (shouldn't happen
+/// thanks to the `user-` prefix) would shadow the built-in — that's the
+/// least surprising behaviour for "the user owns their templates".
+pub struct LayeredTemplatesService {
+    built_in: BuiltInTemplates,
+    user: UserTemplatesLoader,
+}
+
+impl LayeredTemplatesService {
+    pub fn new(built_in: BuiltInTemplates, user: UserTemplatesLoader) -> Self {
+        Self { built_in, user }
+    }
+
+    /// Expose the user loader so commands can save new templates without
+    /// reaching back through `AppState` for the path.
+    pub fn user_loader(&self) -> &UserTemplatesLoader {
+        &self.user
+    }
+}
+
+impl TemplatesService for LayeredTemplatesService {
+    fn list(&self) -> Vec<Template> {
+        let mut all = self.built_in.list();
+        all.extend(self.user.list());
+        all.sort_by(|a, b| a.name.cmp(&b.name));
+        all
+    }
+
+    fn get(&self, id: &str) -> Option<Template> {
+        self.user.get(id).or_else(|| self.built_in.get(id))
     }
 }
 

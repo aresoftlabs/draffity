@@ -267,6 +267,16 @@
     "coverClear": "Clear",
     "coverPickerTitle": "Select a cover image"
   },
+  "saveAsTemplate": {
+    "openButton": "Save as template",
+    "title": "Save project as template",
+    "subtitle": "Binder structure and synopses are kept; document content is not.",
+    "namePlaceholder": "Template name",
+    "descriptionPlaceholder": "Description (optional)",
+    "save": "Save template",
+    "saveError": "Could not save template",
+    "saveSuccess": "Template \"{name}\" saved."
+  },
   "bibliography": {
     "title": "Project bibliography",
     "subtitle": "Import a BibTeX file and reference it from the editor with [@key].",

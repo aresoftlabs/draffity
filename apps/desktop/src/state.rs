@@ -9,6 +9,7 @@ use tracing_appender::non_blocking::WorkerGuard;
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, CloudSyncService, ExportService,
     ProjectManager, ServiceBundle, StorageService, TemplatesService, TierService,
+    UserTemplatesLoader,
 };
 
 pub struct AppState {
@@ -16,6 +17,7 @@ pub struct AppState {
     pub tier: Arc<dyn TierService>,
     pub project_manager: Arc<ProjectManager>,
     pub templates: Arc<dyn TemplatesService>,
+    pub user_templates: Arc<UserTemplatesLoader>,
     #[allow(dead_code)] // wired up in Phase 1+; consumed by premium impls
     pub ai: Arc<dyn AIService>,
     #[allow(dead_code)]
@@ -38,6 +40,7 @@ impl AppState {
             tier: bundle.tier,
             project_manager: bundle.project_manager,
             templates: bundle.templates,
+            user_templates: bundle.user_templates,
             ai: bundle.ai,
             sync: bundle.sync,
             asr: bundle.asr,

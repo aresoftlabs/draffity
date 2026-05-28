@@ -12,6 +12,7 @@ pub mod storage;
 pub mod sync;
 pub mod templates;
 pub mod tier;
+pub mod user_templates;
 
 pub use ai::{AIService, NoOpAI};
 pub use asr::{ASRService, NoOpASR};
@@ -25,5 +26,6 @@ pub use factory::{ServiceBundle, ServiceFactory};
 pub use project_manager::ProjectManager;
 pub use storage::{CitationUpsert, LocalStorageService, StorageService};
 pub use sync::{CloudSyncService, NoOpSync};
-pub use templates::{BuiltInTemplates, TemplatesService};
+pub use templates::{BuiltInTemplates, LayeredTemplatesService, TemplatesService};
 pub use tier::{FreeTier, TierService};
+pub use user_templates::{template_from_project, UserTemplatesLoader};

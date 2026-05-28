@@ -79,6 +79,8 @@ pub fn run() {
             // templates
             commands::list_templates,
             commands::get_template,
+            commands::save_project_as_template,
+            commands::delete_user_template,
             // search
             commands::search_documents,
             // export

@@ -267,6 +267,16 @@
     "coverClear": "Quitar",
     "coverPickerTitle": "Selecciona la imagen de portada"
   },
+  "saveAsTemplate": {
+    "openButton": "Guardar como plantilla",
+    "title": "Guardar proyecto como plantilla",
+    "subtitle": "La estructura del binder y los sinopsis se conservan; el contenido de los documentos no.",
+    "namePlaceholder": "Nombre de la plantilla",
+    "descriptionPlaceholder": "Descripción (opcional)",
+    "save": "Guardar plantilla",
+    "saveError": "No se pudo guardar la plantilla",
+    "saveSuccess": "Plantilla \"{name}\" guardada."
+  },
   "bibliography": {
     "title": "Bibliografía del proyecto",
     "subtitle": "Importa un archivo BibTeX y úsalo desde el editor con [@clave].",

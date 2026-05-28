@@ -15,9 +15,9 @@ use crate::capabilities::Tier;
 use crate::error::{AppError, AppResult};
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
-    ExportService, FreeTier, LocalBackupService, LocalBibliographyService, LocalExporter,
-    LocalStorageService, NoOpAI, NoOpASR, NoOpSync, ProjectManager, StorageService,
-    TemplatesService, TierService,
+    ExportService, FreeTier, LayeredTemplatesService, LocalBackupService, LocalBibliographyService,
+    LocalExporter, LocalStorageService, NoOpAI, NoOpASR, NoOpSync, ProjectManager, StorageService,
+    TemplatesService, TierService, UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -27,6 +27,7 @@ pub struct ServiceBundle {
     pub tier: Arc<dyn TierService>,
     pub project_manager: Arc<ProjectManager>,
     pub templates: Arc<dyn TemplatesService>,
+    pub user_templates: Arc<UserTemplatesLoader>,
     pub ai: Arc<dyn AIService>,
     pub sync: Arc<dyn CloudSyncService>,
     pub asr: Arc<dyn ASRService>,
@@ -43,7 +44,10 @@ impl ServiceFactory {
     pub fn build(tier: Tier, app_data_dir: &Path) -> AppResult<ServiceBundle> {
         let storage = Self::build_storage(app_data_dir)?;
         let tier_service = Self::build_tier(tier)?;
-        let templates = Arc::new(BuiltInTemplates::load()?);
+        let user_templates = Arc::new(UserTemplatesLoader::new(
+            app_data_dir.join("templates").join("user"),
+        ));
+        let templates: Arc<dyn TemplatesService> = Self::build_templates(user_templates.clone())?;
         let project_manager = Arc::new(ProjectManager::new(
             storage.clone(),
             tier_service.clone(),
@@ -55,6 +59,7 @@ impl ServiceFactory {
             tier: tier_service,
             project_manager,
             templates,
+            user_templates,
             ai: Self::build_ai(tier),
             sync: Self::build_sync(tier),
             asr: Self::build_asr(tier),
@@ -68,6 +73,17 @@ impl ServiceFactory {
         let db_path = app_data_dir.join("draffity.db");
         let backup_dir = app_data_dir.join("backups");
         Arc::new(LocalBackupService::new(db_path, backup_dir))
+    }
+
+    fn build_templates(user: Arc<UserTemplatesLoader>) -> AppResult<Arc<dyn TemplatesService>> {
+        let built_in = BuiltInTemplates::load()?;
+        // `LayeredTemplatesService` doesn't own the loader — it borrows a
+        // clone of the same `Arc` we hand to the IPC layer. Both views stay
+        // consistent because the loader re-reads disk on every call.
+        Ok(Arc::new(LayeredTemplatesService::new(
+            built_in,
+            (*user).clone(),
+        )))
     }
 
     fn build_storage(app_data_dir: &Path) -> AppResult<Arc<dyn StorageService>> {

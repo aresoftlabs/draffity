@@ -76,6 +76,13 @@ export const ipc = {
   // Templates
   listTemplates: () => invoke<Template[]>('list_templates'),
   getTemplate: (id: string) => invoke<Template | null>('get_template', { id }),
+  saveProjectAsTemplate: (params: {
+    projectId: string;
+    name: string;
+    description?: string;
+    locale?: string;
+  }) => invoke<Template>('save_project_as_template', params),
+  deleteUserTemplate: (id: string) => invoke<void>('delete_user_template', { id }),
 
   // Search
   searchDocuments: (params: { projectId: string; query: string }) =>
