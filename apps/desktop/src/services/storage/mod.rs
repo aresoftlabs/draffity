@@ -61,6 +61,14 @@ pub trait StorageService: Send + Sync {
     ) -> AppResult<DocNode>;
     fn move_document(&self, id: &str, parent_id: Option<&str>, position: i64) -> AppResult<()>;
     fn delete_document(&self, id: &str) -> AppResult<()>;
+    /// Atomically set `position` (and optionally `parent_id`) for every id
+    /// in `ordered_ids` to its index in the slice. Used by binder drag&drop.
+    fn reorder_documents(
+        &self,
+        project_id: &str,
+        parent_id: Option<&str>,
+        ordered_ids: &[String],
+    ) -> AppResult<()>;
 
     // Snapshots
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot>;
@@ -225,6 +233,20 @@ impl StorageService for LocalStorageService {
 
     fn delete_document(&self, id: &str) -> AppResult<()> {
         documents::delete(&self.conn.lock().unwrap(), id)
+    }
+
+    fn reorder_documents(
+        &self,
+        project_id: &str,
+        parent_id: Option<&str>,
+        ordered_ids: &[String],
+    ) -> AppResult<()> {
+        documents::reorder(
+            &mut self.conn.lock().unwrap(),
+            project_id,
+            parent_id,
+            ordered_ids,
+        )
     }
 
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot> {

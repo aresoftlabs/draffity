@@ -89,6 +89,20 @@ export const useDocumentStore = defineStore('document', () => {
     }
   }
 
+  /** Persist a binder reorder. Apply ops sequentially (1-2 in practice:
+   * the new parent and, if the node changed parents, also the old one).
+   * Reloads documents after to converge with the server's view. */
+  async function reorder(projectId: string, ops: ReorderOp[]) {
+    for (const op of ops) {
+      await ipc.reorderDocuments({
+        projectId,
+        parentId: op.parentId,
+        orderedIds: op.orderedIds,
+      });
+    }
+    await loadFor(projectId);
+  }
+
   function reset() {
     documents.value = [];
     selectedId.value = null;
@@ -111,9 +125,15 @@ export const useDocumentStore = defineStore('document', () => {
     save,
     remove,
     move,
+    reorder,
     reset,
   };
 });
+
+export type ReorderOp = {
+  parentId: string | null;
+  orderedIds: string[];
+};
 
 /** Plain-text word counter that strips HTML tags. */
 export function countWords(htmlOrText: string): number {

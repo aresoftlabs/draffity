@@ -61,6 +61,21 @@ pub fn move_document(
 }
 
 #[tauri::command]
+pub fn reorder_documents(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    project_id: String,
+    parent_id: Option<String>,
+    ordered_ids: Vec<String>,
+) -> CmdResult<()> {
+    state
+        .storage
+        .reorder_documents(&project_id, parent_id.as_deref(), &ordered_ids)?;
+    let _ = app.emit(events::DOCUMENT_MOVED, &project_id);
+    Ok(())
+}
+
+#[tauri::command]
 pub fn delete_document(state: State<'_, AppState>, app: AppHandle, id: String) -> CmdResult<()> {
     state.storage.delete_document(&id)?;
     let _ = app.emit(events::DOCUMENT_DELETED, &id);

@@ -39,6 +39,11 @@ export const ipc = {
     invoke<DocNode>('update_document', params),
   moveDocument: (params: { id: string; parentId?: string | null; position: number }) =>
     invoke<void>('move_document', params),
+  reorderDocuments: (params: {
+    projectId: string;
+    parentId: string | null;
+    orderedIds: string[];
+  }) => invoke<void>('reorder_documents', params),
   deleteDocument: (id: string) => invoke<void>('delete_document', { id }),
 
   // Snapshots

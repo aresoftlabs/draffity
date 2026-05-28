@@ -67,7 +67,6 @@ El export procesa el árbol completo del proyecto en orden de aparición.
 
 ## Problemas conocidos en alpha
 
-- Reordenar nodos en el binder por arrastrar todavía no está disponible.
 - Export PDF llegará en una próxima iteración.
 - macOS no está soportado en esta alpha (se planea para post-MVP).
 

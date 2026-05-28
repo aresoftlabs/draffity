@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import Tree from 'primevue/tree';
+import Tree, { type TreeNodeDropEvent } from 'primevue/tree';
 import type { TreeNode } from 'primevue/treenode';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import { ref } from 'vue';
 import type { DocNode, DocumentType } from '@draffity/shared-types';
+import type { ReorderOp } from '@/stores/document';
 
 const props = defineProps<{
   documents: DocNode[];
@@ -18,7 +19,7 @@ const emit = defineEmits<{
   select: [id: string];
   create: [type: DocumentType];
   remove: [id: string];
-  move: [payload: { id: string; parentId: string | null; position: number }];
+  reorder: [ops: ReorderOp[]];
 }>();
 
 const { t } = useI18n();
@@ -63,6 +64,68 @@ const selectionKeys = computed<Record<string, boolean>>(() => {
 
 function onNodeSelect(node: TreeNode) {
   if (typeof node.key === 'string') emit('select', node.key);
+}
+
+/** Locate `targetKey` inside `tree`, returning its parent node (or null if
+ * at root) plus the sibling list it now belongs to. */
+function findContext(
+  tree: TreeNode[],
+  targetKey: string,
+  parent: TreeNode | null = null,
+): { parent: TreeNode | null; siblings: TreeNode[] } | null {
+  for (const node of tree) {
+    if (node.key === targetKey) return { parent, siblings: tree };
+    if (node.children) {
+      const found = findContext(node.children, targetKey, node);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** Find the children list of a node identified by key. */
+function findChildren(tree: TreeNode[], parentKey: string): TreeNode[] {
+  for (const node of tree) {
+    if (node.key === parentKey) return node.children ?? [];
+    if (node.children) {
+      const inner = findChildren(node.children, parentKey);
+      if (inner.length > 0 || node.children.some((c) => c.key === parentKey)) {
+        return inner;
+      }
+    }
+  }
+  return [];
+}
+
+function onNodeDrop(event: TreeNodeDropEvent) {
+  if (props.readOnly) return;
+  const dragId = typeof event.dragNode.key === 'string' ? event.dragNode.key : null;
+  if (!dragId) return;
+
+  const oldDoc = props.documents.find((d) => d.id === dragId);
+  if (!oldDoc) return;
+  const oldParentId = oldDoc.parentId ?? null;
+
+  const ctx = findContext(event.value, dragId);
+  if (!ctx) return;
+  const newParentId = ctx.parent && typeof ctx.parent.key === 'string' ? ctx.parent.key : null;
+  const newOrderedIds = ctx.siblings
+    .map((s) => (typeof s.key === 'string' ? s.key : null))
+    .filter((k): k is string => k !== null);
+
+  const ops: ReorderOp[] = [{ parentId: newParentId, orderedIds: newOrderedIds }];
+
+  // When the node changed parents, the old parent's remaining children
+  // also need their positions compacted.
+  if (oldParentId !== newParentId) {
+    const oldSiblings = oldParentId === null ? event.value : findChildren(event.value, oldParentId);
+    const oldOrderedIds = oldSiblings
+      .map((s) => (typeof s.key === 'string' ? s.key : null))
+      .filter((k): k is string => k !== null);
+    ops.push({ parentId: oldParentId, orderedIds: oldOrderedIds });
+  }
+
+  emit('reorder', ops);
 }
 
 const newMenu = ref();
@@ -116,8 +179,10 @@ const newMenuItems = computed(() => [
       :value="nodes"
       :selection-keys="selectionKeys"
       selection-mode="single"
+      :dragdrop-scope="readOnly ? undefined : 'documents'"
       class="flex-1 overflow-auto !border-0 !bg-transparent !p-1"
       @node-select="onNodeSelect"
+      @node-drop="onNodeDrop"
     >
       <template #default="{ node }">
         <span class="text-sm truncate">{{ node.label }}</span>

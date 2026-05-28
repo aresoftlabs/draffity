@@ -59,6 +59,7 @@ pub fn run() {
             commands::get_document,
             commands::update_document,
             commands::move_document,
+            commands::reorder_documents,
             commands::delete_document,
             commands::create_snapshot,
             commands::list_snapshots,

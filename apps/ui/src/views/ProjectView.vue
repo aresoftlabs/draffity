@@ -10,7 +10,7 @@ import Tag from 'primevue/tag';
 import type { DocumentType } from '@draffity/shared-types';
 
 import { useProjectStore } from '@/stores/project';
-import { useDocumentStore } from '@/stores/document';
+import { useDocumentStore, type ReorderOp } from '@/stores/document';
 import { useIpcError } from '@/composables/useIpcError';
 import { useAutoSave } from '@/composables/useAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -121,6 +121,11 @@ function onSelect(id: string) {
   docStore.select(id);
 }
 
+async function onReorder(ops: ReorderOp[]) {
+  if (!project.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.reorder(project.value!.id, ops));
+}
+
 useShortcuts({
   'ctrl+s': () => {
     void auto.flush();
@@ -176,6 +181,7 @@ onMounted(loadProject);
           :read-only="readOnly"
           @select="onSelect"
           @create="onCreate"
+          @reorder="onReorder"
         />
       </SplitterPanel>
 
