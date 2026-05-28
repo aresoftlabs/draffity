@@ -8,7 +8,7 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import { computed, watch } from 'vue';
+import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Citation } from './extensions/citation';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
@@ -142,16 +142,36 @@ const wordCount = computed(() => {
 const { customCss } = useEditorSettings();
 const safeCustomCss = computed(() => sanitizeUserCss(customCss.value));
 
+// Vue's template compiler ignores inline <style> tags (side-effect), so we
+// inject the user's CSS into <head> as a singleton <style id="...">. The
+// `watchEffect` keeps it in sync; `onBeforeUnmount` removes it if no other
+// editor instance is mounted.
+const STYLE_ID = 'draffity-editor-custom-css';
+function getStyleEl(): HTMLStyleElement {
+  let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement('style');
+    el.id = STYLE_ID;
+    document.head.appendChild(el);
+  }
+  return el;
+}
+watchEffect(() => {
+  if (typeof document === 'undefined') return;
+  getStyleEl().textContent = safeCustomCss.value;
+});
+onBeforeUnmount(() => {
+  // Leave the style element in place if other instances may still need it;
+  // if its content is empty there's nothing to remove either.
+  const el = document.getElementById(STYLE_ID);
+  if (el && !el.textContent) el.remove();
+});
+
 defineExpose({ editor, charCount, wordCount });
 </script>
 
 <template>
   <div class="tiptap-host h-full overflow-auto">
-    <!-- User CSS is sanitised (no @import / url() / closing </style>). Selectors
-         are at their natural specificity; we expect users to prefix with
-         `.tiptap-content` — the Settings textarea hints at this. -->
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <style v-if="safeCustomCss" v-html="safeCustomCss" />
     <EditorContent :editor="editor" class="h-full" />
   </div>
 </template>
