@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Draffity",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "identifier": "cl.aresoft.draffity",
   "build": {
     "beforeDevCommand": "pnpm --filter @draffity/ui dev",

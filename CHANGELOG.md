@@ -7,12 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Deferred to v0.3
+### Deferred to v0.4
 
-- **PDF export** (S1-02 del Sprint 1). La integración con
-  `WebviewWindow::print()` requiere más exploración del API de Tauri 2
-  para abrir un preview con auto-print. Se retoma en Sprint 2 junto
-  con el resto del editor avanzado.
+- **PDF export** (S1-02 del Sprint 1). Sigue pendiente: la integración
+  con `WebviewWindow::print()` necesita un preview en ventana propia
+  con auto-print que en Tauri 2 requiere asset protocol + cleanup
+  cuidadoso. Bloque dedicado en Sprint 3.
+- **Stats históricas con gráfico de 30 días** (S2-08 del Sprint 2).
+  Bloqueado por decisión de librería de charts (Chart.js vs ECharts
+  vs custom SVG). El backend de `daily_writing` y el endpoint llegan
+  primero; el gráfico, después.
+
+## [0.3.0-beta] — 2026-05-28
+
+Sprint 2 cerrado: productividad del escritor. La app pasa de "editor
+
+- binder" a un entorno de trabajo con pipeline de status, tags,
+  objetivos de palabras y temporizador Pomodoro.
+
+### Added — Sprint 2
+
+- **Document status** (S2-01, S2-02, S2-03): pipeline
+  `draft → revised → final → trashed` con migración 003 aditiva.
+  Selector en Inspector (PrimeVue Select), badge de color como punto
+  pequeño junto a cada nodo del binder. `DocumentStatus` enum en
+  dominio Rust con tests round-trip.
+- **Tags por documento** (S2-04): tabla `document_tags(document_id,
+tag)` con PK compuesta + cascade delete. Subquery
+  `json_group_array(tag)` embebido en el SELECT de documentos evita
+  N+1. Chips PrimeVue en Inspector, dropdown de filtro en el binder
+  con preservación de ancestros. IPC `set_document_tags`,
+  `list_project_tags`.
+- **Word count goals** (S2-05): columna `goal_words INTEGER` nullable
+  en `projects` y `documents` (migración 004). `GoalProgress.vue`
+  reutilizable con barra de progreso (colores por tramo), edición
+  inline con `InputNumber`, modo compact para headers. Inspector
+  muestra goal del documento, header del ProjectView muestra goal
+  del proyecto (totalWordCount / project.goalWords).
+- **Session word goal** (S2-06): `uiStore.sessionStartTotal` capturado
+  por ProjectView al cargar, `sessionGoal` persistido en localStorage.
+  Widget compact en AppShell cuando hay documentos cargados.
+- **Pomodoro / writing timer** (S2-07): composable `useWritingTimer`
+  con state machine idle/work/break/paused + tick 1s. focusMin y
+  breakMin persistidos. WebAudio beep al cambiar de fase (sin bundle
+  de audio file). `PomodoroWidget.vue` en AppShell: chip con color
+  por fase, MM:SS mono, popover de ajustes + counter de sesiones.
+- **Typewriter mode** (S2-09): composable `useTypewriterScroll` que
+  centra verticalmente la línea actual del cursor en el scroll
+  container. Toggle en Settings con `ToggleSwitch`. Persistido.
+- **Atajos navegación binder** (S2-10): `Ctrl+,` doc anterior,
+  `Ctrl+.` doc siguiente (orden natural de `list_documents`).
+
+### Added — Tests
+
+- **S2-11**: 11 tests Vitest para `useWritingTimer` cubriendo el
+  state machine completo con `vi.useFakeTimers()`.
+
+### Changed — Architecture
+
+- Constante `COLS` introducida en `storage/projects.rs` (mirror del
+  patrón ya usado en `documents.rs`). Añadir columnas futuras es un
+  cambio de una línea.
+- `row_to_document` y `row_to_project` toleran columnas ausentes con
+  fallback graceful (status, goal_words) — backwards-compatible con
+  queries que no las pidan.
+
+### Tests
+
+- Rust: 85 verdes (73 previos + 6 status + 4 tags + 2 goals).
+- Vitest: 30 verdes (19 previos + 11 timer).
 
 ## [0.2.0-beta] — 2026-05-27
 
@@ -163,6 +226,7 @@ First public alpha. Free MVP, premium-ready architecture.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.2.0-beta...HEAD
+[Unreleased]: https://github.com/OWNER/draffity/compare/v0.3.0-beta...HEAD
+[0.3.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.3.0-beta
 [0.2.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.2.0-beta
 [0.1.0-alpha]: https://github.com/OWNER/draffity/releases/tag/v0.1.0-alpha
