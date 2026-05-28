@@ -1,17 +1,15 @@
 import { computed, ref, watch, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
+import { findMatches, type FindMatch } from './useProseMirrorSearch';
 
-/** Half-open document range that contains a single match. */
-export interface FindMatch {
-  from: number;
-  to: number;
-}
+export type { FindMatch };
 
 /**
  * In-document find & replace driven by ProseMirror positions. Walks the
- * editor's text nodes on demand to locate matches, then drives the editor's
- * selection to jump between them. Replacement uses the editor's transaction
- * chain so undo works naturally.
+ * editor's text nodes on demand (via `findMatches` in `useProseMirrorSearch`)
+ * to locate matches, then drives the editor's selection to jump between
+ * them. Replacement uses the editor's transaction chain so undo works
+ * naturally.
  *
  * Caller passes a reactive ref to the live `Editor`; the composable
  * subscribes to its `update` event so external edits invalidate the cache.
@@ -33,23 +31,7 @@ export function useFindReplace(editorRef: Ref<Editor | null>) {
       currentIndex.value = -1;
       return;
     }
-    const q = query.value;
-    if (!q) {
-      matches.value = [];
-      currentIndex.value = -1;
-      return;
-    }
-    const needle = caseSensitive.value ? q : q.toLowerCase();
-    const found: FindMatch[] = [];
-    ed.state.doc.descendants((node, pos) => {
-      if (!node.isText || !node.text) return;
-      const haystack = caseSensitive.value ? node.text : node.text.toLowerCase();
-      let idx = 0;
-      while ((idx = haystack.indexOf(needle, idx)) !== -1) {
-        found.push({ from: pos + idx, to: pos + idx + needle.length });
-        idx += needle.length;
-      }
-    });
+    const found = findMatches(ed.state.doc, query.value, caseSensitive.value);
     matches.value = found;
     if (jumpToFirst) {
       currentIndex.value = found.length > 0 ? 0 : -1;
