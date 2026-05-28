@@ -10,6 +10,7 @@ declare module 'vue' {
     AppShell: typeof import('./components/AppShell.vue')['default']
     Binder: typeof import('./components/Binder.vue')['default']
     ExportDialog: typeof import('./components/ExportDialog.vue')['default']
+    FindReplaceBar: typeof import('./components/FindReplaceBar.vue')['default']
     Inspector: typeof import('./components/Inspector.vue')['default']
     NewProjectWizard: typeof import('./components/NewProjectWizard.vue')['default']
     OnboardingDialog: typeof import('./components/OnboardingDialog.vue')['default']
@@ -17,8 +18,12 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SaveIndicator: typeof import('./components/SaveIndicator.vue')['default']
+    SearchDialog: typeof import('./components/SearchDialog.vue')['default']
     SnapshotsList: typeof import('./components/SnapshotsList.vue')['default']
     SwitchProjectDialog: typeof import('./components/SwitchProjectDialog.vue')['default']
+    WizardStepConfirm: typeof import('./components/WizardStepConfirm.vue')['default']
+    WizardStepMetadata: typeof import('./components/WizardStepMetadata.vue')['default']
+    WizardStepTemplate: typeof import('./components/WizardStepTemplate.vue')['default']
   }
   export interface ComponentCustomProperties {
     Tooltip: typeof import('primevue/tooltip')['default']

@@ -16,6 +16,10 @@ const isReady = computed(() => !!props.editor && !props.disabled);
 function isActive(name: string, attrs?: Record<string, unknown>) {
   return !!props.editor && props.editor.isActive(name, attrs);
 }
+
+// Table commands operate on cells; their availability depends on whether
+// the cursor sits inside a table node.
+const isInTable = computed(() => isActive('table'));
 </script>
 
 <template>
@@ -132,6 +136,47 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
       severity="secondary"
       :disabled="!isReady"
       @click="() => editor?.chain().focus().setHorizontalRule().run()"
+    />
+
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" />
+
+    <Button
+      v-tooltip.bottom="t('toolbar.insertTable')"
+      icon="pi pi-table"
+      text
+      severity="secondary"
+      :disabled="!isReady || isInTable"
+      @click="
+        () => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      "
+    />
+    <Button
+      v-tooltip.bottom="t('toolbar.tableAddRow')"
+      icon="pi pi-plus"
+      text
+      severity="secondary"
+      :disabled="!isReady || !isInTable"
+      @click="() => editor?.chain().focus().addRowAfter().run()"
+    >
+      <span class="text-[10px] font-semibold ml-1">R</span>
+    </Button>
+    <Button
+      v-tooltip.bottom="t('toolbar.tableAddCol')"
+      icon="pi pi-plus"
+      text
+      severity="secondary"
+      :disabled="!isReady || !isInTable"
+      @click="() => editor?.chain().focus().addColumnAfter().run()"
+    >
+      <span class="text-[10px] font-semibold ml-1">C</span>
+    </Button>
+    <Button
+      v-tooltip.bottom="t('toolbar.tableDelete')"
+      icon="pi pi-trash"
+      text
+      severity="secondary"
+      :disabled="!isReady || !isInTable"
+      @click="() => editor?.chain().focus().deleteTable().run()"
     />
 
     <span class="flex-1" />

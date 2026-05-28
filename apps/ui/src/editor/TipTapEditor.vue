@@ -4,7 +4,12 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 import { computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const props = withDefaults(
   defineProps<{
@@ -19,6 +24,8 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
 }>();
 
+const { locale } = useI18n();
+
 const editor = useEditor({
   content: props.modelValue || '',
   editable: props.editable,
@@ -31,16 +38,31 @@ const editor = useEditor({
     Placeholder.configure({
       placeholder: () => props.placeholder || 'Empieza a escribir…',
     }),
+    // Tables — header row enabled by default, columns are resizable by drag.
+    Table.configure({ resizable: true, HTMLAttributes: { class: 'tiptap-table' } }),
+    TableRow,
+    TableHeader,
+    TableCell,
   ],
   editorProps: {
     attributes: {
       class: 'tiptap-content prose-style focus:outline-none min-h-full px-10 py-8 leading-relaxed',
       spellcheck: 'true',
+      // Hint the WebView's native spellcheck for the right dictionary.
+      // Updated dynamically via the watcher below when the user changes UI
+      // language.
+      lang: locale.value,
     },
   },
   onUpdate: ({ editor: ed }) => {
     emit('update:modelValue', ed.getHTML());
   },
+});
+
+watch(locale, (next) => {
+  // ProseMirror exposes the editable DOM element; toggling `lang` is enough
+  // to swap the native spellchecker dictionary on the fly.
+  editor.value?.view.dom.setAttribute('lang', next);
 });
 
 watch(
@@ -140,6 +162,47 @@ defineExpose({ editor, charCount, wordCount });
   border: 0;
   border-top: 1px solid var(--p-surface-300, #cbd5e1);
   margin: 2em 0;
+}
+
+.tiptap-host :deep(.tiptap-table) {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+}
+.tiptap-host :deep(.tiptap-table td),
+.tiptap-host :deep(.tiptap-table th) {
+  border: 1px solid var(--p-surface-300, #cbd5e1);
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+  min-width: 4em;
+  position: relative;
+}
+.tiptap-host :deep(.tiptap-table th) {
+  background: var(--p-surface-100, #f1f5f9);
+  font-weight: 600;
+  text-align: left;
+}
+/* TipTap's column resize handle */
+.tiptap-host :deep(.tiptap-table .column-resize-handle) {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--p-primary-400, #38bdf8);
+  pointer-events: none;
+  opacity: 0;
+}
+.tiptap-host :deep(.tiptap-table:hover .column-resize-handle) {
+  opacity: 0.5;
+}
+.tiptap-host :deep(.tableWrapper) {
+  overflow-x: auto;
+}
+.tiptap-host :deep(.resize-cursor) {
+  cursor: col-resize;
 }
 
 .tiptap-host :deep(.tiptap-content code) {

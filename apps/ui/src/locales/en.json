@@ -170,6 +170,10 @@
     "orderedList": "Numbered list",
     "blockquote": "Blockquote",
     "horizontalRule": "Horizontal rule",
+    "insertTable": "Insert table (3×3)",
+    "tableAddRow": "Add row",
+    "tableAddCol": "Add column",
+    "tableDelete": "Delete table",
     "undo": "Undo",
     "redo": "Redo"
   },

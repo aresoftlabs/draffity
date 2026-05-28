@@ -94,6 +94,8 @@ export default [
             'S',
             'B',
             'I',
+            'R',
+            'C',
             'ms',
             'px',
             'em',

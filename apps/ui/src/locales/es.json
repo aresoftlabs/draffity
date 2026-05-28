@@ -170,6 +170,10 @@
     "orderedList": "Lista numerada",
     "blockquote": "Cita",
     "horizontalRule": "Separador",
+    "insertTable": "Insertar tabla (3×3)",
+    "tableAddRow": "Añadir fila",
+    "tableAddCol": "Añadir columna",
+    "tableDelete": "Eliminar tabla",
     "undo": "Deshacer",
     "redo": "Rehacer"
   },
