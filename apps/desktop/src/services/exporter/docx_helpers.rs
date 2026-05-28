@@ -5,7 +5,7 @@
 //! The `pub(super)` surface is the minimum that `docx.rs::render` and
 //! `docx.rs::append_codex` need to call.
 
-use docx_rs::{AlignmentType, BreakType, Docx, Paragraph, Run, RunFonts};
+use docx_rs::{AlignmentType, BreakType, Docx, Footnote, Paragraph, Run, RunFonts};
 use scraper::{ElementRef, Html, Node};
 
 use crate::domain::{CodexEntry, CodexKind};
@@ -251,6 +251,21 @@ fn push_runs(node: ego_tree::NodeRef<'_, Node>, marks: InlineMarks, runs: &mut V
             if name == "br" {
                 runs.push(Run::new().add_break(docx_rs::BreakType::TextWrapping));
                 return;
+            }
+            // TipTap footnotes: `<sup data-footnote-content="…">`. Emit a
+            // proper Word footnote reference; Word renumbers automatically
+            // across the document so we don't need to thread a counter.
+            if name == "sup" {
+                if let Some(content) = e.attr("data-footnote-content") {
+                    if !content.is_empty() {
+                        let body =
+                            Paragraph::new().add_run(Run::new().add_text(content.to_string()));
+                        runs.push(
+                            Run::new().add_footnote_reference(Footnote::new().add_content(body)),
+                        );
+                        return;
+                    }
+                }
             }
             let next_marks = marks.merged_with(name);
             for child in node.children() {

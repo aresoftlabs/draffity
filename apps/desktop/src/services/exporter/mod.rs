@@ -5,6 +5,7 @@ mod config;
 mod docx;
 mod docx_helpers;
 mod epub;
+mod footnotes;
 mod markdown;
 mod media_bundle;
 mod util;

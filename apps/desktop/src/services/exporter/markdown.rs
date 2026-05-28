@@ -7,6 +7,7 @@ use crate::domain::{CodexEntry, CodexKind, DocNode, Project};
 use crate::error::AppResult;
 
 use super::config::ExportConfig;
+use super::footnotes::collect_footnotes;
 use super::media_bundle::MediaBundle;
 use super::util::{flatten_in_order, yaml_quote};
 
@@ -50,10 +51,19 @@ pub fn render(
 
         if let Some(html) = &doc.content {
             if !html.trim().is_empty() {
-                let resolved = inline_media_as_data_uris(html, media);
+                // Footnotes are rewritten to `[^N]` placeholders *before*
+                // html→md so the marker survives the conversion verbatim.
+                let (with_fns, notes) = collect_footnotes(html, |n| format!("[^{n}]"));
+                let resolved = inline_media_as_data_uris(&with_fns, media);
                 let md = html2md::parse_html(&resolved);
                 out.push_str(md.trim());
                 out.push_str("\n\n");
+                for note in notes {
+                    out.push_str(&format!("[^{}]: {}\n", note.number, note.content));
+                }
+                if !html.is_empty() {
+                    out.push('\n');
+                }
             }
         }
     }
@@ -193,6 +203,39 @@ mod tests {
         assert!(text.contains("### Capítulo 1"));
         // html2md should produce a bold marker for <strong>.
         assert!(text.contains("**mundo**"));
+    }
+
+    #[test]
+    fn footnotes_render_as_numbered_refs_and_definitions() {
+        let p = project("Notas");
+        let pid = p.id.clone();
+        let docs = vec![doc(
+            "a",
+            &pid,
+            None,
+            "Capítulo 1",
+            DocumentType::Chapter,
+            Some(
+                r#"<p>Hola<sup data-footnote-id="x" data-footnote-content="Una aclaración">†</sup> mundo.</p>"#,
+            ),
+            0,
+        )];
+        let bytes = render(
+            &p,
+            &docs,
+            &[],
+            &MediaBundle::new(),
+            &ExportConfig::default(),
+        )
+        .unwrap();
+        let text = String::from_utf8(bytes).unwrap();
+        // Inline marker.
+        assert!(text.contains("[^1]"), "missing inline marker: {text}");
+        // Definition appended after the chapter body.
+        assert!(
+            text.contains("[^1]: Una aclaración"),
+            "missing definition: {text}"
+        );
     }
 
     #[test]

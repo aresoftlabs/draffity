@@ -179,8 +179,19 @@
     "insertCitation": "Insertar cita",
     "insertCodexRef": "Insertar referencia al codex",
     "insertImage": "Insertar imagen…",
+    "insertFootnote": "Insertar nota al pie",
     "undo": "Deshacer",
     "redo": "Rehacer"
+  },
+  "footnote": {
+    "insertTitle": "Insertar nota al pie",
+    "editTitle": "Editar nota al pie",
+    "hint": "La nota se numera automáticamente al exportar.",
+    "placeholder": "Texto de la nota…",
+    "insert": "Insertar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar"
   },
   "settings": {
     "title": "Ajustes",

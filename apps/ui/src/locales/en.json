@@ -179,8 +179,19 @@
     "insertCitation": "Insert citation",
     "insertCodexRef": "Insert codex reference",
     "insertImage": "Insert image…",
+    "insertFootnote": "Insert footnote",
     "undo": "Undo",
     "redo": "Redo"
+  },
+  "footnote": {
+    "insertTitle": "Insert footnote",
+    "editTitle": "Edit footnote",
+    "hint": "The footnote body will be numbered automatically at export time.",
+    "placeholder": "Footnote text…",
+    "insert": "Insert",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Remove"
   },
   "settings": {
     "title": "Settings",

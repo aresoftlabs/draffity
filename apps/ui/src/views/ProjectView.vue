@@ -29,6 +29,7 @@ import CodexRefPickerDialog from '@/components/CodexRefPickerDialog.vue';
 import SaveAsTemplateDialog from '@/components/SaveAsTemplateDialog.vue';
 import SearchDialog from '@/components/SearchDialog.vue';
 import { CODEX_REF_EVENT, type CodexRefOpenDetail } from '@/editor/extensions/codex-ref';
+import FootnoteDialog from '@/components/FootnoteDialog.vue';
 import { useCodexStore } from '@/stores/codex';
 import { useMediaStore } from '@/stores/media';
 import { ipc } from '@/services/ipc';
@@ -88,6 +89,9 @@ const showExport = ref(false);
 const showBibliography = ref(false);
 const showCitationPicker = ref(false);
 const showCodexPicker = ref(false);
+const showFootnoteDialog = ref(false);
+const editingFootnoteId = ref<string | null>(null);
+const editingFootnoteContent = ref('');
 const showSaveAsTemplate = ref(false);
 const showSearch = ref(false);
 const findVisible = ref(false);
@@ -197,6 +201,35 @@ async function onInsertImage() {
       .pop()
       ?.replace(/\.[^.]+$/, '') ?? '';
   editor.value.chain().focus().insertImage({ mediaId: asset.id, alt }).run();
+}
+
+function onInsertFootnote() {
+  editingFootnoteId.value = null;
+  editingFootnoteContent.value = '';
+  showFootnoteDialog.value = true;
+}
+
+function onSaveFootnote(content: string) {
+  const ed = editor.value;
+  if (!ed) return;
+  if (editingFootnoteId.value) {
+    ed.chain().focus().updateFootnote(editingFootnoteId.value, content).run();
+  } else {
+    const id = crypto.randomUUID();
+    ed.chain().focus().insertFootnote({ id, content }).run();
+  }
+}
+
+function onRemoveFootnote() {
+  const ed = editor.value;
+  const id = editingFootnoteId.value;
+  if (!ed || !id) return;
+  const { state } = ed;
+  state.doc.descendants((node, pos) => {
+    if (node.type.name !== 'footnote') return;
+    if ((node.attrs as { id: string }).id !== id) return;
+    ed.chain().focus().setNodeSelection(pos).deleteSelection().run();
+  });
 }
 
 function guessMimeFromPath(path: string): string {
@@ -340,13 +373,22 @@ function onSearchJump(documentId: string) {
   docStore.select(documentId);
 }
 
+function onFootnoteClickFromEditor(e: Event) {
+  const detail = (e as CustomEvent<{ id: string; content: string }>).detail;
+  editingFootnoteId.value = detail.id;
+  editingFootnoteContent.value = detail.content;
+  showFootnoteDialog.value = true;
+}
+
 onMounted(() => {
   loadProject();
   window.addEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
+  window.addEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
+  window.removeEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
 });
 </script>
 
@@ -434,6 +476,12 @@ onBeforeUnmount(() => {
       :project-id="project.id"
       @pick="onPickCodexRef"
     />
+    <FootnoteDialog
+      v-model:visible="showFootnoteDialog"
+      :initial-content="editingFootnoteContent"
+      @save="onSaveFootnote"
+      @remove="onRemoveFootnote"
+    />
     <SaveAsTemplateDialog v-model:visible="showSaveAsTemplate" :project-id="project.id" />
     <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
 
@@ -470,6 +518,7 @@ onBeforeUnmount(() => {
             @open-citation-picker="showCitationPicker = true"
             @open-codex-picker="showCodexPicker = true"
             @insert-image="onInsertImage"
+            @insert-footnote="onInsertFootnote"
           />
           <FindReplaceBar
             v-if="selected?.docType !== 'folder'"

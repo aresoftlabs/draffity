@@ -11,6 +11,7 @@ use crate::domain::{extension_for_mime, CodexEntry, CodexKind, DocNode, Project}
 use crate::error::{AppError, AppResult};
 
 use super::config::ExportConfig;
+use super::footnotes::{collect_footnotes, Footnote};
 use super::media_bundle::MediaBundle;
 use super::util::{flatten_in_order, xml_escape};
 
@@ -80,8 +81,15 @@ pub fn render(
     for (idx, (_depth, doc)) in ordered.iter().enumerate() {
         let filename = format!("ch{:03}.xhtml", idx + 1);
         let body = doc.content.as_deref().unwrap_or("");
-        let body = rewrite_media_src(body, &media_paths);
-        let xhtml = chapter_xhtml(&doc.title, &body);
+        // Footnotes are scoped per chapter — fn-1, fn-2… start over each
+        // file so cross-chapter ids don't collide.
+        let (with_fns, notes) = collect_footnotes(body, |n| {
+            format!(
+                r##"<a id="fnref-{n}" href="#fn-{n}" epub:type="noteref" class="footnote-ref"><sup>{n}</sup></a>"##
+            )
+        });
+        let body = rewrite_media_src(&with_fns, &media_paths);
+        let xhtml = chapter_xhtml(&doc.title, &body, &notes);
         builder
             .add_content(
                 EpubContent::new(filename, xhtml.as_bytes())
@@ -152,7 +160,7 @@ fn title_chapter_xhtml(title: &str, author: Option<&str>) -> String {
     )
 }
 
-fn chapter_xhtml(title: &str, content_html: &str) -> String {
+fn chapter_xhtml(title: &str, content_html: &str, notes: &[Footnote]) -> String {
     let safe_title = xml_escape(title);
     // We trust TipTap output to be reasonably XHTML-compatible. If a future
     // extension produces tags that break parsing, the fallback is a wrapping
@@ -162,15 +170,28 @@ fn chapter_xhtml(title: &str, content_html: &str) -> String {
     } else {
         content_html.to_string()
     };
+    let mut notes_section = String::new();
+    if !notes.is_empty() {
+        notes_section.push_str("<section epub:type=\"footnotes\">\n<hr/>\n");
+        for n in notes {
+            notes_section.push_str(&format!(
+                r##"<aside id="fn-{num}" epub:type="footnote"><p>{num}. {body} <a href="#fnref-{num}" class="footnote-backref">↩</a></p></aside>
+"##,
+                num = n.number,
+                body = xml_escape(&n.content),
+            ));
+        }
+        notes_section.push_str("</section>\n");
+    }
     format!(
         r#"<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head><title>{safe_title}</title></head>
 <body>
 <h1>{safe_title}</h1>
 {body}
-</body>
+{notes_section}</body>
 </html>"#,
     )
 }

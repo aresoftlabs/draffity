@@ -12,6 +12,7 @@ import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Citation } from './extensions/citation';
 import { CodexRef } from './extensions/codex-ref';
+import { Footnote } from './extensions/footnote';
 import { Image } from './extensions/image';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 
@@ -73,6 +74,9 @@ const editor = useEditor({
     // Images stored as `<img data-media-id="…">` with a Vue NodeView that
     // resolves a Blob URL from the media store at render time.
     Image,
+    // Footnotes — body lives inline as a node attribute; numbering at
+    // export time. Click on a marker emits `draffity:open-footnote`.
+    Footnote,
   ],
   editorProps: {
     attributes: {
@@ -312,6 +316,26 @@ defineExpose({ editor, charCount, wordCount });
 }
 .tiptap-host :deep(.tiptap-content .codex-ref.ProseMirror-selectednode) {
   outline: 2px solid var(--p-amber-400, #fbbf24);
+}
+
+.tiptap-host :deep(.tiptap-content .footnote-ref) {
+  display: inline-block;
+  vertical-align: super;
+  font-size: 0.7em;
+  font-weight: 600;
+  color: var(--p-primary-700, #1d4ed8);
+  background: var(--p-primary-50, #eff6ff);
+  border-radius: 2px;
+  padding: 0 3px;
+  margin: 0 1px;
+  cursor: pointer;
+  line-height: 1;
+}
+.tiptap-host :deep(.tiptap-content .footnote-ref:hover) {
+  background: var(--p-primary-100, #dbeafe);
+}
+.tiptap-host :deep(.tiptap-content .footnote-ref.ProseMirror-selectednode) {
+  outline: 2px solid var(--p-primary-400, #60a5fa);
 }
 
 .tiptap-host :deep(.tiptap-content code) {

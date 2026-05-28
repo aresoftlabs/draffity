@@ -13,6 +13,7 @@ const emit = defineEmits<{
   'open-citation-picker': [];
   'open-codex-picker': [];
   'insert-image': [];
+  'insert-footnote': [];
 }>();
 
 const { t } = useI18n();
@@ -240,6 +241,15 @@ const isInTable = computed(() => isActive('table'));
       severity="secondary"
       :disabled="!isReady"
       @click="emit('insert-image')"
+    />
+    <Button
+      v-tooltip.bottom="t('toolbar.insertFootnote')"
+      :aria-label="t('toolbar.insertFootnote')"
+      icon="pi pi-asterisk"
+      text
+      severity="secondary"
+      :disabled="!isReady"
+      @click="emit('insert-footnote')"
     />
 
     <span class="flex-1" aria-hidden="true" />
