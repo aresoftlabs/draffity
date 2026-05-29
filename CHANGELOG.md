@@ -25,11 +25,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Hot-swap de tier** (S5-10, P1 → E-02). Sólo gana valor con un
   tier premium real al que swapear.
 
-### Deferred (arrastres anteriores)
+## [0.11.0-beta] — 2026-05-28
 
-- **Diff visual entre snapshots** (S4-05 → C-04), **MD/DOCX import**
-  (S4-06/07 → C-01/02), **round-trip tests** (S4-09 → C-03).
-- **PDF export** (S1-02 → C-05).
+Sprint C cerrado al 100% (5 historias). Cierra el ciclo de export
+con import bidireccional, suma diff visual entre snapshots y termina
+el formato PDF pendiente desde Sprint 1. Toda nueva entrada se
+apoya en el patrón premium-ready (trait + impl + NoOp) consolidado
+en Sprints A/B.
+
+### Added — Markdown import (C-01, S4-06)
+
+- **Nuevo trait `ImportService`** + `LocalImporter` (dispatch por
+  formato) + `LocalMarkdownImporter` (struct enfocado, útil para
+  callers/tests que sólo necesitan Markdown). Sigue el patrón
+  premium-ready: una futura `CloudImporterService` implementa la
+  misma surface.
+- **Parser** con `pulldown-cmark` v0.12: YAML frontmatter mínimo
+  (`title:` se usa como project title cuando está presente), split
+  por `#`-headings con jerarquía H1→Folder, H2→Chapter, H3→Scene.
+  Skip del primer H1 sólo cuando sirve como título de proyecto
+  (único H1 al tope con headings nested debajo).
+- **Footnotes round-trip**: `[^id]: body` se levantan en una pasada
+  previa y los `[^id]` inline se reescriben como
+  `<sup data-footnote-id="…" data-footnote-content="…">†</sup>`
+  para que el editor las reconozca al primer save.
+- **Tauri command** `import_project` + `supported_import_formats`;
+  storage suma `create_project_from_import` que inserta proyecto +
+  tree atómico. Dashboard agrega botón "Importar…" que abre el
+  file picker y navega al proyecto creado.
+
+### Added — DOCX import (C-02, S4-07)
+
+- **Reader** con `roxmltree` v0.20: abre el ZIP, lee
+  `word/document.xml` y recorre `<w:p>` paragraphs. Heading levels
+  detectados desde `<w:pStyle>` con soporte para variantes en
+  inglés (`Heading1..6`) y español (`Ttulo1..6` tras strip del
+  acento).
+- **Inline marks**: cada `<w:r>` aporta texto + estado de
+  `<w:rPr>` que se traduce a `<strong>` / `<em>` / `<u>` / `<s>` /
+  `<code>` — el subset que el editor maneja. `<w:val="none">` y
+  `<w:val="false">` se interpretan como desactivaciones explícitas.
+- **Tree builder** comparte la misma regla de skip del primer H1
+  con el importer de Markdown, así proyectos con un sólo Heading1
+  como portada producen la misma forma de árbol independiente del
+  formato fuente.
+- Tablas y footnotes quedan fuera del MVP: no son lossless aún y
+  exponer soporte parcial sería confuso. Documentado en el cabezal
+  del módulo.
+
+### Added — PDF export (C-05, S1-02)
+
+- **Nuevo renderer** `services/exporter/pdf.rs` que genera HTML
+  standalone con CSS print-friendly (`@page A4`, `page-break-before`
+  por capítulo, TOC opcional, sección de notas al pie por capítulo,
+  imágenes inline como data URIs). Script embebido dispara
+  `window.print()` apenas el documento carga.
+- **`ExportFormat::Pdf`** escribe extensión `.html` (más honesto
+  que un `.pdf` con HTML adentro) y `ExportDialog` detecta el caso
+  para abrir el archivo via `tauri-plugin-shell::open` — el
+  navegador predeterminado lanza el diálogo de impresión del SO y
+  el usuario elige "Guardar como PDF". `WebviewWindow::print_to_pdf`
+  sólo está expuesto en macOS en Tauri 2, así que `window.print()`
+  es la salida común a todas las plataformas.
+- Sin nueva dep nativa de PDF: el output queda WYSIWYG con la
+  maquetación del editor (Lora serif, márgenes 24mm).
+
+### Added — Diff visual entre snapshots (C-04, S4-05)
+
+- **Composable `useTextDiff`** con LCS line diff puro (sin
+  `diff-match-patch` — 50KB minificado que no necesitamos a este
+  nivel) + helper `htmlToLines` que normaliza HTML del editor a
+  texto por párrafo. Cambios de marcas inline (bold/italic) no
+  disparan diffs falsos — sólo cambios reales de texto.
+- **Componente `SnapshotDiffView`** muestra dos columnas alineadas
+  con rojo para removidos y verde para agregados, contador de +N
+  −M, y placeholder cuando las versiones son idénticas.
+- **`SnapshotsList`** recibe `currentHtml` y agrega botón
+  "Comparar con actual" por cada versión. `Inspector` propaga el
+  `doc.content` actual hacia abajo.
+
+### Added — Round-trip tests (C-03, S4-09)
+
+- **Integration suite** `tests/round_trip_integration.rs` con cinco
+  escenarios:
+  - Markdown preserva títulos, texto de body y jerarquía
+    H1→H2→H3 del binder.
+  - Markdown preserva footnotes (`data-footnote-content` vuelve
+    idéntico al body).
+  - DOCX preserva títulos + texto de body.
+  - DOCX preserva marcas inline (bold/italic/under) que el editor
+    soporta.
+- **Cobertura tolerante** a presentación (whitespace, marker
+  characters elegidos por el renderer) y estricta en
+  identity-preserving content. Tablas e imágenes quedan
+  documentadas como fuera de scope hasta que los importers crezcan
+  ese soporte.
+
+### Fixed
+
+- **Markdown importer** trim_start de `\n\r` al body antes de
+  `split_by_headings`: sin esto la blank line entre el cierre de
+  frontmatter y el primer heading se promovía a una sección
+  sintética "Intro" y rompía el skip_first_h1 al duplicar el
+  conteo de H1s.
 
 ## [0.10.0-beta] — 2026-05-28
 
