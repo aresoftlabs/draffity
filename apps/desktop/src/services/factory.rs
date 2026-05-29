@@ -12,14 +12,15 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::capabilities::Tier;
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
-    CrashReporterService, ExportService, FreeTier, ImportService, LayeredTemplatesService,
-    LocalBackupService, LocalBibliographyService, LocalExporter, LocalFileCrashReporter,
-    LocalImporter, LocalMediaService, LocalProjectManager, LocalStorageService, MediaService,
-    NoOpAI, NoOpASR, NoOpCrashReporter, NoOpSync, ProjectManagerService, StorageService,
-    TemplatesService, TierService, UserTemplatesLoader,
+    CrashReporterService, DisabledLicenseValidator, Ed25519Validator, ExportService, ImportService,
+    KeyringSecretStorage, LayeredTemplatesService, LicenseValidator, LocalBackupService,
+    LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
+    LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, MutableTier, NoOpAI,
+    NoOpASR, NoOpCrashReporter, NoOpSync, NoOpTTS, ProjectManagerService, SecretStorage,
+    StorageService, TTSService, TemplatesService, TierService, UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -33,12 +34,15 @@ pub struct ServiceBundle {
     pub ai: Arc<dyn AIService>,
     pub sync: Arc<dyn CloudSyncService>,
     pub asr: Arc<dyn ASRService>,
+    pub tts: Arc<dyn TTSService>,
     pub exporter: Arc<dyn ExportService>,
     pub importer: Arc<dyn ImportService>,
     pub bibliography: Arc<dyn BibliographyService>,
     pub backup: Arc<dyn BackupService>,
     pub media: Arc<dyn MediaService>,
     pub crash_reporter: Arc<dyn CrashReporterService>,
+    pub secrets: Arc<dyn SecretStorage>,
+    pub license_validator: Arc<dyn LicenseValidator>,
 }
 
 /// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
@@ -73,13 +77,33 @@ impl ServiceFactory {
             ai: Self::build_ai(tier),
             sync: Self::build_sync(tier),
             asr: Self::build_asr(tier),
+            tts: Self::build_tts(tier),
             exporter: Arc::new(LocalExporter),
             importer: Arc::new(LocalImporter),
             bibliography: Arc::new(LocalBibliographyService),
             backup: Self::build_backup(app_data_dir),
             media,
             crash_reporter,
+            secrets: Arc::new(KeyringSecretStorage::new()),
+            license_validator: Self::build_license_validator(),
         })
+    }
+
+    /// Wire the license validator from the build-time `DRAFFITY_LICENSE_PUBKEY`
+    /// (base64url of the 32-byte Ed25519 public key). When absent — the default
+    /// for OSS builds — premium cannot be activated. Mirrors the crash-reporter
+    /// env gating above. A malformed key fails closed (disabled), logging why.
+    fn build_license_validator() -> Arc<dyn LicenseValidator> {
+        match std::env::var("DRAFFITY_LICENSE_PUBKEY") {
+            Ok(b64) if !b64.trim().is_empty() => match Ed25519Validator::from_base64(&b64) {
+                Ok(v) => Arc::new(v),
+                Err(e) => {
+                    tracing::warn!(error = %e, "invalid DRAFFITY_LICENSE_PUBKEY; licensing disabled");
+                    Arc::new(DisabledLicenseValidator)
+                }
+            },
+            _ => Arc::new(DisabledLicenseValidator),
+        }
     }
 
     /// Pick a crash reporter impl. When `DRAFFITY_SENTRY_DSN` is empty
@@ -124,17 +148,20 @@ impl ServiceFactory {
         Ok(Arc::new(storage))
     }
 
+    /// Always wraps the tier in a `MutableTier` so premium activation (E-07)
+    /// can flip capabilities at runtime without a restart — the same
+    /// `Arc<dyn TierService>` is shared by the IPC layer and the project
+    /// manager, so one `set_tier` is seen everywhere live.
     fn build_tier(tier: Tier) -> AppResult<Arc<dyn TierService>> {
-        match tier {
-            Tier::Free => Ok(Arc::new(FreeTier)),
-            Tier::Premium => Err(AppError::Unsupported(
-                "premium tier service not yet implemented".into(),
-            )),
-        }
+        Ok(Arc::new(MutableTier::new(tier)))
     }
 
-    // Each builder below returns the free impl today and will gain a premium
-    // match arm without touching callers. See docs/PREMIUM-INTEGRATION.md.
+    // Each builder below returns the free/NoOp impl today and will gain a
+    // premium match arm without touching callers. The real premium impls
+    // (`OpenRouterAIService`, `WhisperLocalASR`, `PiperTTSService`) land in
+    // Épicas F/G/H; until then premium tier also gets NoOp here, so activating
+    // premium flips capability *gates* but the services stay stubs until their
+    // épica ships. See docs/PREMIUM-INTEGRATION.md.
 
     fn build_ai(_tier: Tier) -> Arc<dyn AIService> {
         Arc::new(NoOpAI)
@@ -146,6 +173,10 @@ impl ServiceFactory {
 
     fn build_asr(_tier: Tier) -> Arc<dyn ASRService> {
         Arc::new(NoOpASR)
+    }
+
+    fn build_tts(_tier: Tier) -> Arc<dyn TTSService> {
+        Arc::new(NoOpTTS)
     }
 }
 
@@ -165,13 +196,26 @@ mod tests {
     }
 
     #[test]
-    fn build_premium_tier_fails_until_wired() {
+    fn build_premium_tier_grants_capabilities() {
         let dir = tempdir();
-        match ServiceFactory::build(Tier::Premium, &dir) {
-            Err(AppError::Unsupported(_)) => {}
-            Ok(_) => panic!("premium tier should not be wired yet"),
-            Err(other) => panic!("unexpected error variant: {other}"),
-        }
+        let bundle = ServiceFactory::build(Tier::Premium, &dir).expect("build premium bundle");
+        // Premium flips capability gates on…
+        assert!(bundle.tier.is_enabled("ai_inline"));
+        assert!(bundle.tier.is_enabled("voice_dictation"));
+        // …but the premium service impls don't exist yet (land in F/G/H), so
+        // the wired services are still NoOp stubs.
+        assert!(!bundle.ai.available());
+        assert!(!bundle.asr.available());
+        assert!(!bundle.tts.available());
+    }
+
+    #[test]
+    fn tier_hot_swaps_free_to_premium_at_runtime() {
+        let dir = tempdir();
+        let bundle = ServiceFactory::build(Tier::Free, &dir).expect("build free bundle");
+        assert!(!bundle.tier.is_enabled("ai_inline"));
+        bundle.tier.set_tier(Tier::Premium);
+        assert!(bundle.tier.is_enabled("ai_inline"), "hot-swap to premium");
     }
 
     #[test]

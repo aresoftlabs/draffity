@@ -9,17 +9,23 @@ pub mod crash_reporter;
 pub mod exporter;
 pub mod factory;
 pub mod importer;
+pub mod license;
 pub mod media;
 pub mod project_manager;
 mod retention_policy;
+pub mod secrets;
+pub mod sidecar;
 pub mod storage;
 pub mod sync;
 pub mod templates;
 pub mod tier;
+pub mod tts;
 pub mod user_templates;
 
-pub use ai::{AIService, NoOpAI};
-pub use asr::{ASRService, NoOpASR};
+pub use ai::{
+    AIService, ChatMessage, CompletionRequest, CompletionResponse, NoOpAI, Role, TokenUsage,
+};
+pub use asr::{ASRService, NoOpASR, Transcript, TranscriptSegment};
 pub use backup::{BackupKind, BackupRecord, BackupService, LocalBackupService, NoOpBackup};
 pub use bibliography::{BibliographyService, LocalBibliographyService, ParseSummary};
 pub use crash_reporter::{
@@ -33,10 +39,13 @@ pub use factory::{ServiceBundle, ServiceFactory};
 pub use importer::{
     ImportFormat, ImportNode, ImportService, ImportTree, LocalImporter, LocalMarkdownImporter,
 };
+pub use license::{DisabledLicenseValidator, Ed25519Validator, LicenseClaims, LicenseValidator};
 pub use media::{LocalMediaService, MediaService, NoOpMedia};
 pub use project_manager::{LocalProjectManager, ProjectManagerService};
+pub use secrets::{InMemorySecretStorage, KeyringSecretStorage, SecretStorage};
 pub use storage::{CitationUpsert, LocalStorageService, StorageService};
 pub use sync::{CloudSyncService, NoOpSync};
 pub use templates::{BuiltInTemplates, LayeredTemplatesService, TemplatesService};
-pub use tier::{FreeTier, TierService};
+pub use tier::{FreeTier, MutableTier, PremiumTier, TierService};
+pub use tts::{NoOpTTS, SynthesizedAudio, TTSService, Voice};
 pub use user_templates::{template_from_project, UserTemplatesLoader};

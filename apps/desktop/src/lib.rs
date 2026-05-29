@@ -46,6 +46,18 @@ pub fn run() {
                 let enabled = matches!(value.as_str(), "1" | "true" | "on");
                 bundle.crash_reporter.set_enabled(enabled);
             }
+            // Restore a previously-activated premium license from the OS
+            // keyring and hot-swap the tier (E-07). A missing/invalid key
+            // simply leaves the app on Free — never blocks startup.
+            if let Ok(Some(key)) = bundle
+                .secrets
+                .get_secret(commands::license::LICENSE_SECRET_KEY)
+            {
+                match bundle.license_validator.validate(&key) {
+                    Ok(claims) => bundle.tier.set_tier(claims.tier),
+                    Err(e) => tracing::warn!(error = %e, "stored license invalid; staying on free"),
+                }
+            }
             app.manage(AppState::from_bundle(bundle, log_guard));
 
             Ok(())
@@ -61,6 +73,10 @@ pub fn run() {
             commands::get_recent_daily_writing,
             commands::get_crash_reporting_status,
             commands::set_crash_reporting_enabled,
+            // premium / license
+            commands::get_premium_status,
+            commands::activate_premium,
+            commands::deactivate_premium,
             // projects
             commands::create_project,
             commands::list_projects,

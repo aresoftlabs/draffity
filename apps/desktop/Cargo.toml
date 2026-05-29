@@ -5,6 +5,7 @@ description = "Draffity desktop (Tauri 2 + Rust)"
 authors = ["Draffity"]
 edition = "2021"
 rust-version = "1.77"
+default-run = "draffity-desktop"
 
 [lib]
 name = "draffity_desktop_lib"
@@ -39,6 +40,8 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 biblatex = "0.10"
 sha2 = "0.10"
 base64 = "0.22"
+ed25519-dalek = "2"
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service", "crypto-rust"] }
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-serde = "0.0.12"
 specta-typescript = "0.0.12"
