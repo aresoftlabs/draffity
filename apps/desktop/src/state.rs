@@ -59,8 +59,7 @@ pub struct AppState {
     pub ai: Arc<dyn AIService>,
     /// Engram-aligned project memory feeding AI context (Épica F/G).
     pub memory: Arc<dyn ProjectMemoryService>,
-    /// AI validators (Épica G). Consumed by the validation commands (slice 2).
-    #[allow(dead_code)] // consumed by validation commands in G slice 2
+    /// AI validators (Épica G). Consumed by the validation commands.
     pub validators: Arc<dyn AIValidatorService>,
     #[allow(dead_code)]
     pub sync: Arc<dyn CloudSyncService>,

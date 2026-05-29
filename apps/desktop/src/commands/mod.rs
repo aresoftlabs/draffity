@@ -14,6 +14,7 @@ pub mod project;
 pub mod search;
 pub mod system;
 pub mod templates;
+pub mod validators;
 
 pub use ai::*;
 pub use backup::*;
@@ -28,3 +29,4 @@ pub use project::*;
 pub use search::*;
 pub use system::*;
 pub use templates::*;
+pub use validators::*;

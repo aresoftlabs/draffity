@@ -85,6 +85,10 @@ pub fn run() {
             commands::ai_cancel,
             commands::ai_record_accepted,
             commands::list_ai_history,
+            // ai validators (épica g)
+            commands::check_codex_coverage,
+            commands::run_validators,
+            commands::list_validations,
             // projects
             commands::create_project,
             commands::list_projects,

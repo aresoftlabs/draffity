@@ -34,7 +34,7 @@ pub use ai_openrouter::{ByokAIService, OPENROUTER_KEY};
 pub use ai_prompts::{build_messages, parse_action, ActionInput, AiAction, RewriteMode};
 pub use ai_validators::{
     codex_coverage, summarize, AIValidatorService, CoverageReport, Finding, OpenRouterValidators,
-    ValidationInput, ValidatorKind,
+    Severity, ValidationInput, ValidatorKind,
 };
 pub use asr::{ASRService, NoOpASR, Transcript, TranscriptSegment};
 pub use backup::{BackupKind, BackupRecord, BackupService, LocalBackupService, NoOpBackup};
