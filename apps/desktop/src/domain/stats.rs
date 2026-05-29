@@ -9,6 +9,10 @@ pub struct WritingStats {
     pub longest_streak: u32,
     /// ISO date of the most recent activity (YYYY-MM-DD).
     pub last_writing_date: Option<String>,
+    /// Consecutive days (ending today/yesterday) where the daily word goal
+    /// was met (J-05). 0 when there's no active goal-met run.
+    #[serde(default)]
+    pub goal_met_streak: u32,
 }
 
 /// Per-day counter of words written. Powers the 30-day sparkline in
@@ -22,6 +26,12 @@ pub struct DailyWriting {
     pub date: String,
     pub words: u32,
     pub sessions: u32,
+    /// The word goal in force that day (J-04). `None` when no goal was set.
+    #[serde(default)]
+    pub goal_words: Option<u32>,
+    /// Whether `words` reached `goal_words` that day.
+    #[serde(default)]
+    pub goal_met: bool,
 }
 
 /// Strip HTML tags and return a rough word count. Used by the writing

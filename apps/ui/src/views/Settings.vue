@@ -8,6 +8,7 @@ import Slider from 'primevue/slider';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import InputNumber from 'primevue/inputnumber';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -455,6 +456,7 @@ function onOpenPolicy(kind: LegalKind) {
 
 const stats = ref<WritingStats | null>(null);
 const dailySeries = ref<DailyWriting[]>([]);
+const dailyGoal = ref<number | null>(null);
 const backups = ref<BackupRecord[]>([]);
 const creatingBackup = ref(false);
 const restoringId = ref<string | null>(null);
@@ -462,6 +464,15 @@ const { run } = useIpcError();
 
 const totalWords30d = computed(() => dailySeries.value.reduce((acc, d) => acc + d.words, 0));
 const activeDays30d = computed(() => dailySeries.value.filter((d) => d.sessions > 0).length);
+
+async function onDailyGoalChange(value: number | null) {
+  const goal = value && value > 0 ? Math.floor(value) : null;
+  dailyGoal.value = goal;
+  await run(t('settings.dailyGoalError'), () => ipc.setDailyGoal(goal));
+  // Refresh the streak + series so the goal-met state reflects the new goal.
+  stats.value = await ipc.getWritingStats();
+  dailySeries.value = await ipc.getRecentDailyWriting(30);
+}
 
 onMounted(async () => {
   try {
@@ -473,6 +484,11 @@ onMounted(async () => {
     dailySeries.value = await ipc.getRecentDailyWriting(30);
   } catch {
     dailySeries.value = [];
+  }
+  try {
+    dailyGoal.value = await ipc.getDailyGoal();
+  } catch {
+    dailyGoal.value = null;
   }
   await loadBackups();
   await loadCustomFonts();
@@ -670,12 +686,33 @@ function kindLabel(kind: BackupRecord['kind']): string {
             <dt class="opacity-60">{{ t('settings.longestStreak') }}</dt>
             <dd class="font-mono">{{ stats.longestStreak }}</dd>
           </div>
+          <div class="flex justify-between gap-2">
+            <dt class="opacity-60">{{ t('settings.goalMetStreak') }}</dt>
+            <dd class="font-mono">{{ stats.goalMetStreak }}</dd>
+          </div>
           <div v-if="stats.lastWritingDate" class="flex justify-between gap-2">
             <dt class="opacity-60">{{ t('settings.lastWritingDate') }}</dt>
             <dd class="font-mono">{{ stats.lastWritingDate }}</dd>
           </div>
         </dl>
         <p v-else class="text-xs opacity-60">…</p>
+
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <label for="set-daily-goal" class="text-sm opacity-80">
+            {{ t('settings.dailyGoal') }}
+          </label>
+          <InputNumber
+            input-id="set-daily-goal"
+            :model-value="dailyGoal"
+            :min="0"
+            :step="50"
+            show-buttons
+            :placeholder="t('settings.dailyGoalNone')"
+            class="!w-40"
+            @update:model-value="onDailyGoalChange"
+          />
+        </div>
+        <p class="text-xs opacity-55 mt-1">{{ t('settings.dailyGoalHint') }}</p>
 
         <div class="mt-5">
           <div class="flex items-baseline justify-between mb-2 text-xs">

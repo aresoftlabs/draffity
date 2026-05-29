@@ -67,6 +67,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
         19,
         include_str!("../../migrations/019_project_deadline.sql"),
     ),
+    (20, include_str!("../../migrations/020_session_targets.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -164,6 +165,10 @@ pub trait StorageService: Send + Sync {
     /// Last `days` days of activity, oldest first, with missing days padded
     /// by zero rows. Powers the Settings sparkline.
     fn list_recent_daily_writing(&self, days: u32) -> AppResult<Vec<DailyWriting>>;
+    /// The persisted daily word goal (J-04), or `None` when unset.
+    fn get_daily_goal(&self) -> AppResult<Option<i64>>;
+    /// Set or clear the daily word goal; recomputes today's `goal_met`.
+    fn set_daily_goal(&self, goal: Option<i64>) -> AppResult<()>;
 
     // Citations (bibliography)
     /// List all citations attached to a project, sorted by key.
@@ -531,6 +536,14 @@ impl StorageService for LocalStorageService {
 
     fn list_recent_daily_writing(&self, days: u32) -> AppResult<Vec<DailyWriting>> {
         stats::list_recent_daily(&self.conn.lock().unwrap(), days)
+    }
+
+    fn get_daily_goal(&self) -> AppResult<Option<i64>> {
+        stats::get_daily_goal(&self.conn.lock().unwrap())
+    }
+
+    fn set_daily_goal(&self, goal: Option<i64>) -> AppResult<()> {
+        stats::set_daily_goal(&self.conn.lock().unwrap(), goal)
     }
 
     fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>> {

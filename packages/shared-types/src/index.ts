@@ -314,6 +314,8 @@ export interface WritingStats {
   currentStreak: number;
   longestStreak: number;
   lastWritingDate?: string | null;
+  /** Consecutive days (ending today/yesterday) the daily goal was met (J-05). */
+  goalMetStreak: number;
 }
 
 /** One day in the writing-activity series. Date is `YYYY-MM-DD` local. */
@@ -321,6 +323,10 @@ export interface DailyWriting {
   date: string;
   words: number;
   sessions: number;
+  /** Word goal in force that day, or null when none (J-04). */
+  goalWords?: number | null;
+  /** Whether `words` reached `goalWords` that day. */
+  goalMet: boolean;
 }
 
 export type WireErrorCode =

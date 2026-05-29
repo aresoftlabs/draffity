@@ -76,6 +76,7 @@ pub(super) fn record_activity(conn: &Connection) -> AppResult<WritingStats> {
         current_streak: new_streak,
         longest_streak: longest,
         last_writing_date: Some(today_str),
+        goal_met_streak: goal_met_streak(conn)?,
     })
 }
 
@@ -127,13 +128,53 @@ pub(super) fn get(conn: &Connection) -> AppResult<WritingStats> {
         current_streak: current,
         longest_streak: longest,
         last_writing_date: last,
+        goal_met_streak: goal_met_streak(conn)?,
     })
+}
+
+/// The persisted daily word goal (J-04), or `None` when unset.
+pub(super) fn get_daily_goal(conn: &Connection) -> AppResult<Option<i64>> {
+    let v: Option<String> = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key='writing.daily_goal'",
+            [],
+            |r| r.get(0),
+        )
+        .optional()?;
+    Ok(v.and_then(|s| s.parse().ok()))
+}
+
+/// Set or clear the daily word goal and recompute today's `goal_met`.
+pub(super) fn set_daily_goal(conn: &Connection, goal: Option<i64>) -> AppResult<()> {
+    let goal = goal.filter(|g| *g > 0);
+    match goal {
+        Some(g) => {
+            conn.execute(
+                "INSERT INTO settings(key, value) VALUES('writing.daily_goal', ?1)
+                 ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                params![g.to_string()],
+            )?;
+        }
+        None => {
+            conn.execute("DELETE FROM settings WHERE key='writing.daily_goal'", [])?;
+        }
+    }
+    // Re-snapshot today's row so the change is reflected immediately.
+    conn.execute(
+        "UPDATE daily_writing
+         SET goal_words = ?2,
+             goal_met = CASE WHEN ?2 IS NOT NULL AND words >= ?2 THEN 1 ELSE 0 END
+         WHERE date = ?1",
+        params![today_iso(), goal],
+    )?;
+    Ok(())
 }
 
 /// Upsert today's row, adding `words_delta` to the running total and
 /// bumping the session counter. Called once per `update_document` save.
 /// `words_delta == 0` still counts as a session (the user pressed save
-/// even if they only deleted text).
+/// even if they only deleted text). Also snapshots the active daily goal
+/// and recomputes today's `goal_met` (J-04).
 pub(super) fn record_daily(conn: &Connection, words_delta: u32) -> AppResult<()> {
     let today = today_iso();
     conn.execute(
@@ -145,7 +186,48 @@ pub(super) fn record_daily(conn: &Connection, words_delta: u32) -> AppResult<()>
              updated_at = excluded.updated_at",
         params![today, words_delta, now_ms()],
     )?;
+    let goal = get_daily_goal(conn)?;
+    conn.execute(
+        "UPDATE daily_writing
+         SET goal_words = ?2,
+             goal_met = CASE WHEN ?2 IS NOT NULL AND words >= ?2 THEN 1 ELSE 0 END
+         WHERE date = ?1",
+        params![today, goal],
+    )?;
     Ok(())
+}
+
+/// Consecutive days with `goal_met=1` ending today or yesterday. 0 when the
+/// most recent goal-met day is older than yesterday (the run is broken).
+fn goal_met_streak(conn: &Connection) -> AppResult<u32> {
+    let mut stmt =
+        conn.prepare("SELECT date FROM daily_writing WHERE goal_met=1 ORDER BY date DESC")?;
+    let dates: Vec<NaiveDate> = stmt
+        .query_map([], |r| r.get::<_, String>(0))?
+        .filter_map(|r| r.ok())
+        .filter_map(|s| NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok())
+        .collect();
+    let Some(&most_recent) = dates.first() else {
+        return Ok(0);
+    };
+    let today = Local::now().date_naive();
+    if today.signed_duration_since(most_recent).num_days() > 1 {
+        return Ok(0);
+    }
+    let mut streak = 0u32;
+    let mut expected = most_recent;
+    for d in dates {
+        if d == expected {
+            streak += 1;
+            match expected.pred_opt() {
+                Some(p) => expected = p,
+                None => break,
+            }
+        } else if d < expected {
+            break;
+        }
+    }
+    Ok(streak)
 }
 
 /// Last `days` worth of activity, oldest first. Missing days are filled
@@ -163,29 +245,41 @@ pub(super) fn list_recent_daily(conn: &Connection, days: u32) -> AppResult<Vec<D
     );
 
     let mut stmt = conn.prepare(
-        "SELECT date, words, sessions FROM daily_writing
+        "SELECT date, words, sessions, goal_words, goal_met FROM daily_writing
          WHERE date >= ?1
          ORDER BY date ASC",
     )?;
-    let rows: Vec<(String, u32, u32)> = stmt
+    #[allow(clippy::type_complexity)]
+    let rows: Vec<(String, u32, u32, Option<u32>, bool)> = stmt
         .query_map(params![start_str], |r| {
-            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get::<_, Option<u32>>(3)?,
+                r.get::<_, i64>(4)? != 0,
+            ))
         })?
         .collect::<Result<Vec<_>, _>>()?;
 
     // Fill in gaps with zero rows so the consumer always gets exactly
     // `days` entries spanning [start, today].
-    let mut by_date: std::collections::HashMap<String, (u32, u32)> =
-        rows.into_iter().map(|(d, w, s)| (d, (w, s))).collect();
+    let mut by_date: std::collections::HashMap<String, (u32, u32, Option<u32>, bool)> = rows
+        .into_iter()
+        .map(|(d, w, s, g, m)| (d, (w, s, g, m)))
+        .collect();
     let mut out = Vec::with_capacity(days as usize);
     for i in 0..days as i64 {
         let d = start + Duration::days(i);
         let key = format!("{:04}-{:02}-{:02}", d.year(), d.month(), d.day());
-        let (words, sessions) = by_date.remove(&key).unwrap_or((0, 0));
+        let (words, sessions, goal_words, goal_met) =
+            by_date.remove(&key).unwrap_or((0, 0, None, false));
         out.push(DailyWriting {
             date: key,
             words,
             sessions,
+            goal_words,
+            goal_met,
         });
     }
     Ok(out)
@@ -250,5 +344,39 @@ mod tests {
         let series = s.list_recent_daily_writing(0).unwrap();
         // Clamped to a minimum of 1 day.
         assert_eq!(series.len(), 1);
+    }
+
+    #[test]
+    fn daily_goal_drives_goal_met_and_streak() {
+        let s = fresh();
+        s.set_daily_goal(Some(100)).unwrap();
+        assert_eq!(s.get_daily_goal().unwrap(), Some(100));
+
+        // Below the goal → not met, no streak.
+        s.record_daily_writing(40).unwrap();
+        let series = s.list_recent_daily_writing(1).unwrap();
+        assert_eq!(series[0].goal_words, Some(100));
+        assert!(!series[0].goal_met);
+        assert_eq!(s.get_writing_stats().unwrap().goal_met_streak, 0);
+
+        // Reaching the goal flips goal_met and lights the streak.
+        s.record_daily_writing(70).unwrap();
+        let series = s.list_recent_daily_writing(1).unwrap();
+        assert!(series[0].goal_met);
+        assert_eq!(s.get_writing_stats().unwrap().goal_met_streak, 1);
+    }
+
+    #[test]
+    fn clearing_daily_goal_clears_goal_met() {
+        let s = fresh();
+        s.set_daily_goal(Some(10)).unwrap();
+        s.record_daily_writing(50).unwrap();
+        assert!(s.list_recent_daily_writing(1).unwrap()[0].goal_met);
+
+        s.set_daily_goal(None).unwrap();
+        let series = s.list_recent_daily_writing(1).unwrap();
+        assert!(!series[0].goal_met);
+        assert_eq!(series[0].goal_words, None);
+        assert_eq!(s.get_daily_goal().unwrap(), None);
     }
 }

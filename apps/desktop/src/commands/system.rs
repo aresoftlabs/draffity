@@ -47,6 +47,16 @@ pub fn get_recent_daily_writing(
     state.storage.list_recent_daily_writing(days)
 }
 
+#[tauri::command]
+pub fn get_daily_goal(state: State<'_, AppState>) -> CmdResult<Option<i64>> {
+    state.storage.get_daily_goal()
+}
+
+#[tauri::command]
+pub fn set_daily_goal(state: State<'_, AppState>, goal: Option<i64>) -> CmdResult<()> {
+    state.storage.set_daily_goal(goal)
+}
+
 /// Snapshot of the crash-reporting service state. `active` tells the UI
 /// whether to show the opt-in toggle at all (no destination → no toggle).
 /// `enabled` is the user's current consent value.

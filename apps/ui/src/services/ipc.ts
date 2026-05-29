@@ -189,6 +189,8 @@ export const ipc = {
   getWritingStats: () => invoke<WritingStats>('get_writing_stats'),
   getRecentDailyWriting: (days: number) =>
     invoke<DailyWriting[]>('get_recent_daily_writing', { days }),
+  getDailyGoal: () => invoke<number | null>('get_daily_goal'),
+  setDailyGoal: (goal: number | null) => invoke<void>('set_daily_goal', { goal }),
   getCrashReportingStatus: () =>
     invoke<{ active: boolean; enabled: boolean }>('get_crash_reporting_status'),
   setCrashReportingEnabled: (enabled: boolean) =>

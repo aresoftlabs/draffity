@@ -71,6 +71,8 @@ pub fn run() {
             commands::set_setting,
             commands::get_writing_stats,
             commands::get_recent_daily_writing,
+            commands::get_daily_goal,
+            commands::set_daily_goal,
             commands::get_crash_reporting_status,
             commands::set_crash_reporting_enabled,
             // premium / license
