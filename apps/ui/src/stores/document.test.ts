@@ -23,6 +23,8 @@ function makeDoc(over: Partial<DocNode> = {}): DocNode {
     labelIds: over.labelIds ?? [],
     metadata: over.metadata ?? {},
     isResearch: over.isResearch ?? false,
+    isFrontMatter: over.isFrontMatter ?? false,
+    isBackMatter: over.isBackMatter ?? false,
     createdAt: over.createdAt ?? now,
     updatedAt: over.updatedAt ?? now,
   };

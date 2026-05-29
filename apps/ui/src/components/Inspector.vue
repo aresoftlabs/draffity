@@ -6,6 +6,7 @@ import Chips from 'primevue/chips';
 import MultiSelect from 'primevue/multiselect';
 import Button from 'primevue/button';
 import ToggleSwitch from 'primevue/toggleswitch';
+import SelectButton from 'primevue/selectbutton';
 import Textarea from 'primevue/textarea';
 import type { CustomField, DocNode, DocumentStatus, Label } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   metadataChange: [fieldId: string, value: string | null];
   manageFields: [];
   researchChange: [isResearch: boolean];
+  matterChange: [isFront: boolean, isBack: boolean];
   goalChange: [goal: number | null];
   synopsisChange: [synopsis: string | null];
 }>();
@@ -58,6 +60,20 @@ function readingTime(words: number): string {
   const minutes = words / wpm;
   if (minutes < 1) return t('reading.lessThanMinute');
   return t('reading.minutes', { n: Math.round(minutes) });
+}
+
+type MatterValue = 'body' | 'front' | 'back';
+const matterValue = computed<MatterValue>(() =>
+  props.doc?.isFrontMatter ? 'front' : props.doc?.isBackMatter ? 'back' : 'body',
+);
+const matterOptions = computed(() => [
+  { value: 'body' as MatterValue, label: t('compile.matterBody') },
+  { value: 'front' as MatterValue, label: t('compile.matterFront') },
+  { value: 'back' as MatterValue, label: t('compile.matterBack') },
+]);
+function onMatterChange(v: MatterValue) {
+  if (!props.doc || props.readOnly || !v) return;
+  emit('matterChange', v === 'front', v === 'back');
 }
 
 const statusOptions = computed<{ value: DocumentStatus; label: string }[]>(() =>
@@ -162,6 +178,19 @@ function onSynopsisInput(v: string) {
           </div>
         </dl>
         <p class="text-[11px] opacity-50 mt-1">{{ t('research.hint') }}</p>
+        <div class="flex items-center justify-between gap-2 mt-2">
+          <span class="text-xs opacity-60">{{ t('compile.matter') }}</span>
+          <SelectButton
+            :model-value="matterValue"
+            :options="matterOptions"
+            option-label="label"
+            option-value="value"
+            :allow-empty="false"
+            :disabled="readOnly"
+            size="small"
+            @update:model-value="onMatterChange"
+          />
+        </div>
       </section>
 
       <section>

@@ -156,7 +156,64 @@ function buildConfig(): ExportConfig {
     ...config.value,
     pageSize: buildPageSize(),
     sceneSeparator: buildSceneSeparator(),
+    // Drop blank find&replace rows so they don't persist as noise.
+    findReplace: config.value.findReplace.filter((r) => r.pattern.trim() !== ''),
   };
+}
+
+/** Built-in compile presets (K-05): one-shot bundles of existing config
+ *  fields. Selecting one merges its overrides into the current config. */
+const selectedPreset = ref<string | null>(null);
+const compilePresets = computed<{ id: string; label: string; config: Partial<ExportConfig> }[]>(
+  () => [
+    {
+      id: 'manuscript',
+      label: t('compile.presetManuscript'),
+      config: {
+        fontFamily: 'monospace',
+        includeToc: false,
+        includeTitlePage: true,
+        sceneSeparator: { kind: 'stars' },
+        pageSize: 'letter',
+      },
+    },
+    {
+      id: 'ebook',
+      label: t('compile.presetEbook'),
+      config: {
+        fontFamily: 'serif',
+        includeToc: true,
+        includeTitlePage: true,
+        sceneSeparator: { kind: 'stars' },
+        pageSize: 'a4',
+      },
+    },
+    {
+      id: 'editor',
+      label: t('compile.presetEditor'),
+      config: {
+        fontFamily: 'serif',
+        includeToc: true,
+        includeTitlePage: false,
+        sceneSeparator: { kind: 'dashes' },
+        pageSize: 'a4',
+      },
+    },
+  ],
+);
+
+function applyPreset(id: string | null) {
+  const preset = compilePresets.value.find((p) => p.id === id);
+  if (!preset) return;
+  config.value = { ...config.value, ...preset.config };
+  syncFromConfig(config.value);
+}
+
+function addFindReplace() {
+  config.value.findReplace = [...config.value.findReplace, { pattern: '', replacement: '' }];
+}
+function removeFindReplace(index: number) {
+  config.value.findReplace = config.value.findReplace.filter((_, i) => i !== index);
 }
 
 async function onExport() {
@@ -262,6 +319,24 @@ function coverFilename(path: string | null | undefined): string {
       <p class="text-sm opacity-70">{{ t('export.subtitle') }}</p>
 
       <div class="flex flex-col gap-1">
+        <label for="export-preset" class="text-sm font-medium">
+          {{ t('compile.preset') }}
+        </label>
+        <Select
+          id="export-preset"
+          v-model="selectedPreset"
+          :options="compilePresets"
+          option-label="label"
+          option-value="id"
+          :placeholder="t('compile.presetPlaceholder')"
+          show-clear
+          class="w-full"
+          @update:model-value="applyPreset"
+        />
+        <small class="opacity-55">{{ t('compile.presetHint') }}</small>
+      </div>
+
+      <div class="flex flex-col gap-1">
         <label for="export-format" class="text-sm font-medium">
           {{ t('export.format') }}
         </label>
@@ -281,6 +356,42 @@ function coverFilename(path: string | null | undefined): string {
           </template>
         </Select>
       </div>
+
+      <Fieldset :legend="t('compile.findReplace')" :toggleable="true" :collapsed="true">
+        <div class="flex flex-col gap-2">
+          <p class="text-xs opacity-60">{{ t('compile.findReplaceHint') }}</p>
+          <div v-for="(rule, i) in config.findReplace" :key="i" class="flex items-center gap-2">
+            <InputText
+              v-model="rule.pattern"
+              :placeholder="t('compile.findPattern')"
+              class="flex-1"
+              size="small"
+            />
+            <span aria-hidden="true" class="opacity-50">{{ '→' }}</span>
+            <InputText
+              v-model="rule.replacement"
+              :placeholder="t('compile.findReplacement')"
+              class="flex-1"
+              size="small"
+            />
+            <Button
+              icon="pi pi-times"
+              text
+              size="small"
+              severity="danger"
+              :aria-label="t('actions.delete')"
+              @click="removeFindReplace(i)"
+            />
+          </div>
+          <Button
+            :label="t('compile.addRule')"
+            icon="pi pi-plus"
+            text
+            size="small"
+            @click="addFindReplace"
+          />
+        </div>
+      </Fieldset>
 
       <Fieldset :legend="t('export.sectionContent')" :toggleable="true">
         <div class="flex flex-col gap-3">

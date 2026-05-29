@@ -68,6 +68,10 @@ const MIGRATIONS: &[(u32, &str)] = &[
         include_str!("../../migrations/019_project_deadline.sql"),
     ),
     (20, include_str!("../../migrations/020_session_targets.sql")),
+    (
+        21,
+        include_str!("../../migrations/021_front_back_matter.sql"),
+    ),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -130,6 +134,8 @@ pub trait StorageService: Send + Sync {
     fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode>;
     /// Flag or unflag a document as research material (I-10).
     fn set_document_research(&self, id: &str, is_research: bool) -> AppResult<DocNode>;
+    /// Set a document's front/back matter flags (K-03).
+    fn set_document_matter(&self, id: &str, is_front: bool, is_back: bool) -> AppResult<DocNode>;
     /// Set or clear a project's target word count.
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project>;
     /// Set or clear a project's deadline (epoch ms).
@@ -488,6 +494,10 @@ impl StorageService for LocalStorageService {
 
     fn set_document_research(&self, id: &str, is_research: bool) -> AppResult<DocNode> {
         documents::set_research(&self.conn.lock().unwrap(), id, is_research)
+    }
+
+    fn set_document_matter(&self, id: &str, is_front: bool, is_back: bool) -> AppResult<DocNode> {
+        documents::set_matter(&self.conn.lock().unwrap(), id, is_front, is_back)
     }
 
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project> {

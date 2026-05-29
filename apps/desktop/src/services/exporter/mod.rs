@@ -14,7 +14,8 @@ mod util;
 pub use media_bundle::{extract_media_ids, MediaBundle};
 
 pub use config::{
-    settings_key as export_config_settings_key, ExportConfig, Margins, PageSize, SceneSeparator,
+    settings_key as export_config_settings_key, ExportConfig, FindReplaceRule, Margins, PageSize,
+    SceneSeparator,
 };
 
 use crate::domain::{CodexEntry, DocNode, Project};
@@ -151,6 +152,8 @@ pub(crate) mod test_support {
             label_ids: Vec::new(),
             metadata: std::collections::HashMap::new(),
             is_research: false,
+            is_front_matter: false,
+            is_back_matter: false,
             goal_words: None,
             created_at: now,
             updated_at: now,

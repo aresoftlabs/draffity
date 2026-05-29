@@ -638,6 +638,23 @@
     "empty": "Press “Generate” to get names.",
     "pickHint": "Click a name to use it."
   },
+  "compile": {
+    "preset": "Compile preset",
+    "presetPlaceholder": "Choose a preset…",
+    "presetHint": "Applies a bundle of settings; you can fine-tune them below.",
+    "presetManuscript": "Manuscript (submission)",
+    "presetEbook": "Ebook",
+    "presetEditor": "Draft for editor",
+    "findReplace": "Find & replace (export only)",
+    "findReplaceHint": "Applied to the exported text, not the editor.",
+    "findPattern": "Find",
+    "findReplacement": "Replace with",
+    "addRule": "Add rule",
+    "matter": "Compile as",
+    "matterBody": "Body",
+    "matterFront": "Front",
+    "matterBack": "Back"
+  },
   "composition": {
     "enter": "Composition mode",
     "exit": "Exit (Esc)",

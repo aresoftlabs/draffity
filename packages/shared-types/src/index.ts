@@ -56,6 +56,10 @@ export interface DocNode {
   /** Research material (I-10): excluded from word-count stats and from export
    *  by default (the whole subtree under a research doc is treated as such). */
   isResearch: boolean;
+  /** Compile as front matter (K-03): reordered to the start of the export. */
+  isFrontMatter: boolean;
+  /** Compile as back matter (K-03): reordered to the end of the export. */
+  isBackMatter: boolean;
   /** Target word count for this document. `null` means no goal set. */
   goalWords?: number | null;
   createdAt: number;
@@ -291,6 +295,14 @@ export interface ExportConfig {
   /** When true, research documents (I-10) and their subtree are included in
    *  the export. Defaults to false. */
   includeResearch: boolean;
+  /** Compile find&replace rules (K-02), applied to content at export only. */
+  findReplace: FindReplaceRule[];
+}
+
+/** A single compile find&replace rule (K-02). Literal (non-regex). */
+export interface FindReplaceRule {
+  pattern: string;
+  replacement: string;
 }
 
 /** Defaults mirrored from `services::exporter::config::ExportConfig::default()`. */
@@ -306,6 +318,7 @@ export const DEFAULT_EXPORT_CONFIG: ExportConfig = {
   coverImagePath: null,
   includeCodex: false,
   includeResearch: false,
+  findReplace: [],
 };
 
 // Writing stats

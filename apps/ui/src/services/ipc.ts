@@ -344,6 +344,9 @@ export const ipc = {
   // Research folder (Épica I — I-10)
   setDocumentResearch: (id: string, isResearch: boolean) =>
     invoke<DocNode>('set_document_research', { id, isResearch }),
+  // Front/back matter (Épica K — K-03)
+  setDocumentMatter: (id: string, isFront: boolean, isBack: boolean) =>
+    invoke<DocNode>('set_document_matter', { id, isFront, isBack }),
 
   // Search
   searchDocuments: (params: { projectId: string; query: string }) =>

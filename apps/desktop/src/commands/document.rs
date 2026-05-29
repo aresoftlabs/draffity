@@ -168,6 +168,19 @@ pub fn set_document_research(
 }
 
 #[tauri::command]
+pub fn set_document_matter(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    id: String,
+    is_front: bool,
+    is_back: bool,
+) -> CmdResult<DocNode> {
+    let doc = state.storage.set_document_matter(&id, is_front, is_back)?;
+    let _ = app.emit(events::DOCUMENT_SAVED, &doc);
+    Ok(doc)
+}
+
+#[tauri::command]
 pub fn delete_document(state: State<'_, AppState>, app: AppHandle, id: String) -> CmdResult<()> {
     state.storage.delete_document(&id)?;
     let _ = app.emit(events::DOCUMENT_DELETED, &id);

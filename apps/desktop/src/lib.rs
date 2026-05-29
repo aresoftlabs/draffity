@@ -148,6 +148,7 @@ pub fn run() {
             commands::set_document_goal,
             commands::set_document_synopsis,
             commands::set_document_research,
+            commands::set_document_matter,
             commands::delete_document,
             commands::create_snapshot,
             commands::list_snapshots,

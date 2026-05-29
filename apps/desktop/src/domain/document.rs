@@ -109,6 +109,12 @@ pub struct DocNode {
     /// excluded from word-count stats and from export by default.
     #[serde(default)]
     pub is_research: bool,
+    /// Compile as front matter (K-03): reordered to the start of the export.
+    #[serde(default)]
+    pub is_front_matter: bool,
+    /// Compile as back matter (K-03): reordered to the end of the export.
+    #[serde(default)]
+    pub is_back_matter: bool,
     /// Target word count for this document. `None` means no goal set.
     #[serde(default)]
     pub goal_words: Option<i64>,

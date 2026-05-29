@@ -638,6 +638,23 @@
     "empty": "Pulsá «Generar» para obtener nombres.",
     "pickHint": "Clic en un nombre para usarlo."
   },
+  "compile": {
+    "preset": "Preset de compilación",
+    "presetPlaceholder": "Elegir preset…",
+    "presetHint": "Aplica un conjunto de ajustes; podés afinarlos abajo.",
+    "presetManuscript": "Manuscrito (envío editorial)",
+    "presetEbook": "Ebook",
+    "presetEditor": "Borrador para editor",
+    "findReplace": "Buscar y reemplazar (solo export)",
+    "findReplaceHint": "Se aplica al texto exportado, no al editor.",
+    "findPattern": "Buscar",
+    "findReplacement": "Reemplazar por",
+    "addRule": "Añadir regla",
+    "matter": "Compilar como",
+    "matterBody": "Cuerpo",
+    "matterFront": "Inicio",
+    "matterBack": "Final"
+  },
   "composition": {
     "enter": "Modo composición",
     "exit": "Salir (Esc)",

@@ -63,6 +63,8 @@ fn doc(
         label_ids: Vec::new(),
         metadata: std::collections::HashMap::new(),
         is_research: false,
+        is_front_matter: false,
+        is_back_matter: false,
         goal_words: None,
         created_at: now,
         updated_at: now,

@@ -457,6 +457,13 @@ async function onResearchChange(isResearch: boolean) {
   await run(t('errors.saveDocument'), () => docStore.setResearch(selected.value!.id, isResearch));
 }
 
+async function onMatterChange(isFront: boolean, isBack: boolean) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () =>
+    docStore.setMatter(selected.value!.id, isFront, isBack),
+  );
+}
+
 async function onDocGoalChange(goal: number | null) {
   if (!selected.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => docStore.setGoal(selected.value!.id, goal));
@@ -901,6 +908,7 @@ onBeforeUnmount(() => {
           @metadata-change="onMetadataChange"
           @manage-fields="fieldsManagerVisible = true"
           @research-change="onResearchChange"
+          @matter-change="onMatterChange"
           @goal-change="onDocGoalChange"
           @synopsis-change="onSynopsisChange"
         />

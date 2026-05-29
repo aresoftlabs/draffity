@@ -84,6 +84,14 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         .get::<_, i64>("is_research")
         .map(|n| n != 0)
         .unwrap_or(false);
+    let is_front_matter: bool = r
+        .get::<_, i64>("is_front_matter")
+        .map(|n| n != 0)
+        .unwrap_or(false);
+    let is_back_matter: bool = r
+        .get::<_, i64>("is_back_matter")
+        .map(|n| n != 0)
+        .unwrap_or(false);
     let synopsis: Option<String> = r.get("synopsis").ok().flatten();
     let content_json: Option<String> = r.get("content_json").ok().flatten();
     Ok(DocNode {
@@ -101,6 +109,8 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         label_ids,
         metadata,
         is_research,
+        is_front_matter,
+        is_back_matter,
         goal_words,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,

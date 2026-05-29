@@ -86,6 +86,19 @@ pub struct ExportConfig {
     /// the export. Defaults to false — research is reference material, not
     /// reader-facing manuscript.
     pub include_research: bool,
+    /// Compile find&replace rules (K-02), applied to document content at
+    /// export time only — the editor/storage are never touched. Literal
+    /// (non-regex) replacement, applied in order.
+    #[serde(default)]
+    pub find_replace: Vec<FindReplaceRule>,
+}
+
+/// A single compile-time find&replace rule (K-02).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FindReplaceRule {
+    pub pattern: String,
+    pub replacement: String,
 }
 
 impl Default for ExportConfig {
@@ -102,6 +115,7 @@ impl Default for ExportConfig {
             cover_image_path: None,
             include_codex: false,
             include_research: false,
+            find_replace: Vec::new(),
         }
     }
 }

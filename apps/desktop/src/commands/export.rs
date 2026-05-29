@@ -39,11 +39,16 @@ pub fn export_project(
 
     // Research material (I-10) is excluded unless opted in. Drop research
     // roots and everything nested under them.
-    let documents = if effective.include_research {
+    let mut documents = if effective.include_research {
         all_documents
     } else {
         strip_research(all_documents)
     };
+
+    // Compile passes (K-02/K-03), format-agnostic so every renderer benefits:
+    // find&replace on content, then reorder front/back matter to the edges.
+    apply_find_replace(&mut documents, &effective.find_replace);
+    reorder_matter(&mut documents);
 
     // Pre-resolve every `data-media-id` referenced by the documents into
     // a `MediaBundle` so the renderers don't depend on `MediaService`.
@@ -118,6 +123,46 @@ fn strip_research(documents: Vec<crate::domain::DocNode>) -> Vec<crate::domain::
         .collect()
 }
 
+/// Apply compile find&replace rules (K-02) to each document's content. Literal
+/// (non-regex) replacement, in order. Export-only — storage is untouched.
+fn apply_find_replace(
+    documents: &mut [crate::domain::DocNode],
+    rules: &[crate::services::exporter::FindReplaceRule],
+) {
+    let active: Vec<&crate::services::exporter::FindReplaceRule> =
+        rules.iter().filter(|r| !r.pattern.is_empty()).collect();
+    if active.is_empty() {
+        return;
+    }
+    for doc in documents.iter_mut() {
+        if let Some(html) = doc.content.as_mut() {
+            for rule in &active {
+                if html.contains(&rule.pattern) {
+                    *html = html.replace(&rule.pattern, &rule.replacement);
+                }
+            }
+        }
+    }
+}
+
+/// Reorder so front-matter top-level docs compile first and back-matter last
+/// (K-03). Achieved by rewriting `position` of root docs into three bands;
+/// renderers sort by position within each parent, so subtrees stay intact.
+fn reorder_matter(documents: &mut [crate::domain::DocNode]) {
+    const FRONT: i64 = -1_000_000;
+    const BACK: i64 = 1_000_000;
+    for doc in documents.iter_mut() {
+        if doc.parent_id.is_some() {
+            continue; // only reorder at the top level
+        }
+        if doc.is_front_matter {
+            doc.position += FRONT;
+        } else if doc.is_back_matter {
+            doc.position += BACK;
+        }
+    }
+}
+
 #[tauri::command]
 pub fn supported_export_formats(state: State<'_, AppState>) -> AppResult<Vec<ExportFormat>> {
     Ok(state.exporter.supported_formats())
@@ -159,8 +204,9 @@ fn load_config(state: &State<'_, AppState>, project_id: &str) -> AppResult<Expor
 
 #[cfg(test)]
 mod tests {
-    use super::strip_research;
+    use super::{apply_find_replace, reorder_matter, strip_research};
     use crate::domain::{DocNode, DocumentStatus, DocumentType};
+    use crate::services::exporter::FindReplaceRule;
 
     fn doc(id: &str, parent: Option<&str>, is_research: bool) -> DocNode {
         DocNode {
@@ -178,10 +224,50 @@ mod tests {
             label_ids: vec![],
             metadata: std::collections::HashMap::new(),
             is_research,
+            is_front_matter: false,
+            is_back_matter: false,
             goal_words: None,
             created_at: 0,
             updated_at: 0,
         }
+    }
+
+    fn rule(pattern: &str, replacement: &str) -> FindReplaceRule {
+        FindReplaceRule {
+            pattern: pattern.into(),
+            replacement: replacement.into(),
+        }
+    }
+
+    #[test]
+    fn find_replace_rewrites_content_only_for_matching_rules() {
+        let mut docs = vec![doc("a", None, false), doc("b", None, false)];
+        docs[0].content = Some("<p>[SPOILER] hidden</p>".into());
+        docs[1].content = Some("<p>clean</p>".into());
+        apply_find_replace(&mut docs, &[rule("[SPOILER] ", ""), rule("", "x")]);
+        assert_eq!(docs[0].content.as_deref(), Some("<p>hidden</p>"));
+        // Empty-pattern rule is ignored; untouched doc stays as-is.
+        assert_eq!(docs[1].content.as_deref(), Some("<p>clean</p>"));
+    }
+
+    #[test]
+    fn reorder_matter_pushes_front_first_and_back_last() {
+        let mut docs = vec![
+            doc("body", None, false),
+            doc("title", None, false),
+            doc("appendix", None, false),
+            doc("child", Some("body"), false),
+        ];
+        docs[0].position = 1;
+        docs[1].position = 0;
+        docs[1].is_front_matter = true;
+        docs[2].position = 2;
+        docs[2].is_back_matter = true;
+        docs[3].position = 5; // a child — must NOT be reordered
+        reorder_matter(&mut docs);
+        assert!(docs[1].position < docs[0].position); // front before body
+        assert!(docs[2].position > docs[0].position); // back after body
+        assert_eq!(docs[3].position, 5); // child untouched
     }
 
     #[test]
