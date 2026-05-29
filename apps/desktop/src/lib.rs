@@ -95,6 +95,7 @@ pub fn run() {
             commands::download_voice_model,
             commands::delete_voice_model,
             commands::import_voice_binary,
+            commands::transcribe_audio,
             // projects
             commands::create_project,
             commands::list_projects,

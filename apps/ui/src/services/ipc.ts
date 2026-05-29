@@ -85,6 +85,40 @@ export interface CoverageReport {
   covered: number;
 }
 
+/** Transcription result (Épica H). */
+export interface TranscriptSegment {
+  text: string;
+  startMs: number;
+  endMs: number;
+}
+export interface Transcript {
+  text: string;
+  segments: TranscriptSegment[];
+}
+
+/** Voice runtime status (H). */
+export interface VoiceStatus {
+  dictationAvailable: boolean;
+  binaryInstalled: boolean;
+  installedModels: string[];
+}
+
+/** A downloadable Whisper model (H-02). */
+export interface VoiceModel {
+  id: string;
+  filename: string;
+  sizeMb: number;
+  recommended: boolean;
+  installed: boolean;
+}
+
+/** Model download progress event (`voice.download.progress`). */
+export interface VoiceDownloadProgress {
+  modelId: string;
+  downloaded: number;
+  total: number | null;
+}
+
 /** Premium activation status reported by the backend (E-07). */
 export interface PremiumStatus {
   /** `'free'` or `'premium'`. */
@@ -142,6 +176,15 @@ export const ipc = {
     invoke<AiValidation[]>('run_validators', { projectId, documentId, validators }),
   listValidations: (documentId: string) =>
     invoke<AiValidation[]>('list_validations', { documentId }),
+
+  // Voice (Épica H)
+  getVoiceStatus: () => invoke<VoiceStatus>('get_voice_status'),
+  listVoiceModels: () => invoke<VoiceModel[]>('list_voice_models'),
+  downloadVoiceModel: (modelId: string) => invoke<void>('download_voice_model', { modelId }),
+  deleteVoiceModel: (modelId: string) => invoke<void>('delete_voice_model', { modelId }),
+  importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
+  transcribeAudio: (wav: Uint8Array) =>
+    invoke<Transcript>('transcribe_audio', { wav: Array.from(wav) }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

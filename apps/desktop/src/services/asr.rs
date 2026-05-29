@@ -8,18 +8,22 @@
 //! `transcribe_stream` (chunked dictation H-03). Streaming uses a callback
 //! sink — same object-safe, runtime-free pattern as `AIService`.
 
+use serde::Serialize;
+
 use crate::error::AppResult;
 
 /// A recognized span of audio with its timing, used both for the final
 /// dictation text and for word-level seek in the voice-notes player (H-11).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TranscriptSegment {
     pub text: String,
     pub start_ms: u64,
     pub end_ms: u64,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Transcript {
     pub text: String,
     pub segments: Vec<TranscriptSegment>,

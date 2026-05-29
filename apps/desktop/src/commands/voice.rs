@@ -9,11 +9,13 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, Emitter, State};
 
+use crate::domain::now_ms;
 use crate::error::AppError;
 use crate::services::voice::{
-    bin_path, download_to_file, installed_models, model_by_id, model_path, model_url,
+    bin_path, download_to_file, installed_models, model_by_id, model_path, model_url, voice_dir,
     whisper_models,
 };
+use crate::services::Transcript;
 use crate::state::AppState;
 
 type CmdResult<T> = Result<T, AppError>;
@@ -110,6 +112,30 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
         std::fs::remove_file(&path)?;
     }
     Ok(())
+}
+
+/// Transcribe a recorded clip (16 kHz mono WAV bytes from the UI) to text.
+/// The engine is whatever `ASRService` is wired — this command only depends on
+/// the trait, so swapping the ASR backend never touches it. Runs off-thread.
+#[tauri::command]
+pub async fn transcribe_audio(state: State<'_, AppState>, wav: Vec<u8>) -> CmdResult<Transcript> {
+    if !state.asr.available() {
+        return Err(AppError::Unsupported(
+            "el dictado no está disponible (instalá el binario y un modelo de voz)".into(),
+        ));
+    }
+    let tmp_dir = voice_dir(&state.app_data_dir).join("tmp");
+    std::fs::create_dir_all(&tmp_dir)?;
+    let path = tmp_dir.join(format!("rec{}.wav", now_ms()));
+    std::fs::write(&path, &wav)?;
+
+    let asr = state.asr.clone();
+    let path_str = path.to_string_lossy().into_owned();
+    let result = tauri::async_runtime::spawn_blocking(move || asr.transcribe_file(&path_str))
+        .await
+        .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
+    let _ = std::fs::remove_file(&path);
+    result
 }
 
 /// Copy a user-provided whisper.cpp binary into the app's voice/bin dir. The
