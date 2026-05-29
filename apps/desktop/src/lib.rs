@@ -89,6 +89,14 @@ pub fn run() {
             commands::check_codex_coverage,
             commands::run_validators,
             commands::list_validations,
+            // collections (épica i)
+            commands::create_collection,
+            commands::list_collections,
+            commands::rename_collection,
+            commands::set_collection_query,
+            commands::delete_collection,
+            commands::set_collection_members,
+            commands::resolve_collection,
             // voice (épica h)
             commands::get_voice_status,
             commands::list_voice_models,

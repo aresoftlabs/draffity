@@ -14,8 +14,9 @@ use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
     AiHistoryEntry, AiValidation, Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate,
-    DailyWriting, DocNode, DocumentInput, DocumentStatus, MediaAsset, Project, ProjectInput,
-    ProjectStatus, SearchHit, Snapshot, TemplateNode, WritingStats,
+    Collection, CollectionInput, CollectionQuery, DailyWriting, DocNode, DocumentInput,
+    DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
+    TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 use crate::services::importer::ImportTree;
@@ -26,6 +27,7 @@ mod ai_history;
 mod ai_validations;
 mod citations;
 mod codex;
+mod collections;
 mod document_positions;
 mod document_tags;
 mod documents;
@@ -55,6 +57,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (12, include_str!("../../migrations/012_ai_history.sql")),
     (13, include_str!("../../migrations/013_ai_validations.sql")),
     (14, include_str!("../../migrations/014_voice_notes.sql")),
+    (15, include_str!("../../migrations/015_collections.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -240,6 +243,19 @@ pub trait StorageService: Send + Sync {
     ) -> AppResult<AiValidation>;
     /// All reports for a document, newest first.
     fn list_ai_validations(&self, document_id: &str) -> AppResult<Vec<AiValidation>>;
+
+    // Collections (I-01..I-03)
+    fn create_collection(&self, input: CollectionInput) -> AppResult<Collection>;
+    fn list_collections(&self, project_id: &str) -> AppResult<Vec<Collection>>;
+    fn get_collection(&self, id: &str) -> AppResult<Option<Collection>>;
+    fn rename_collection(&self, id: &str, name: &str) -> AppResult<Collection>;
+    /// Update a smart collection's query.
+    fn set_collection_query(&self, id: &str, query: &CollectionQuery) -> AppResult<Collection>;
+    fn delete_collection(&self, id: &str) -> AppResult<()>;
+    /// Replace a manual collection's ordered membership.
+    fn set_collection_members(&self, collection_id: &str, ordered_ids: &[String]) -> AppResult<()>;
+    /// Resolve a collection to its documents (manual order or smart filter).
+    fn resolve_collection(&self, id: &str) -> AppResult<Vec<DocNode>>;
 }
 
 /// Local SQLite-backed implementation. Single connection guarded by Mutex —
@@ -512,6 +528,38 @@ impl StorageService for LocalStorageService {
 
     fn list_ai_validations(&self, document_id: &str) -> AppResult<Vec<AiValidation>> {
         ai_validations::list_for_document(&self.conn.lock().unwrap(), document_id)
+    }
+
+    fn create_collection(&self, input: CollectionInput) -> AppResult<Collection> {
+        collections::create(&self.conn.lock().unwrap(), input)
+    }
+
+    fn list_collections(&self, project_id: &str) -> AppResult<Vec<Collection>> {
+        collections::list(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn get_collection(&self, id: &str) -> AppResult<Option<Collection>> {
+        collections::get(&self.conn.lock().unwrap(), id)
+    }
+
+    fn rename_collection(&self, id: &str, name: &str) -> AppResult<Collection> {
+        collections::rename(&self.conn.lock().unwrap(), id, name)
+    }
+
+    fn set_collection_query(&self, id: &str, query: &CollectionQuery) -> AppResult<Collection> {
+        collections::set_query(&self.conn.lock().unwrap(), id, query)
+    }
+
+    fn delete_collection(&self, id: &str) -> AppResult<()> {
+        collections::delete(&self.conn.lock().unwrap(), id)
+    }
+
+    fn set_collection_members(&self, collection_id: &str, ordered_ids: &[String]) -> AppResult<()> {
+        collections::set_members(&mut self.conn.lock().unwrap(), collection_id, ordered_ids)
+    }
+
+    fn resolve_collection(&self, id: &str) -> AppResult<Vec<DocNode>> {
+        collections::resolve(&self.conn.lock().unwrap(), id)
     }
 
     fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {
