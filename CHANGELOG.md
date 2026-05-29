@@ -106,6 +106,29 @@ premium (IA BYOK + voz). Aún sin release versionada.
   (JSON whisper, WAV, encoder WAV, autopuntuación) unit-testeados.
 - **Diferido**: vínculo codex↔nota de voz (H-10, P1).
 
+### Added — Épica I: paridad binder/metadata (I-01..I-10)
+
+- **Colecciones** (I-01..I-04): migración 015 (`collections` +
+  `collection_documents`). Manuales (lista ordenada) y smart (query serializado
+  resuelto en vivo por `CollectionQuery::matches`, lógica de dominio pura). UI:
+  panel bajo el binder + editor con constructor de filtros (tags/estado/título).
+- **Marcadores de color** (I-05/I-06): migración 016 (`labels` +
+  `document_labels` M:N). Taxonomía coloreada por proyecto; `DocNode.label_ids`
+  vía subquery `json_group_array`. Chips en binder/outliner/corkboard/inspector,
+  asignación con MultiSelect, gestor con paleta y filtro de binder por label.
+- **Campos personalizados** (I-08/I-09): migración 017 (`custom_fields` +
+  `document_custom_values`). Kinds text/number/date/select con validación de
+  opciones; `DocNode.metadata` vía `json_group_object`. Editor por kind en el
+  inspector, gestor de definiciones y columnas ordenables en el outliner.
+- **Carpeta de investigación** (I-10): migración 018 (`documents.is_research`
+  aditiva). El subárbol research se excluye del conteo de palabras y del export
+  por defecto (`strip_research` + `ExportConfig.include_research` opt-in). Toggle
+  en inspector, indicador en binder, checkbox en el diálogo de export.
+- **Diferido**: status configurable por proyecto (I-07). Rompería el enum tipado
+  `DocumentStatus` (CHECK SQL, semántica de `trashed`, filtro de colecciones,
+  dots, tipo specta) y se solapa con Labels, que ya da taxonomía de color por
+  proyecto. Se revisará si aparece demanda real del _pipeline_ configurable.
+
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03 →
