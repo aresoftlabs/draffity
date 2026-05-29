@@ -17,7 +17,7 @@ pub(super) fn find_by_hash(
     sha256: &str,
 ) -> AppResult<Option<MediaAsset>> {
     let mut stmt = conn.prepare(
-        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at
+        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at, duration_ms, transcribed_text, is_voice_note
          FROM media WHERE project_id = ?1 AND sha256 = ?2",
     )?;
     let row = stmt
@@ -52,12 +52,42 @@ pub(super) fn insert(
         sha256: sha256.into(),
         bytes,
         created_at: now,
+        duration_ms: None,
+        transcribed_text: None,
+        is_voice_note: false,
     })
+}
+
+/// Flag a stored asset as a voice note (H), setting its duration + optional
+/// transcription. Returns the refreshed row.
+pub(super) fn set_voice_note(
+    conn: &Connection,
+    id: &str,
+    duration_ms: Option<i64>,
+    transcribed_text: Option<&str>,
+) -> AppResult<MediaAsset> {
+    conn.execute(
+        "UPDATE media SET is_voice_note = 1, duration_ms = ?2, transcribed_text = ?3 WHERE id = ?1",
+        params![id, duration_ms, transcribed_text],
+    )?;
+    get(conn, id)?.ok_or_else(|| crate::error::AppError::NotFound(format!("media {id}")))
+}
+
+/// List a project's voice notes, newest first.
+pub(super) fn list_voice_notes(conn: &Connection, project_id: &str) -> AppResult<Vec<MediaAsset>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at, duration_ms, transcribed_text, is_voice_note
+         FROM media WHERE project_id = ?1 AND is_voice_note = 1 ORDER BY created_at DESC",
+    )?;
+    let rows = stmt
+        .query_map(params![project_id], row_to_media)?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(rows)
 }
 
 pub(super) fn get(conn: &Connection, id: &str) -> AppResult<Option<MediaAsset>> {
     let mut stmt = conn.prepare(
-        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at
+        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at, duration_ms, transcribed_text, is_voice_note
          FROM media WHERE id = ?1",
     )?;
     Ok(stmt.query_row(params![id], row_to_media).optional()?)
@@ -65,7 +95,7 @@ pub(super) fn get(conn: &Connection, id: &str) -> AppResult<Option<MediaAsset>> 
 
 pub(super) fn list(conn: &Connection, project_id: &str) -> AppResult<Vec<MediaAsset>> {
     let mut stmt = conn.prepare(
-        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at
+        "SELECT id, project_id, path_relative, mime, sha256, bytes, created_at, duration_ms, transcribed_text, is_voice_note
          FROM media WHERE project_id = ?1 ORDER BY created_at",
     )?;
     let rows = stmt
@@ -91,6 +121,9 @@ fn row_to_media(row: &rusqlite::Row<'_>) -> rusqlite::Result<MediaAsset> {
         sha256: row.get(4)?,
         bytes: row.get(5)?,
         created_at: row.get(6)?,
+        duration_ms: row.get(7)?,
+        transcribed_text: row.get(8)?,
+        is_voice_note: row.get::<_, i64>(9)? != 0,
     })
 }
 
@@ -169,6 +202,29 @@ mod tests {
         // `find_media_by_hash` first.
         let err = s.insert_media_row(&p.id, "media/p/dup.png", "image/png", "h", 2);
         assert!(err.is_err());
+    }
+
+    #[test]
+    fn voice_note_round_trip_and_listing() {
+        let s = fresh();
+        let p = seed_project(&s, "P");
+        let a = s
+            .insert_media_row(&p.id, "media/p/v.wav", "audio/wav", "vh", 999)
+            .unwrap();
+        // Plain media isn't a voice note.
+        assert!(!a.is_voice_note);
+        assert!(s.list_voice_notes(&p.id).unwrap().is_empty());
+
+        let updated = s
+            .set_media_voice_note(&a.id, Some(4200), Some("hola que tal"))
+            .unwrap();
+        assert!(updated.is_voice_note);
+        assert_eq!(updated.duration_ms, Some(4200));
+        assert_eq!(updated.transcribed_text.as_deref(), Some("hola que tal"));
+
+        let notes = s.list_voice_notes(&p.id).unwrap();
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0].id, a.id);
     }
 
     #[test]

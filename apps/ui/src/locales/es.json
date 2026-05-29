@@ -551,6 +551,16 @@
       "skip": "Saltar oración",
       "stop": "Detener",
       "speed": "Velocidad"
+    },
+    "notes": {
+      "title": "Notas de voz",
+      "button": "Notas de voz",
+      "record": "Grabar",
+      "stop": "Detener",
+      "transcribe": "Transcribir",
+      "delete": "Eliminar",
+      "empty": "Aún no hay notas de voz en este proyecto.",
+      "error": "No se pudo completar la operación de notas de voz."
     }
   },
   "editor": {

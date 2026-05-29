@@ -17,6 +17,14 @@ pub struct MediaAsset {
     pub sha256: String,
     pub bytes: i64,
     pub created_at: i64,
+    /// Voice-note metadata (H). `is_voice_note` distinguishes audio memos from
+    /// images/fonts; duration + transcription are set when one is recorded.
+    #[serde(default)]
+    pub duration_ms: Option<i64>,
+    #[serde(default)]
+    pub transcribed_text: Option<String>,
+    #[serde(default)]
+    pub is_voice_note: bool,
 }
 
 /// Pick the right extension for a MIME type. Falls back to `bin` when

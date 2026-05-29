@@ -47,6 +47,7 @@ import AiInlinePanel from '@/components/AiInlinePanel.vue';
 import ValidationDialog from '@/components/ValidationDialog.vue';
 import DictationOverlay from '@/components/DictationOverlay.vue';
 import ReadAloudBar from '@/components/ReadAloudBar.vue';
+import VoiceNotesDialog from '@/components/VoiceNotesDialog.vue';
 import { useCapability } from '@/composables/useCapability';
 import { useDictation } from '@/composables/useDictation';
 import { useReadAloud } from '@/composables/useReadAloud';
@@ -130,6 +131,8 @@ const showValidation = ref(false);
 const aiInline = useCapability('ai_inline');
 const voiceDictation = useCapability('voice_dictation');
 const voiceTts = useCapability('voice_tts');
+const voiceNotes = useCapability('voice_notes');
+const showVoiceNotes = ref(false);
 const dictation = useDictation(editor);
 const readAloud = useReadAloud(editor);
 
@@ -561,6 +564,16 @@ onBeforeUnmount(() => {
         @click="readAloud.toggle()"
       />
       <Button
+        v-if="voiceNotes"
+        v-tooltip.bottom="t('voice.notes.button')"
+        icon="pi pi-comment"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('voice.notes.button')"
+        @click="showVoiceNotes = true"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -612,6 +625,7 @@ onBeforeUnmount(() => {
       @skip="readAloud.skip"
       @update:speed="readAloud.setSpeed"
     />
+    <VoiceNotesDialog v-model:visible="showVoiceNotes" :project-id="project.id" />
 
     <Splitter
       class="flex-1 !rounded-none !border-0 min-h-0"

@@ -54,6 +54,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (11, include_str!("../../migrations/011_daily_writing.sql")),
     (12, include_str!("../../migrations/012_ai_history.sql")),
     (13, include_str!("../../migrations/013_ai_validations.sql")),
+    (14, include_str!("../../migrations/014_voice_notes.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -200,6 +201,15 @@ pub trait StorageService: Send + Sync {
     /// Returns the deleted row so the `MediaService` knows which file to
     /// unlink on disk; `None` when the id was already gone.
     fn delete_media_row(&self, id: &str) -> AppResult<Option<MediaAsset>>;
+    /// Flag a media asset as a voice note with duration + optional transcript.
+    fn set_media_voice_note(
+        &self,
+        id: &str,
+        duration_ms: Option<i64>,
+        transcribed_text: Option<&str>,
+    ) -> AppResult<MediaAsset>;
+    /// A project's voice notes, newest first.
+    fn list_voice_notes(&self, project_id: &str) -> AppResult<Vec<MediaAsset>>;
 
     // Search
     /// Full-text search across documents of a single project. Returns up to
@@ -585,6 +595,24 @@ impl StorageService for LocalStorageService {
 
     fn delete_media_row(&self, id: &str) -> AppResult<Option<MediaAsset>> {
         media::delete(&self.conn.lock().unwrap(), id)
+    }
+
+    fn set_media_voice_note(
+        &self,
+        id: &str,
+        duration_ms: Option<i64>,
+        transcribed_text: Option<&str>,
+    ) -> AppResult<MediaAsset> {
+        media::set_voice_note(
+            &self.conn.lock().unwrap(),
+            id,
+            duration_ms,
+            transcribed_text,
+        )
+    }
+
+    fn list_voice_notes(&self, project_id: &str) -> AppResult<Vec<MediaAsset>> {
+        media::list_voice_notes(&self.conn.lock().unwrap(), project_id)
     }
 }
 

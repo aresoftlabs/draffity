@@ -146,6 +146,10 @@ export interface MediaAsset {
    *  for the foreseeable file sizes a writer pastes. */
   bytes: number;
   createdAt: number;
+  /** Voice-note metadata (Épica H). Absent/false for images and fonts. */
+  durationMs?: number | null;
+  transcribedText?: string | null;
+  isVoiceNote?: boolean;
 }
 
 // Backups

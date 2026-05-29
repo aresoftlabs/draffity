@@ -551,6 +551,16 @@
       "skip": "Skip sentence",
       "stop": "Stop",
       "speed": "Speed"
+    },
+    "notes": {
+      "title": "Voice notes",
+      "button": "Voice notes",
+      "record": "Record",
+      "stop": "Stop",
+      "transcribe": "Transcribe",
+      "delete": "Delete",
+      "empty": "No voice notes in this project yet.",
+      "error": "Could not complete the voice notes operation."
     }
   },
   "editor": {

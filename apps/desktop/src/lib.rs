@@ -100,6 +100,9 @@ pub fn run() {
             commands::import_piper_binary,
             commands::download_voice_voice,
             commands::synthesize_speech,
+            commands::save_voice_note,
+            commands::list_voice_notes,
+            commands::delete_voice_note,
             // projects
             commands::create_project,
             commands::list_projects,

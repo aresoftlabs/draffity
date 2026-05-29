@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, Emitter, State};
 
-use crate::domain::now_ms;
+use crate::domain::{now_ms, MediaAsset};
 use crate::error::AppError;
 use crate::services::tts::SynthesizedAudio;
 use crate::services::voice::{
@@ -260,4 +260,57 @@ pub async fn synthesize_speech(
     tauri::async_runtime::spawn_blocking(move || tts.synthesize(&text, &voice_id))
         .await
         .map_err(|e| AppError::Unexpected(format!("tarea de síntesis: {e}")))?
+}
+
+/// Save a recorded voice note (16 kHz mono WAV bytes) as project media, and —
+/// when requested and the ASR is available — transcribe it in the background.
+/// Transcription failure never fails the save.
+#[tauri::command]
+pub async fn save_voice_note(
+    state: State<'_, AppState>,
+    project_id: String,
+    wav: Vec<u8>,
+    duration_ms: i64,
+    transcribe: bool,
+) -> CmdResult<MediaAsset> {
+    if state.project_manager.get(&project_id)?.is_none() {
+        return Err(AppError::NotFound(format!("project {project_id}")));
+    }
+    let asset = state.media.store(&project_id, "audio/wav", &wav)?;
+
+    let mut text: Option<String> = None;
+    if transcribe && state.asr.available() {
+        let path = state
+            .app_data_dir
+            .join(&asset.path_relative)
+            .to_string_lossy()
+            .into_owned();
+        let asr = state.asr.clone();
+        let transcript = tauri::async_runtime::spawn_blocking(move || asr.transcribe_file(&path))
+            .await
+            .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
+        if let Ok(t) = transcript {
+            let trimmed = t.text.trim();
+            if !trimmed.is_empty() {
+                text = Some(trimmed.to_string());
+            }
+        }
+    }
+
+    state
+        .storage
+        .set_media_voice_note(&asset.id, Some(duration_ms), text.as_deref())
+}
+
+#[tauri::command]
+pub fn list_voice_notes(
+    state: State<'_, AppState>,
+    project_id: String,
+) -> CmdResult<Vec<MediaAsset>> {
+    state.storage.list_voice_notes(&project_id)
+}
+
+#[tauri::command]
+pub fn delete_voice_note(state: State<'_, AppState>, id: String) -> CmdResult<()> {
+    state.media.delete(&id)
 }

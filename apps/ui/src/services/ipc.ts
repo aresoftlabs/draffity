@@ -208,6 +208,20 @@ export const ipc = {
   importPiperBinary: (sourcePath: string) => invoke<void>('import_piper_binary', { sourcePath }),
   synthesizeSpeech: (text: string, voiceId: string) =>
     invoke<SynthesizedAudio>('synthesize_speech', { text, voiceId }),
+  saveVoiceNote: (params: {
+    projectId: string;
+    wav: Uint8Array;
+    durationMs: number;
+    transcribe: boolean;
+  }) =>
+    invoke<MediaAsset>('save_voice_note', {
+      projectId: params.projectId,
+      wav: Array.from(params.wav),
+      durationMs: params.durationMs,
+      transcribe: params.transcribe,
+    }),
+  listVoiceNotes: (projectId: string) => invoke<MediaAsset[]>('list_voice_notes', { projectId }),
+  deleteVoiceNote: (id: string) => invoke<void>('delete_voice_note', { id }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),
