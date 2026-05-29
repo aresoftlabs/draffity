@@ -27,10 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sprint D cerrado al 100% (7 historias). Foco en **DX, arquitectura y
 calidad**: tipos auto-generados con drift gate, coverage floors,
 crash reporting opt-in, tema alto contraste, política de privacidad
-
-- ToS y a11y E2E. Sin features visibles nuevas — el output es un
-  codebase con gates más fuertes y un UX que respeta a usuarios con
-  necesidades de accesibilidad y privacidad explícitas.
+y ToS, y a11y E2E. Sin features visibles nuevas — el output es un
+codebase con gates más fuertes y un UX que respeta a usuarios con
+necesidades de accesibilidad y privacidad explícitas.
 
 ### Added — Política de privacidad + ToS (D-06, S8-11)
 
@@ -86,7 +85,7 @@ crash reporting opt-in, tema alto contraste, política de privacidad
 - **Rust (D-02)**: nuevo job `coverage-rs` en `ci.yml` usa
   `cargo-llvm-cov` con `--fail-under-lines 80`. Filtra wiring
   (`commands/`, `lib.rs`, `state.rs`, capabilities, events, logging)
-  - tests/examples para medir sólo `domain/` y `services/`.
+  más tests y examples para medir sólo `domain/` y `services/`.
 - **TS (D-03)**: `vitest --coverage` vía `@vitest/coverage-v8`,
   config en `vite.config.ts` con scope a `composables/` y
   `stores/`. Thresholds al floor actual (lines 30, functions 55,
