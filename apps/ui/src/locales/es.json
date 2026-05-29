@@ -192,7 +192,8 @@
     "pickDocument": "Elegí un documento",
     "empty": "Elegí un documento para editarlo en paralelo",
     "saving": "Guardando",
-    "close": "Cerrar panel"
+    "close": "Cerrar panel",
+    "lock": "Fijar documento del panel"
   },
   "footnote": {
     "insertTitle": "Insertar nota al pie",

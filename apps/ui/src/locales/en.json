@@ -192,7 +192,8 @@
     "pickDocument": "Pick a document",
     "empty": "Pick a document to edit alongside",
     "saving": "Saving",
-    "close": "Close split"
+    "close": "Close split",
+    "lock": "Pin pane document"
   },
   "footnote": {
     "insertTitle": "Insert footnote",

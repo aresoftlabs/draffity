@@ -92,6 +92,10 @@ export const useUiStore = defineStore('ui', () => {
   // the primary one and autosaves to this doc.
   const splitSecondaryIds = ref<Record<string, string | null>>(loadJson('splitSecondaryIds', {}));
 
+  // Recently-opened docs in the secondary split pane, per project (K-10).
+  // Most-recent first, capped — powers the per-pane bookmark chips.
+  const splitBookmarks = ref<Record<string, string[]>>(loadJson('splitBookmarks', {}));
+
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
   watch(typewriterMode, (v) => saveBool('typewriterMode', v));
@@ -103,6 +107,7 @@ export const useUiStore = defineStore('ui', () => {
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
   watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
   watch(splitSecondaryIds, (v) => saveJson('splitSecondaryIds', v), { deep: true });
+  watch(splitBookmarks, (v) => saveJson('splitBookmarks', v), { deep: true });
 
   function setTheme(mode: ThemeMode) {
     theme.value = mode;
@@ -189,6 +194,16 @@ export const useUiStore = defineStore('ui', () => {
     return splitSecondaryIds.value[projectId] ?? null;
   }
 
+  function getSplitBookmarks(projectId: string): string[] {
+    return splitBookmarks.value[projectId] ?? [];
+  }
+
+  function pushSplitBookmark(projectId: string, docId: string) {
+    const cur = splitBookmarks.value[projectId] ?? [];
+    const next = [docId, ...cur.filter((id) => id !== docId)].slice(0, 6);
+    splitBookmarks.value = { ...splitBookmarks.value, [projectId]: next };
+  }
+
   function setSplitSecondary(projectId: string, docId: string | null) {
     splitSecondaryIds.value = {
       ...splitSecondaryIds.value,
@@ -232,5 +247,7 @@ export const useUiStore = defineStore('ui', () => {
     setProjectView,
     getSplitSecondary,
     setSplitSecondary,
+    getSplitBookmarks,
+    pushSplitBookmark,
   };
 });

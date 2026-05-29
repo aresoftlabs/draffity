@@ -6,6 +6,7 @@ import Button from 'primevue/button';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import { useAutoSave } from '@/composables/useAutoSave';
 import { useDocumentStore } from '@/stores/document';
+import { useUiStore } from '@/stores/ui';
 import { ipc } from '@/services/ipc';
 import type { DocNode } from '@draffity/shared-types';
 
@@ -31,11 +32,30 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const docStore = useDocumentStore();
+const uiStore = useUiStore();
 
 const editorContent = ref('');
 const editorContentJson = ref<string | null>(null);
 const loadedId = ref<string | null>(null);
 const saving = ref(false);
+/** When locked, the pane pins its current doc — the picker/bookmarks are
+ *  disabled so it can't be swapped by accident (K-10). */
+const locked = ref(false);
+
+/** Recently-opened docs in this pane (excluding the current + primary). */
+const bookmarks = computed(() =>
+  uiStore
+    .getSplitBookmarks(props.projectId)
+    .filter((id) => id !== props.secondaryDocId && id !== props.primaryDocId)
+    .map((id) => docStore.documents.find((d: DocNode) => d.id === id))
+    .filter((d): d is DocNode => !!d && d.docType !== 'folder')
+    .slice(0, 5),
+);
+
+function openBookmark(id: string) {
+  if (locked.value) return;
+  emit('update:secondaryDocId', id);
+}
 
 const docOptions = computed<{ label: string; value: string }[]>(() =>
   docStore.documents
@@ -69,6 +89,7 @@ watch(
       editorContent.value = doc.content ?? '';
       editorContentJson.value = doc.contentJson ?? null;
       loadedId.value = id;
+      uiStore.pushSplitBookmark(props.projectId, id);
     } catch {
       editorContent.value = '';
       editorContentJson.value = null;
@@ -107,6 +128,7 @@ function onJsonInput(v: string) {
       class="h-10 px-3 flex items-center gap-2 border-b border-surface-200 dark:border-surface-700"
     >
       <Select
+        v-if="!locked"
         v-model="secondaryModel"
         :options="docOptions"
         option-label="label"
@@ -115,6 +137,9 @@ function onJsonInput(v: string) {
         class="flex-1"
         size="small"
       />
+      <span v-else class="flex-1 min-w-0 truncate text-sm font-medium">
+        {{ secondaryDoc?.title || t('project.untitled') }}
+      </span>
       <span
         v-if="saving"
         class="text-[10px] uppercase tracking-wide opacity-60"
@@ -122,6 +147,17 @@ function onJsonInput(v: string) {
       >
         {{ t('split.saving') }}
       </span>
+      <Button
+        v-tooltip.bottom="t('split.lock')"
+        :aria-label="t('split.lock')"
+        :aria-pressed="locked"
+        :icon="locked ? 'pi pi-lock' : 'pi pi-lock-open'"
+        text
+        size="small"
+        severity="secondary"
+        :class="{ 'p-button-outlined': locked }"
+        @click="locked = !locked"
+      />
       <Button
         v-tooltip.bottom="t('split.close')"
         :aria-label="t('split.close')"
@@ -131,6 +167,19 @@ function onJsonInput(v: string) {
         severity="secondary"
         @click="emit('close')"
       />
+    </div>
+    <div
+      v-if="!locked && bookmarks.length > 0"
+      class="flex items-center gap-1 flex-wrap px-3 py-1 border-b border-surface-200 dark:border-surface-700"
+    >
+      <button
+        v-for="b in bookmarks"
+        :key="b.id"
+        class="rounded-full bg-surface-100 dark:bg-surface-800 px-2 py-0.5 text-[11px] max-w-[10rem] truncate hover:bg-surface-200 dark:hover:bg-surface-700"
+        @click="openBookmark(b.id)"
+      >
+        {{ b.title || t('project.untitled') }}
+      </button>
     </div>
     <div class="flex-1 min-h-0 overflow-auto">
       <div v-if="!secondaryDoc" class="h-full flex items-center justify-center text-sm opacity-60">
