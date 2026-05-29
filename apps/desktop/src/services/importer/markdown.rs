@@ -53,9 +53,13 @@ pub(super) fn import(bytes: &[u8], filename_hint: &str) -> AppResult<ImportTree>
     // needs the definitions in place to actually recognise `[^id]` as a
     // FootnoteReference event. The renderer filters out the definition
     // events after the fact so they don't bleed into chapter bodies.
-    let footnotes = scan_footnote_defs(stripped_frontmatter);
+    // Trim leading whitespace so a blank line right after the
+    // frontmatter close (or before the first heading) doesn't promote
+    // itself to a synthetic "Intro" section.
+    let body = stripped_frontmatter.trim_start_matches(['\n', '\r']);
+    let footnotes = scan_footnote_defs(body);
 
-    let sections = split_by_headings(stripped_frontmatter);
+    let sections = split_by_headings(body);
     let nodes = build_tree(&sections, &footnotes);
 
     // Title priority: YAML frontmatter `title:` > first explicit H1 >
