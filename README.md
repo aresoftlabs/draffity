@@ -9,7 +9,7 @@ Draffity es una aplicación desktop ligera y rápida para escritores que trabaja
 
 ## Estado
 
-**v0.2.0-beta — Sprint 1 cerrado.** Drag&drop en binder, búsqueda full-text por proyecto (FTS5), find & replace en documento, modo enfoque (F11), onboarding integrado con creación de proyecto. Ver [`backlog.md`](./backlog.md) y `CHANGELOG.md` para el detalle.
+**v0.12.0-beta + capa premium en desarrollo.** El núcleo free está completo (editor TipTap, binder con vistas Scrivener-like, codex, export/import DOCX/EPUB/MD/PDF, backups, plantillas, stats, a11y). En desarrollo la **capa premium**: editor IA inline con BYOK (OpenRouter) — continuar/expandir/reescribir/describir con streaming y diff —, fundaciones de licencia (Ed25519 offline) y voz local (próximamente). Ver `CHANGELOG.md` para el detalle.
 
 Guía de usuario: [ES](./docs/USER-GUIDE.md) · [EN](./docs/USER-GUIDE.en.md).
 

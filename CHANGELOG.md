@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Desarrollo del **backlog v4** (interno): cerrar brechas competitivas + capa
+premium (IA BYOK + voz). Aún sin release versionada.
+
+### Added — Épica E: foundations premium (E-01..E-10)
+
+- **Secrets en keyring del SO** (E-01): trait `SecretStorage` +
+  `KeyringSecretStorage` (Windows Credential Manager / macOS Keychain /
+  Linux Secret Service) + `InMemorySecretStorage` para tests. Las API keys
+  BYOK y la licencia nunca tocan la tabla `settings` en texto plano.
+- **Tier hot-swap** (E-06, cierra el arrastre S5-10): `PremiumTier` +
+  `MutableTier` (con `set_tier` en el trait) → activar premium cambia las
+  capabilities en vivo, sin reiniciar, a través del único `Arc<dyn TierService>`
+  compartido.
+- **Licencia premium offline** (E-07): `LicenseValidator` + `Ed25519Validator`
+  (firma asimétrica; sólo la clave pública viaja en la app) +
+  `DisabledLicenseValidator` para builds OSS sin clave. Comandos
+  `activate_premium` / `deactivate_premium` / `get_premium_status` + restore
+  al arranque desde el keyring. Pubkey por env `DRAFFITY_LICENSE_PUBKEY`.
+- **Contratos premium-ready** (E-03/E-04): `AIService` con `stream_complete`
+  por callback sink (object-safe, sin runtime async); `ASRService` con
+  `Transcript` + streaming; nuevo `TTSService` + `NoOpTTS`.
+- **Capabilities granulares** (E-05): `ai_inline`, `ai_validators`,
+  `voice_dictation`, `voice_tts`, `voice_notes` + umbrellas.
+- **Sidecar infra** (E-02): helper `run_sidecar` sobre `tauri-plugin-shell`
+  (binarios los provee la Épica H).
+- **Event bus tipado** (E-09): enum `AppEvent` mapeando a las consts estables.
+- **Telemetría local-only** (E-10): appender `premium-events.log` filtrado por
+  target `ai_events`/`voice_events`. Cero red.
+- **UI premium** (E-08): activación de licencia + secciones IA/Voz en Settings,
+  gateadas por capability (sin leakage en free).
+
+### Added — Épica F: editor IA inline con BYOK OpenRouter (F-01..F-13)
+
+- **Motor OpenRouter BYOK** (F-01): `ByokAIService` vía `reqwest::blocking` +
+  parseo SSE (función pura testeada), retry con backoff, errores
+  `AppError::AiProvider`. Gateado por tier + key en cada llamada (hot-swap sin
+  rebuild). Key en keyring.
+- **Memoria del proyecto engram-aligned** (F-03): `ProjectMemoryService` léxico
+  que arma contexto con codex mencionado (semántica) + pasajes FTS5 (episódica)
+  - sinopsis, recortado a budget. Embeddings = upgrade opt-in post-v4 detrás del
+    mismo trait. Estimador de tokens heurístico (F-02).
+- **Acciones inline** (F-08..F-11): Continuar / Expandir / Reescribir (6
+  sub-modos + custom) / Describir. Prompts curados en `ai_prompts.rs`.
+- **Streaming + preview + accept/reject** (F-06/F-07): bubble menu flotante
+  sobre la selección (`@floating-ui/dom`), preview con streaming en vivo por
+  evento `ai.suggestion.received`, diff rojo/verde para rewrite/expand, Enter
+  acepta / Esc descarta+cancela.
+- **Slash command** (F-05): `/` al inicio de línea continúa desde el cursor.
+- **Historial de IA** (F-12): migración 012 + `ai_history`; sólo se persiste lo
+  aceptado. Comandos `ai_record_accepted` / `list_ai_history`.
+- **Cost meter** (F-13): store de tokens del mes (real usage de OpenRouter,
+  coincide con su dashboard) en Settings + link a la página de actividad.
+- **Cancelación** (F-06): `AiCancelRegistry`; el sink deja de emitir al
+  cancelar.
+
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03 →
