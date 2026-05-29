@@ -44,6 +44,9 @@ import ScriveningsView from '@/components/ScriveningsView.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 import AiInlinePanel from '@/components/AiInlinePanel.vue';
+import ValidationDialog from '@/components/ValidationDialog.vue';
+import { useCapability } from '@/composables/useCapability';
+import { findMatches } from '@/composables/useProseMirrorSearch';
 
 const route = useRoute();
 const router = useRouter();
@@ -119,8 +122,25 @@ const editingFootnoteId = ref<string | null>(null);
 const editingFootnoteContent = ref('');
 const showSaveAsTemplate = ref(false);
 const showSearch = ref(false);
+const showValidation = ref(false);
+const aiInline = useCapability('ai_inline');
 const findVisible = ref(false);
 const findMode = ref<'find' | 'replace'>('find');
+
+/** Jump to a finding's excerpt in the editor (G-09 "ir al texto"). Best-effort:
+ * exact match first, then the first few words. */
+function onLocate(excerpt: string) {
+  const ed = editor.value;
+  if (!ed || !excerpt.trim()) return;
+  let matches = findMatches(ed.state.doc, excerpt.trim(), false);
+  if (matches.length === 0) {
+    const short = excerpt.trim().split(/\s+/).slice(0, 6).join(' ');
+    if (short) matches = findMatches(ed.state.doc, short, false);
+  }
+  if (matches.length > 0) {
+    ed.chain().focus().setTextSelection(matches[0]).scrollIntoView().run();
+  }
+}
 const sessionWordCount = computed(() => {
   const start = uiStore.sessionStartTotal;
   return start === null ? 0 : Math.max(0, totalWordCount.value - start);
@@ -490,6 +510,16 @@ onBeforeUnmount(() => {
         @click="showSaveAsTemplate = true"
       />
       <Button
+        v-if="aiInline"
+        v-tooltip.bottom="t('ai.validators.title')"
+        icon="pi pi-verified"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('ai.validators.title')"
+        @click="showValidation = true"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -519,6 +549,12 @@ onBeforeUnmount(() => {
     />
     <SaveAsTemplateDialog v-model:visible="showSaveAsTemplate" :project-id="project.id" />
     <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
+    <ValidationDialog
+      v-model:visible="showValidation"
+      :project-id="project.id"
+      :document-id="docStore.selectedId"
+      @locate="onLocate"
+    />
 
     <Splitter
       class="flex-1 !rounded-none !border-0 min-h-0"

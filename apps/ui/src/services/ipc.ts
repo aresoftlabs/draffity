@@ -59,6 +59,32 @@ export interface AiDeltaEvent {
   delta: string;
 }
 
+/** A single AI validator finding (Épica G). */
+export interface ValidationFinding {
+  validator: string;
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  detail: string;
+  excerpt?: string;
+  suggestion?: string;
+}
+
+/** A persisted validation report; `resultsJson` is a `ValidationFinding[]`. */
+export interface AiValidation {
+  id: string;
+  documentId: string;
+  validatorName: string;
+  resultsJson: string;
+  severitySummary: string;
+  createdAt: number;
+}
+
+/** Codex coverage pre-check (G-03). */
+export interface CoverageReport {
+  candidates: number;
+  covered: number;
+}
+
 /** Premium activation status reported by the backend (E-07). */
 export interface PremiumStatus {
   /** `'free'` or `'premium'`. */
@@ -108,6 +134,14 @@ export const ipc = {
     model?: string | null;
     response: string;
   }) => invoke<unknown>('ai_record_accepted', { input }),
+
+  // AI validators (Épica G)
+  checkCodexCoverage: (projectId: string, documentId: string) =>
+    invoke<CoverageReport>('check_codex_coverage', { projectId, documentId }),
+  runValidators: (projectId: string, documentId: string, validators: string[]) =>
+    invoke<AiValidation[]>('run_validators', { projectId, documentId, validators }),
+  listValidations: (documentId: string) =>
+    invoke<AiValidation[]>('list_validations', { documentId }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

@@ -506,6 +506,19 @@
       "reject": "Descartar",
       "cancel": "Cancelar",
       "tokens": "{sent} enviados · {received} recibidos"
+    },
+    "validators": {
+      "title": "Análisis IA",
+      "run": "Validar",
+      "empty": "Aún no corriste ningún análisis sobre este documento.",
+      "error": "No se pudo ejecutar el análisis",
+      "locate": "Ir al texto",
+      "coverageWarning": "El codex describe {covered} de {total} personajes que aparecen en el texto. Los análisis de personajes y trama serán menos precisos; completá el codex para mejores resultados.",
+      "character": "Coherencia de personajes",
+      "voice": "Voz y tono",
+      "repetition": "Repeticiones",
+      "plot": "Trama y temporalidad",
+      "style": "Estilo"
     }
   },
   "editor": {

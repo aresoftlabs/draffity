@@ -506,6 +506,19 @@
       "reject": "Discard",
       "cancel": "Cancel",
       "tokens": "{sent} sent · {received} received"
+    },
+    "validators": {
+      "title": "AI analysis",
+      "run": "Validate",
+      "empty": "You haven't run any analysis on this document yet.",
+      "error": "Could not run the analysis",
+      "locate": "Go to text",
+      "coverageWarning": "The codex describes {covered} of {total} characters that appear in the text. Character and plot analysis will be less accurate; fill in the codex for better results.",
+      "character": "Character consistency",
+      "voice": "Voice & tone",
+      "repetition": "Repetition",
+      "plot": "Plot & timeline",
+      "style": "Style"
     }
   },
   "editor": {
