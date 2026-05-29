@@ -62,6 +62,27 @@ premium (IA BYOK + voz). Aún sin release versionada.
 - **Cancelación** (F-06): `AiCancelRegistry`; el sink deja de emitir al
   cancelar.
 
+### Added — Épica G: validadores IA (G-01..G-10)
+
+- **5 validadores** (G-04/05/06/07/08): coherencia de personajes, voz/tono y
+  trama/temporalidad son model-backed (prompt con contrato JSON + parseo
+  tolerante); repetición (n-gramas) y estilo (oraciones largas, adverbios, voz
+  pasiva) son heurísticas locales sin red. Orquestador `OpenRouterValidators`
+  detrás del trait `AIValidatorService`.
+- **Codex coverage pre-check** (G-03): estima qué tanto del elenco aparente del
+  texto está en el codex y avisa antes de correr si es escaso.
+- **Persistencia** (G-02): migración 013 + tabla `ai_validations` (cascade con
+  el documento). Reabrir el documento muestra el último reporte sin re-llamar
+  al modelo.
+- **Command layer**: `run_validators` (batch G-10, off-thread, un fallo por
+  validador no aborta el resto), `check_codex_coverage`, `list_validations`.
+- **UI** (G-09/G-10): `ValidationDialog` con toggles por validador (persistidos),
+  aviso de cobertura, reporte por severidad con excerpt + sugerencia, y "ir al
+  texto" que salta y selecciona el pasaje en el editor. Botón "Análisis IA" en
+  el header, gateado por capability.
+- **Diferido**: `CodexKind::Event` + campo `when` (G-00) como enriquecimiento
+  opcional del validador de trama, que ya funciona con el codex existente.
+
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03 →
