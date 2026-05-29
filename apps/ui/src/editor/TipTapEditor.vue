@@ -16,6 +16,7 @@ import { Footnote } from './extensions/footnote';
 import { Image } from './extensions/image';
 import { LinguisticFocus } from './extensions/linguistic-focus';
 import { RepetitionHeatmap } from './extensions/repetition-heatmap';
+import { ParagraphFade } from './extensions/paragraph-fade';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 import { useMediaStore } from '@/stores/media';
 
@@ -28,8 +29,11 @@ const props = withDefaults(
     modelValueJson?: string | null;
     editable?: boolean;
     placeholder?: string;
+    /** Text-column width in characters (composition mode, K-08). 0/undefined
+     *  keeps the default 720px column. */
+    paperWidthCh?: number;
   }>(),
-  { editable: true, placeholder: '', modelValueJson: null },
+  { editable: true, placeholder: '', modelValueJson: null, paperWidthCh: 0 },
 );
 
 const emit = defineEmits<{
@@ -85,6 +89,8 @@ const editor = useEditor({
     LinguisticFocus,
     // Repetition heatmap (J-08): local highlight of over-used words/phrases.
     RepetitionHeatmap,
+    // Paragraph fade (K-08): dims non-focused blocks in composition mode.
+    ParagraphFade,
   ],
   editorProps: {
     attributes: {
@@ -231,7 +237,10 @@ defineExpose({ editor, charCount, wordCount });
 <template>
   <div
     class="tiptap-host h-full overflow-auto"
-    :style="{ '--editor-font-family': resolvedFontFamily }"
+    :style="{
+      '--editor-font-family': resolvedFontFamily,
+      '--editor-max-width': paperWidthCh > 0 ? paperWidthCh + 'ch' : '720px',
+    }"
   >
     <EditorContent :editor="editor" class="h-full" />
   </div>
@@ -242,8 +251,14 @@ defineExpose({ editor, charCount, wordCount });
   font-family: var(--editor-font-family, Lora, Georgia, 'Times New Roman', serif);
   font-size: 18px;
   line-height: 1.7;
-  max-width: 720px;
+  max-width: var(--editor-max-width, 720px);
   margin: 0 auto;
+}
+
+/* Paragraph fade (K-08): dim non-focused blocks in composition mode. */
+.tiptap-host :deep(.tiptap-content .pm-faded) {
+  opacity: 0.32;
+  transition: opacity 0.25s ease;
 }
 
 .tiptap-host :deep(.tiptap-content h1) {

@@ -7,6 +7,8 @@ import Splitter from 'primevue/splitter';
 import SplitterPanel from 'primevue/splitterpanel';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
+import Slider from 'primevue/slider';
+import Select from 'primevue/select';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import type { DocumentStatus, DocumentType } from '@draffity/shared-types';
@@ -55,6 +57,7 @@ import DictationOverlay from '@/components/DictationOverlay.vue';
 import ReadAloudBar from '@/components/ReadAloudBar.vue';
 import VoiceNotesDialog from '@/components/VoiceNotesDialog.vue';
 import { useCapability } from '@/composables/useCapability';
+import { useEditorSettings } from '@/composables/useEditorSettings';
 import { useDictation } from '@/composables/useDictation';
 import { useReadAloud } from '@/composables/useReadAloud';
 import { findMatches } from '@/composables/useProseMirrorSearch';
@@ -73,7 +76,13 @@ const labelManagerVisible = ref(false);
 const fieldsManagerVisible = ref(false);
 
 const focusMode = computed(() => uiStore.focusMode);
+const compositionMode = computed(() => uiStore.compositionMode);
 const typewriterEnabled = computed(() => uiStore.typewriterMode);
+const { paperWidthCh, compositionBg, fadeLevel } = useEditorSettings();
+const fadeOptions = computed(() => [
+  { value: 'none' as const, label: t('composition.fadeNone') },
+  { value: 'paragraph' as const, label: t('composition.fadeParagraph') },
+]);
 const viewMode = computed<ProjectViewMode>(() =>
   project.value ? uiStore.getProjectView(project.value.id) : 'editor',
 );
@@ -149,6 +158,15 @@ watch(
   { immediate: true },
 );
 
+// Paragraph fade (K-08): only in composition mode with fadeLevel = paragraph.
+watch(
+  [editor, compositionMode, () => fadeLevel.value],
+  ([ed]) => {
+    ed?.commands.setParagraphFade(compositionMode.value && fadeLevel.value === 'paragraph');
+  },
+  { immediate: true },
+);
+
 const showExport = ref(false);
 const showBibliography = ref(false);
 const showCitationPicker = ref(false);
@@ -172,6 +190,16 @@ function onDictateKey(e: KeyboardEvent) {
     if (!voiceDictation.value || readOnly.value || !editor.value) return;
     e.preventDefault();
     dictation.toggle();
+  }
+}
+
+/** Composition mode (K-09): Ctrl+Shift+F11 toggles, Esc exits. */
+function onCompositionKey(e: KeyboardEvent) {
+  if (e.ctrlKey && e.shiftKey && e.key === 'F11') {
+    e.preventDefault();
+    uiStore.toggleCompositionMode();
+  } else if (e.key === 'Escape' && uiStore.compositionMode) {
+    uiStore.toggleCompositionMode();
   }
 }
 const findVisible = ref(false);
@@ -506,18 +534,21 @@ onMounted(() => {
   window.addEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
   window.addEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
   window.addEventListener('keydown', onDictateKey);
+  window.addEventListener('keydown', onCompositionKey);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
   window.removeEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
   window.removeEventListener('keydown', onDictateKey);
+  window.removeEventListener('keydown', onCompositionKey);
 });
 </script>
 
 <template>
   <div v-if="project" class="flex-1 flex flex-col min-h-0">
     <header
+      v-if="!compositionMode"
       class="h-10 px-4 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-950"
     >
       <Button
@@ -568,6 +599,15 @@ onBeforeUnmount(() => {
         :aria-label="t('project.focusMode')"
         :aria-pressed="focusMode"
         @click="toggleFocus"
+      />
+      <Button
+        v-tooltip.bottom="t('composition.enter')"
+        icon="pi pi-desktop"
+        text
+        severity="secondary"
+        size="small"
+        :aria-label="t('composition.enter')"
+        @click="uiStore.toggleCompositionMode()"
       />
       <Button
         v-tooltip.bottom="t('split.toggle')"
@@ -699,7 +739,12 @@ onBeforeUnmount(() => {
       }"
       style-class="h-full"
     >
-      <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">
+      <SplitterPanel
+        v-if="!focusMode && !compositionMode"
+        :size="22"
+        :min-size="14"
+        class="!min-w-0"
+      >
         <div class="h-full flex flex-col min-h-0">
           <div class="flex-1 min-h-0 overflow-auto">
             <Binder
@@ -721,7 +766,11 @@ onBeforeUnmount(() => {
         </div>
       </SplitterPanel>
 
-      <SplitterPanel :size="focusMode ? 100 : 56" :min-size="30" class="!min-w-0 flex flex-col">
+      <SplitterPanel
+        :size="focusMode || compositionMode ? 100 : 56"
+        :min-size="30"
+        class="!min-w-0 flex flex-col"
+      >
         <div
           v-if="readOnly"
           class="px-4 py-2 text-xs italic bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-b border-amber-300 dark:border-amber-800"
@@ -730,7 +779,7 @@ onBeforeUnmount(() => {
         </div>
         <template v-if="viewMode === 'editor'">
           <EditorToolbar
-            v-if="selected?.docType !== 'folder'"
+            v-if="selected?.docType !== 'folder' && !compositionMode"
             :editor="editor"
             :disabled="readOnly"
             :linguistic-focus-active="uiStore.linguisticFocus"
@@ -743,13 +792,18 @@ onBeforeUnmount(() => {
             @toggle-repetition="uiStore.toggleRepetitionHeatmap()"
           />
           <FindReplaceBar
-            v-if="selected?.docType !== 'folder'"
+            v-if="selected?.docType !== 'folder' && !compositionMode"
             v-model:visible="findVisible"
             :editor="editor"
             :mode="findMode"
             :read-only="readOnly"
           />
-          <div class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950">
+          <div
+            class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950"
+            :style="
+              compositionMode && compositionBg ? { backgroundColor: compositionBg } : undefined
+            "
+          >
             <div
               v-if="!selected"
               class="h-full flex items-center justify-center text-sm opacity-60"
@@ -791,11 +845,13 @@ onBeforeUnmount(() => {
               :model-value-json="editorContentJson"
               :editable="!readOnly"
               :placeholder="t('project.untitled')"
+              :paper-width-ch="compositionMode ? paperWidthCh : 0"
               @update:model-value="onEditorInput"
               @update:model-value-json="onEditorJsonInput"
             />
           </div>
           <AiInlinePanel
+            v-if="!compositionMode"
             :editor="editor"
             :project-id="project.id"
             :doc-id="docStore.selectedId"
@@ -822,7 +878,12 @@ onBeforeUnmount(() => {
         <CodexView v-else :project-id="project.id" :read-only="readOnly" />
       </SplitterPanel>
 
-      <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">
+      <SplitterPanel
+        v-if="!focusMode && !compositionMode"
+        :size="22"
+        :min-size="14"
+        class="!min-w-0"
+      >
         <Inspector
           :doc="selected"
           :word-count-here="wordCount"
@@ -846,7 +907,79 @@ onBeforeUnmount(() => {
       </SplitterPanel>
     </Splitter>
 
+    <!-- Composition mode control bar (K-09): hidden until hover at the top. -->
+    <div v-if="compositionMode" class="composition-bar">
+      <div
+        class="composition-bar-inner flex items-center gap-4 px-4 py-2 bg-surface-0/95 dark:bg-surface-950/95 border-b border-surface-200 dark:border-surface-700 backdrop-blur"
+      >
+        <Button
+          icon="pi pi-times"
+          text
+          size="small"
+          :label="t('composition.exit')"
+          @click="uiStore.toggleCompositionMode()"
+        />
+        <span class="text-xs opacity-60 font-mono">{{ wordCount }} · {{ totalWordCount }}</span>
+        <span class="flex-1" />
+        <label class="flex items-center gap-2 text-xs opacity-70">
+          {{ t('composition.paperWidth') }}
+          <Slider v-model="paperWidthCh" :min="50" :max="140" :step="5" class="!w-32" />
+          <span class="font-mono w-8">{{ paperWidthCh }}</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs opacity-70">
+          {{ t('composition.background') }}
+          <input
+            type="color"
+            :value="compositionBg || '#ffffff'"
+            class="w-7 h-7 rounded border-0 bg-transparent cursor-pointer"
+            :aria-label="t('composition.background')"
+            @input="(e) => (compositionBg = (e.target as HTMLInputElement).value)"
+          />
+          <Button
+            v-if="compositionBg"
+            icon="pi pi-times"
+            text
+            size="small"
+            :pt="{ root: { class: '!w-5 !h-5 !p-0' } }"
+            :aria-label="t('composition.resetBackground')"
+            @click="compositionBg = ''"
+          />
+        </label>
+        <label class="flex items-center gap-2 text-xs opacity-70">
+          {{ t('composition.fade') }}
+          <Select
+            v-model="fadeLevel"
+            :options="fadeOptions"
+            option-label="label"
+            option-value="value"
+            size="small"
+            class="!text-xs"
+          />
+        </label>
+      </div>
+    </div>
+
     <LabelManagerDialog v-model:visible="labelManagerVisible" :project-id="projectId" />
     <CustomFieldsManagerDialog v-model:visible="fieldsManagerVisible" :project-id="projectId" />
   </div>
 </template>
+
+<style scoped>
+/* Composition control bar reveals on hover at the very top of the screen. */
+.composition-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 8px;
+}
+.composition-bar-inner {
+  transform: translateY(-100%);
+  transition: transform 0.2s ease;
+}
+.composition-bar:hover .composition-bar-inner,
+.composition-bar:focus-within .composition-bar-inner {
+  transform: translateY(0);
+}
+</style>

@@ -18,16 +18,28 @@ const KEY_FONT = 'editor.font';
 const KEY_FONT_FAMILY = 'editor.font_family';
 const KEY_FONT_CUSTOM_ID = 'editor.font_custom_id';
 const KEY_CUSTOM_CSS = 'editor.custom_css';
+const KEY_PAPER_WIDTH = 'editor.paper_width_ch';
+const KEY_COMPOSITION_BG = 'editor.composition_bg';
+const KEY_FADE_LEVEL = 'editor.fade_level';
 
 const DEFAULT_AUTOSAVE = 500;
 const DEFAULT_FONT: EditorFont = 'serif';
 const MAX_CUSTOM_CSS = 4096;
+const DEFAULT_PAPER_WIDTH = 80;
+
+/** Composition-mode (K-08) fade level: dim everything but the focused unit. */
+export type FadeLevel = 'none' | 'paragraph';
 
 const autosaveMs = ref(DEFAULT_AUTOSAVE);
 const font = ref<EditorFont>(DEFAULT_FONT);
 const fontFamily = ref(BUILT_IN_FAMILIES.serif);
 const customFontId = ref<string | null>(null);
 const customCss = ref('');
+/** Paper width in characters for composition mode (50–140); 0 = full width. */
+const paperWidthCh = ref<number>(DEFAULT_PAPER_WIDTH);
+/** Composition background — a CSS color string; '' = theme default. */
+const compositionBg = ref<string>('');
+const fadeLevel = ref<FadeLevel>('none');
 const loaded = ref(false);
 
 let inFlight: Promise<void> | null = null;
@@ -47,6 +59,9 @@ export function useEditorSettings(): {
   fontFamily: Ref<string>;
   customFontId: Ref<string | null>;
   customCss: Ref<string>;
+  paperWidthCh: Ref<number>;
+  compositionBg: Ref<string>;
+  fadeLevel: Ref<FadeLevel>;
   loaded: Ref<boolean>;
   reload: () => Promise<void>;
 } {
@@ -60,6 +75,9 @@ export function useEditorSettings(): {
     fontFamily,
     customFontId,
     customCss,
+    paperWidthCh,
+    compositionBg,
+    fadeLevel,
     loaded,
     reload: () => {
       inFlight = load();
@@ -70,12 +88,15 @@ export function useEditorSettings(): {
 
 async function load() {
   try {
-    const [auto, f, fam, customId, css] = await Promise.all([
+    const [auto, f, fam, customId, css, paper, bg, fade] = await Promise.all([
       ipc.getSetting(KEY_AUTOSAVE),
       ipc.getSetting(KEY_FONT),
       ipc.getSetting(KEY_FONT_FAMILY),
       ipc.getSetting(KEY_FONT_CUSTOM_ID),
       ipc.getSetting(KEY_CUSTOM_CSS),
+      ipc.getSetting(KEY_PAPER_WIDTH),
+      ipc.getSetting(KEY_COMPOSITION_BG),
+      ipc.getSetting(KEY_FADE_LEVEL),
     ]);
     if (auto) {
       const n = Number.parseInt(auto, 10);
@@ -95,6 +116,12 @@ async function load() {
     if (typeof css === 'string') {
       customCss.value = css.slice(0, MAX_CUSTOM_CSS);
     }
+    if (paper) {
+      const n = Number.parseInt(paper, 10);
+      if (Number.isFinite(n) && (n === 0 || (n >= 50 && n <= 140))) paperWidthCh.value = n;
+    }
+    if (typeof bg === 'string') compositionBg.value = bg;
+    if (fade === 'none' || fade === 'paragraph') fadeLevel.value = fade;
   } finally {
     loaded.value = true;
   }
@@ -147,6 +174,33 @@ watch(customCss, async (v) => {
   }
   try {
     await ipc.setSetting(KEY_CUSTOM_CSS, v);
+  } catch {
+    /* ignore */
+  }
+});
+
+watch(paperWidthCh, async (v) => {
+  if (!loaded.value) return;
+  try {
+    await ipc.setSetting(KEY_PAPER_WIDTH, String(v));
+  } catch {
+    /* ignore */
+  }
+});
+
+watch(compositionBg, async (v) => {
+  if (!loaded.value) return;
+  try {
+    await ipc.setSetting(KEY_COMPOSITION_BG, v);
+  } catch {
+    /* ignore */
+  }
+});
+
+watch(fadeLevel, async (v) => {
+  if (!loaded.value) return;
+  try {
+    await ipc.setSetting(KEY_FADE_LEVEL, v);
   } catch {
     /* ignore */
   }

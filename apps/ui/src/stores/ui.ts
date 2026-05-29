@@ -55,6 +55,9 @@ export const useUiStore = defineStore('ui', () => {
   const binderCollapsed = ref(loadBool('binderCollapsed', false));
   const inspectorCollapsed = ref(loadBool('inspectorCollapsed', false));
   const focusMode = ref(false);
+  // Composition mode (K-08): distraction-free fullscreen writing surface.
+  // Session-only like focusMode — it's a transient mode, not a preference.
+  const compositionMode = ref(false);
   const typewriterMode = ref(loadBool('typewriterMode', false));
   // Linguistic Focus (J-06): highlight adverbs / passive voice / dialogue in
   // the editor. Persisted so the mode survives restarts.
@@ -120,6 +123,10 @@ export const useUiStore = defineStore('ui', () => {
 
   function toggleFocusMode() {
     focusMode.value = !focusMode.value;
+  }
+
+  function toggleCompositionMode() {
+    compositionMode.value = !compositionMode.value;
   }
 
   function toggleTypewriterMode() {
@@ -194,6 +201,7 @@ export const useUiStore = defineStore('ui', () => {
     binderCollapsed,
     inspectorCollapsed,
     focusMode,
+    compositionMode,
     typewriterMode,
     linguisticFocus,
     linguisticExtraWords,
@@ -209,6 +217,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleBinder,
     toggleInspector,
     toggleFocusMode,
+    toggleCompositionMode,
     toggleTypewriterMode,
     toggleLinguisticFocus,
     toggleRepetitionHeatmap,

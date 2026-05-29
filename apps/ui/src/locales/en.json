@@ -637,6 +637,16 @@
     "empty": "Press “Generate” to get names.",
     "pickHint": "Click a name to use it."
   },
+  "composition": {
+    "enter": "Composition mode",
+    "exit": "Exit (Esc)",
+    "paperWidth": "Width",
+    "background": "Background",
+    "resetBackground": "Clear background color",
+    "fade": "Fade",
+    "fadeNone": "None",
+    "fadeParagraph": "Paragraph"
+  },
   "pacemaker": {
     "setDeadline": "Deadline",
     "clear": "Clear deadline",

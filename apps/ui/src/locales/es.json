@@ -637,6 +637,16 @@
     "empty": "Pulsá «Generar» para obtener nombres.",
     "pickHint": "Clic en un nombre para usarlo."
   },
+  "composition": {
+    "enter": "Modo composición",
+    "exit": "Salir (Esc)",
+    "paperWidth": "Ancho",
+    "background": "Fondo",
+    "resetBackground": "Quitar color de fondo",
+    "fade": "Atenuar",
+    "fadeNone": "Nada",
+    "fadeParagraph": "Párrafo"
+  },
   "pacemaker": {
     "setDeadline": "Fecha límite",
     "clear": "Quitar fecha límite",
