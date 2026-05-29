@@ -101,6 +101,24 @@ export interface VoiceStatus {
   dictationAvailable: boolean;
   binaryInstalled: boolean;
   installedModels: string[];
+  ttsAvailable: boolean;
+  piperInstalled: boolean;
+}
+
+/** A downloadable Piper voice (H-05). */
+export interface VoiceVoice {
+  id: string;
+  name: string;
+  lang: string;
+  sizeMb: number;
+  recommended: boolean;
+  installed: boolean;
+}
+
+/** Synthesized speech (H-06): mono PCM16 + sample rate for Web Audio. */
+export interface SynthesizedAudio {
+  samplesPcm16: number[];
+  sampleRate: number;
 }
 
 /** A downloadable Whisper model (H-02). */
@@ -185,6 +203,11 @@ export const ipc = {
   importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
   transcribeAudio: (wav: Uint8Array) =>
     invoke<Transcript>('transcribe_audio', { wav: Array.from(wav) }),
+  listVoiceVoices: () => invoke<VoiceVoice[]>('list_voice_voices'),
+  downloadVoiceVoice: (voiceId: string) => invoke<void>('download_voice_voice', { voiceId }),
+  importPiperBinary: (sourcePath: string) => invoke<void>('import_piper_binary', { sourcePath }),
+  synthesizeSpeech: (text: string, voiceId: string) =>
+    invoke<SynthesizedAudio>('synthesize_speech', { text, voiceId }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

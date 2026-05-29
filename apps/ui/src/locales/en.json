@@ -263,6 +263,11 @@
     "voiceModelDelete": "Remove",
     "voiceModelDownloaded": "Model downloaded.",
     "voiceModelError": "Could not complete the voice operation.",
+    "voiceInstalled": "Installed",
+    "voiceReadAloud": "Read aloud (Piper)",
+    "voicePiperInstalled": "Piper binary installed",
+    "voicePiperMissing": "Piper binary missing",
+    "voiceImportPiper": "Import Piper…",
     "legal": "Legal",
     "legalHint": "Privacy and terms of use. Open in the in-app reader.",
     "privacyLink": "Privacy policy",
@@ -537,6 +542,15 @@
       "transcribing": "Transcribing…",
       "stop": "Done",
       "cancel": "Cancel"
+    },
+    "readAloud": {
+      "title": "Read aloud",
+      "button": "Read aloud",
+      "pause": "Pause",
+      "resume": "Resume",
+      "skip": "Skip sentence",
+      "stop": "Stop",
+      "speed": "Speed"
     }
   },
   "editor": {

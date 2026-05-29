@@ -27,6 +27,7 @@ import {
   type PremiumStatus,
   type VoiceModel,
   type VoiceStatus,
+  type VoiceVoice,
   type VoiceDownloadProgress,
 } from '@/services/ipc';
 import type { BackupRecord, DailyWriting, MediaAsset, WritingStats } from '@draffity/shared-types';
@@ -305,17 +306,75 @@ async function onDeactivatePremium() {
 // Voice models (Épica H). Shown inside the premium-gated "Voz" section.
 const voiceStatus = ref<VoiceStatus | null>(null);
 const voiceModels = ref<VoiceModel[]>([]);
+const voiceVoices = ref<VoiceVoice[]>([]);
 const downloadPct = ref<Record<string, number>>({});
 const importingBinary = ref(false);
+const importingPiper = ref(false);
 let unlistenVoiceProgress: UnlistenFn | null = null;
 
 async function loadVoice() {
   try {
     voiceStatus.value = await ipc.getVoiceStatus();
     voiceModels.value = await ipc.listVoiceModels();
+    voiceVoices.value = await ipc.listVoiceVoices();
   } catch {
     voiceStatus.value = null;
     voiceModels.value = [];
+    voiceVoices.value = [];
+  }
+}
+
+async function onDownloadVoice(v: VoiceVoice) {
+  downloadPct.value = { ...downloadPct.value, [v.id]: 0 };
+  try {
+    await ipc.downloadVoiceVoice(v.id);
+    toast.add({
+      severity: 'success',
+      summary: t('settings.voiceTitle'),
+      detail: t('settings.voiceModelDownloaded'),
+      life: 3000,
+    });
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.voiceTitle'),
+      detail: t('settings.voiceModelError'),
+      life: 5000,
+    });
+  } finally {
+    const rest = { ...downloadPct.value };
+    delete rest[v.id];
+    downloadPct.value = rest;
+    await loadVoice();
+  }
+}
+
+async function onImportPiper() {
+  const picked = await open({
+    multiple: false,
+    directory: false,
+    title: t('settings.voiceImportPiper'),
+  });
+  if (typeof picked !== 'string') return;
+  importingPiper.value = true;
+  try {
+    await ipc.importPiperBinary(picked);
+    toast.add({
+      severity: 'success',
+      summary: t('settings.voiceTitle'),
+      detail: t('settings.voiceBinaryImported'),
+      life: 3000,
+    });
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.voiceTitle'),
+      detail: t('settings.voiceModelError'),
+      life: 5000,
+    });
+  } finally {
+    importingPiper.value = false;
+    await loadVoice();
   }
 }
 
@@ -879,6 +938,73 @@ function kindLabel(kind: BackupRecord['kind']): string {
                 size="small"
                 text
                 @click="onDownloadModel(m)"
+              />
+            </div>
+          </li>
+        </ul>
+
+        <!-- Read-aloud: Piper binary + voices -->
+        <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mt-4 mb-2">
+          {{ t('settings.voiceReadAloud') }}
+        </h3>
+        <div
+          class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
+        >
+          <span>
+            <i
+              :class="
+                voiceStatus?.piperInstalled
+                  ? 'pi pi-check-circle text-green-500'
+                  : 'pi pi-exclamation-circle text-amber-500'
+              "
+              class="mr-1"
+            />
+            {{
+              voiceStatus?.piperInstalled
+                ? t('settings.voicePiperInstalled')
+                : t('settings.voicePiperMissing')
+            }}
+          </span>
+          <Button
+            :label="t('settings.voiceImportPiper')"
+            size="small"
+            text
+            :loading="importingPiper"
+            @click="onImportPiper"
+          />
+        </div>
+        <ul
+          class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
+        >
+          <li
+            v-for="v in voiceVoices"
+            :key="v.id"
+            class="flex items-center justify-between gap-3 p-3 text-sm"
+          >
+            <div class="min-w-0">
+              <span class="font-medium">{{ v.name }}</span>
+              <span
+                v-if="v.recommended"
+                class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
+              >
+                {{ t('settings.voiceRecommended') }}
+              </span>
+              <span class="block text-xs opacity-60">{{ `${v.sizeMb} MB` }}</span>
+            </div>
+            <div class="shrink-0">
+              <span v-if="downloadPct[v.id] !== undefined" class="text-xs font-mono opacity-70">
+                {{ `${downloadPct[v.id]}%` }}
+              </span>
+              <span v-else-if="v.installed" class="text-xs text-green-600 dark:text-green-400">
+                {{ t('settings.voiceInstalled') }}
+              </span>
+              <Button
+                v-else
+                :label="t('settings.voiceModelDownload')"
+                icon="pi pi-download"
+                size="small"
+                text
+                @click="onDownloadVoice(v)"
               />
             </div>
           </li>

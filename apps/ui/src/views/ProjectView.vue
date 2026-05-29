@@ -46,8 +46,10 @@ import EditorToolbar from '@/editor/EditorToolbar.vue';
 import AiInlinePanel from '@/components/AiInlinePanel.vue';
 import ValidationDialog from '@/components/ValidationDialog.vue';
 import DictationOverlay from '@/components/DictationOverlay.vue';
+import ReadAloudBar from '@/components/ReadAloudBar.vue';
 import { useCapability } from '@/composables/useCapability';
 import { useDictation } from '@/composables/useDictation';
+import { useReadAloud } from '@/composables/useReadAloud';
 import { findMatches } from '@/composables/useProseMirrorSearch';
 
 const route = useRoute();
@@ -127,7 +129,9 @@ const showSearch = ref(false);
 const showValidation = ref(false);
 const aiInline = useCapability('ai_inline');
 const voiceDictation = useCapability('voice_dictation');
+const voiceTts = useCapability('voice_tts');
 const dictation = useDictation(editor);
+const readAloud = useReadAloud(editor);
 
 function onDictateKey(e: KeyboardEvent) {
   if (e.ctrlKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
@@ -546,6 +550,17 @@ onBeforeUnmount(() => {
         @click="dictation.toggle()"
       />
       <Button
+        v-if="voiceTts"
+        v-tooltip.bottom="t('voice.readAloud.button')"
+        icon="pi pi-volume-up"
+        text
+        :severity="readAloud.phase.value !== 'idle' ? 'primary' : 'secondary'"
+        size="small"
+        :aria-label="t('voice.readAloud.button')"
+        :aria-pressed="readAloud.phase.value !== 'idle'"
+        @click="readAloud.toggle()"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -586,6 +601,16 @@ onBeforeUnmount(() => {
       :level="dictation.level.value"
       @stop="dictation.stopAndInsert"
       @cancel="dictation.cancel"
+    />
+    <ReadAloudBar
+      :phase="readAloud.phase.value"
+      :speed="readAloud.speed.value"
+      :speeds="readAloud.speeds"
+      @pause="readAloud.pause"
+      @resume="readAloud.resume"
+      @stop="readAloud.stop"
+      @skip="readAloud.skip"
+      @update:speed="readAloud.setSpeed"
     />
 
     <Splitter
