@@ -206,6 +206,7 @@
     "theme": "Tema",
     "themeLight": "Claro",
     "themeDark": "Oscuro",
+    "themeHighContrast": "Alto contraste",
     "themeSystem": "Según el sistema",
     "language": "Idioma",
     "editorFont": "Fuente del editor",

@@ -28,6 +28,7 @@ const { autosaveMs, font, fontFamily, customFontId, customCss } = useEditorSetti
 const themeOptions = computed(() => [
   { label: t('settings.themeLight'), value: 'light' },
   { label: t('settings.themeDark'), value: 'dark' },
+  { label: t('settings.themeHighContrast'), value: 'high-contrast' },
   { label: t('settings.themeSystem'), value: 'system' },
 ]);
 
@@ -154,7 +155,7 @@ async function onUploadFont() {
 
 const themeModel = computed({
   get: () => ui.theme,
-  set: (v) => ui.setTheme(v as 'light' | 'dark' | 'system'),
+  set: (v) => ui.setTheme(v as 'light' | 'dark' | 'high-contrast' | 'system'),
 });
 
 const localeModel = computed({

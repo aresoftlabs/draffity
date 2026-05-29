@@ -43,3 +43,56 @@ body {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* ---- High-contrast theme ----
+ * Rides on top of `.app-dark` (the dark surface chain is already on the
+ * `<html>` element when this class is set). The overrides force pure
+ * black/white surfaces, saturate the primary stop for WCAG-AAA contrast
+ * and bump every border to 2px so panel boundaries don't dissolve in
+ * monochrome. PrimeVue v4 reads --p-* CSS vars at runtime; overriding
+ * them inside `.app-high-contrast` retunes the whole component tree
+ * without forking the preset.
+ */
+.app-high-contrast {
+  --p-surface-0: #000;
+  --p-surface-50: #0a0a0a;
+  --p-surface-100: #111;
+  --p-surface-200: #1a1a1a;
+  --p-surface-300: #2a2a2a;
+  --p-surface-400: #4a4a4a;
+  --p-surface-500: #888;
+  --p-surface-600: #b0b0b0;
+  --p-surface-700: #d4d4d4;
+  --p-surface-800: #ececec;
+  --p-surface-900: #f7f7f7;
+  --p-surface-950: #fff;
+  --p-content-color: #fff;
+  --p-content-background: #000;
+  --p-content-border-color: #fff;
+  --p-primary-50: #fff7d6;
+  --p-primary-100: #ffedaa;
+  --p-primary-300: #ffd700;
+  --p-primary-400: #ffd700;
+  --p-primary-500: #ffd700;
+  --p-primary-600: #e6c200;
+  --p-primary-700: #b39400;
+  --p-text-color: #fff;
+  --p-text-muted-color: #d4d4d4;
+}
+
+.app-high-contrast body,
+.app-high-contrast #app {
+  background: #000;
+  color: #fff;
+}
+
+.app-high-contrast *:focus-visible {
+  outline: 3px solid #ffd700;
+  outline-offset: 2px;
+}
+
+/* Force opaque borders on cards, panels and dividers — translucent
+ * surface-200/700 strokes vanish in monochrome. */
+.app-high-contrast [class*='border-surface'] {
+  border-color: #fff !important;
+}

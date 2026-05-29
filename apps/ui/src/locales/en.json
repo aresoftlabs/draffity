@@ -206,6 +206,7 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
+    "themeHighContrast": "High contrast",
     "themeSystem": "Follow system",
     "language": "Language",
     "editorFont": "Editor font",
