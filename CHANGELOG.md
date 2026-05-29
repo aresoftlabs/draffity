@@ -16,14 +16,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deferred (arrastres de Sprint 5)
 
-- **`specta` para autogenerar tipos Rust↔TS** (S5-07 → D-01). El
-  payoff llega cuando tengamos ~30+ types; Sprint D lo activa con
-  gate de CI.
 - **Pool de conexiones SQLite** (S5-08+09 → E-01). Contención
   hipotética con un único usuario; sin benchmark que muestre cuello,
   es churn. Cuando aparezca storage premium o sync remoto.
 - **Hot-swap de tier** (S5-10, P1 → E-02). Sólo gana valor con un
   tier premium real al que swapear.
+
+## [0.12.0-beta] — 2026-05-28
+
+Sprint D cerrado al 100% (7 historias). Foco en **DX, arquitectura y
+calidad**: tipos auto-generados con drift gate, coverage floors,
+crash reporting opt-in, tema alto contraste, política de privacidad
+
+- ToS y a11y E2E. Sin features visibles nuevas — el output es un
+  codebase con gates más fuertes y un UX que respeta a usuarios con
+  necesidades de accesibilidad y privacidad explícitas.
+
+### Added — Política de privacidad + ToS (D-06, S8-11)
+
+- Cuatro markdowns en `docs/` como fuente canónica:
+  `PRIVACY-POLICY.md`, `PRIVACY-POLICY.en.md`, `TOS.md`, `TOS.en.md`.
+- Copia bajo `apps/ui/src/assets/legal/` que se importa vía Vite
+  `?raw` y se muestra en `LegalDialog.vue` en monoespaciado. Sin
+  dep de markdown renderer: el texto es prosa breve y se lee bien
+  pre-wrapped.
+- Settings agrega sección "Legal" con dos links que abren el dialog
+  en el idioma activo del editor.
+
+### Added — High-contrast theme (D-05, S8-09)
+
+- `ThemeMode` crece a `'high-contrast'` (riding on top of dark, no
+  como toggle independiente). `<html>` ahora lleva dos canales
+  ortogonales: `app-dark` + `app-high-contrast`.
+- PrimeVue v4 lee `--p-*` CSS vars en runtime, así que el override
+  en `main.css` retunea toda la cascada (surface, primary, content)
+  sin forkear el preset. Paleta amarillo saturado `#ffd700` sobre
+  negro puro (WCAG-AAA), focus ring de 3px, bordes opacos forzados.
+- Settings agrega cuarta opción "Alto contraste" / "High contrast"
+  en el `SelectButton` de tema.
+
+### Added — Crash reporting opt-in (D-04, S8-10)
+
+- Trait `CrashReporterService` + `NoOpCrashReporter` +
+  `LocalFileCrashReporter` (escribe reportes JSONL bajo
+  `<app_data>/crash-reports/` — stand-in hasta que el owner
+  provisione Sentry self-hosted). El factory mira la env var
+  `DRAFFITY_SENTRY_DSN` del build: si está seteada wirea el
+  local-file reporter para ejercer el pipeline end-to-end; si no,
+  `NoOp`.
+- Settings agrega `ToggleSwitch` "Send crash reports" sólo cuando
+  el reporter es activo. Default OFF, persistido en settings con
+  clave `crash_reporting.enabled`; `lib.rs` restaura el flag al
+  startup. Comandos Tauri `get_crash_reporting_status` +
+  `set_crash_reporting_enabled`.
+
+### Added — a11y E2E con axe-core (D-07, S8-06)
+
+- Nueva spec `apps/ui/e2e/a11y.spec.ts` con dos escaneos via
+  `@axe-core/playwright` filtrados a tags WCAG 2.0/2.1 AA.
+  Cualquier violación rompe el job e2e existente — el descubrimiento
+  ya cubre `.spec.ts` del directorio, así que no hace falta wiring
+  extra de CI.
+- `best-practice` queda fuera a propósito: incluye reglas que no son
+  conformance failures (heading-order sobre decisiones de diseño) y
+  ensuciaría el gate sin sumar valor.
+
+### Added — Coverage gates (D-02 + D-03, S8-04 + S8-05)
+
+- **Rust (D-02)**: nuevo job `coverage-rs` en `ci.yml` usa
+  `cargo-llvm-cov` con `--fail-under-lines 80`. Filtra wiring
+  (`commands/`, `lib.rs`, `state.rs`, capabilities, events, logging)
+  - tests/examples para medir sólo `domain/` y `services/`.
+- **TS (D-03)**: `vitest --coverage` vía `@vitest/coverage-v8`,
+  config en `vite.config.ts` con scope a `composables/` y
+  `stores/`. Thresholds al floor actual (lines 30, functions 55,
+  statements 30, branches 70) por honestidad: el target del backlog
+  es 70% lines y se ratchetea a medida que se sumen tests para los
+  stores/composables sin cobertura. El gate hoy bloquea regresiones.
+
+### Added — Specta gen-types con drift gate (D-01, S5-07, parcial)
+
+- `specta` v2 + `specta-serde` + `specta-typescript` wired. Bin
+  `gen-types` exporta los enums simples del dominio (`ProjectStatus`,
+  `DocumentType`, `DocumentStatus`, `CodexKind`) a
+  `packages/shared-types/src/generated.ts`.
+- CI corre el bin después de `cargo test` y falla con `git diff` si
+  `generated.ts` no coincide con lo committeado — agregar un
+  `serde::Serialize` en `domain/` sin regenerar rompe la build.
+- Scope intencionalmente acotado: los structs con
+  `serde_json::Value` (`Project`, `ProjectInput`, `CodexInput`,
+  etc.) quedan en `index.ts` como manual hasta que
+  `specta-typescript` crezca soporte cleano para
+  `Record<string, unknown>`. El `index.ts` re-exporta los cuatro
+  enums desde `generated.ts` así callers no notan la migración.
 
 ## [0.11.0-beta] — 2026-05-28
 
