@@ -2,6 +2,7 @@
 //! Entities + invariants + value objects, fully testable in isolation.
 
 pub mod ai_history;
+pub mod ai_validation;
 pub mod citation;
 pub mod codex;
 pub mod document;
@@ -13,6 +14,7 @@ pub mod stats;
 pub mod template;
 
 pub use ai_history::AiHistoryEntry;
+pub use ai_validation::AiValidation;
 pub use citation::Citation;
 pub use codex::{CodexEntry, CodexInput, CodexKind, CodexUpdate};
 pub use document::{DocNode, DocumentInput, DocumentStatus, DocumentType};

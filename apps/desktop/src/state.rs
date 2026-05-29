@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 
 use crate::logging::LogGuards;
 use crate::services::{
-    AIService, ASRService, BackupService, BibliographyService, CloudSyncService,
-    CrashReporterService, ExportService, ImportService, LicenseValidator, MediaService,
-    ProjectManagerService, ProjectMemoryService, SecretStorage, ServiceBundle, StorageService,
-    TTSService, TemplatesService, TierService, UserTemplatesLoader,
+    AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
+    CloudSyncService, CrashReporterService, ExportService, ImportService, LicenseValidator,
+    MediaService, ProjectManagerService, ProjectMemoryService, SecretStorage, ServiceBundle,
+    StorageService, TTSService, TemplatesService, TierService, UserTemplatesLoader,
 };
 
 /// Per-request cancellation flags for in-flight AI streams (F-06). The
@@ -58,8 +58,10 @@ pub struct AppState {
     /// AI commands (Épica F).
     pub ai: Arc<dyn AIService>,
     /// Engram-aligned project memory feeding AI context (Épica F/G).
-    #[allow(dead_code)] // consumed by AI action commands in F slice 2
     pub memory: Arc<dyn ProjectMemoryService>,
+    /// AI validators (Épica G). Consumed by the validation commands (slice 2).
+    #[allow(dead_code)] // consumed by validation commands in G slice 2
+    pub validators: Arc<dyn AIValidatorService>,
     #[allow(dead_code)]
     pub sync: Arc<dyn CloudSyncService>,
     #[allow(dead_code)]
@@ -95,6 +97,7 @@ impl AppState {
             user_templates: bundle.user_templates,
             ai: bundle.ai,
             memory: bundle.memory,
+            validators: bundle.validators,
             sync: bundle.sync,
             asr: bundle.asr,
             tts: bundle.tts,

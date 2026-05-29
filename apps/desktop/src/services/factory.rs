@@ -14,14 +14,15 @@ use std::sync::Arc;
 use crate::capabilities::Tier;
 use crate::error::AppResult;
 use crate::services::{
-    AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, ByokAIService,
-    CloudSyncService, CrashReporterService, DisabledLicenseValidator, Ed25519Validator,
-    ExportService, ImportService, KeyringSecretStorage, LayeredTemplatesService,
-    LexicalProjectMemory, LicenseValidator, LocalBackupService, LocalBibliographyService,
-    LocalExporter, LocalFileCrashReporter, LocalImporter, LocalMediaService, LocalProjectManager,
-    LocalStorageService, MediaService, MutableTier, NoOpASR, NoOpCrashReporter, NoOpSync, NoOpTTS,
-    ProjectManagerService, ProjectMemoryService, SecretStorage, StorageService, TTSService,
-    TemplatesService, TierService, UserTemplatesLoader,
+    AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
+    BuiltInTemplates, ByokAIService, CloudSyncService, CrashReporterService,
+    DisabledLicenseValidator, Ed25519Validator, ExportService, ImportService, KeyringSecretStorage,
+    LayeredTemplatesService, LexicalProjectMemory, LicenseValidator, LocalBackupService,
+    LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
+    LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, MutableTier,
+    NoOpASR, NoOpCrashReporter, NoOpSync, NoOpTTS, OpenRouterValidators, ProjectManagerService,
+    ProjectMemoryService, SecretStorage, StorageService, TTSService, TemplatesService, TierService,
+    UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -34,6 +35,7 @@ pub struct ServiceBundle {
     pub user_templates: Arc<UserTemplatesLoader>,
     pub ai: Arc<dyn AIService>,
     pub memory: Arc<dyn ProjectMemoryService>,
+    pub validators: Arc<dyn AIValidatorService>,
     pub sync: Arc<dyn CloudSyncService>,
     pub asr: Arc<dyn ASRService>,
     pub tts: Arc<dyn TTSService>,
@@ -78,6 +80,8 @@ impl ServiceFactory {
             Arc::new(ByokAIService::new(tier_service.clone(), secrets.clone()));
         let memory: Arc<dyn ProjectMemoryService> =
             Arc::new(LexicalProjectMemory::new(storage.clone()));
+        let validators: Arc<dyn AIValidatorService> =
+            Arc::new(OpenRouterValidators::new(ai.clone()));
 
         Ok(ServiceBundle {
             storage,
@@ -87,6 +91,7 @@ impl ServiceFactory {
             user_templates,
             ai,
             memory,
+            validators,
             sync: Self::build_sync(tier),
             asr: Self::build_asr(tier),
             tts: Self::build_tts(tier),

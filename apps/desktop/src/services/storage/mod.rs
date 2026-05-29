@@ -13,9 +13,9 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    AiHistoryEntry, Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DailyWriting,
-    DocNode, DocumentInput, DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus,
-    SearchHit, Snapshot, TemplateNode, WritingStats,
+    AiHistoryEntry, AiValidation, Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate,
+    DailyWriting, DocNode, DocumentInput, DocumentStatus, MediaAsset, Project, ProjectInput,
+    ProjectStatus, SearchHit, Snapshot, TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 use crate::services::importer::ImportTree;
@@ -23,6 +23,7 @@ use crate::services::importer::ImportTree;
 pub use citations::UpsertEntry as CitationUpsert;
 
 mod ai_history;
+mod ai_validations;
 mod citations;
 mod codex;
 mod document_positions;
@@ -52,6 +53,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (10, include_str!("../../migrations/010_media.sql")),
     (11, include_str!("../../migrations/011_daily_writing.sql")),
     (12, include_str!("../../migrations/012_ai_history.sql")),
+    (13, include_str!("../../migrations/013_ai_validations.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -217,6 +219,17 @@ pub trait StorageService: Send + Sync {
     ) -> AppResult<AiHistoryEntry>;
     /// List a project's accepted generations, newest first, capped at `limit`.
     fn list_ai_history(&self, project_id: &str, limit: u32) -> AppResult<Vec<AiHistoryEntry>>;
+
+    // AI validations (G-02). Append-only reports per (document, validator).
+    fn record_ai_validation(
+        &self,
+        document_id: &str,
+        validator_name: &str,
+        results_json: &str,
+        severity_summary: &str,
+    ) -> AppResult<AiValidation>;
+    /// All reports for a document, newest first.
+    fn list_ai_validations(&self, document_id: &str) -> AppResult<Vec<AiValidation>>;
 }
 
 /// Local SQLite-backed implementation. Single connection guarded by Mutex —
@@ -469,6 +482,26 @@ impl StorageService for LocalStorageService {
 
     fn list_ai_history(&self, project_id: &str, limit: u32) -> AppResult<Vec<AiHistoryEntry>> {
         ai_history::list(&self.conn.lock().unwrap(), project_id, limit)
+    }
+
+    fn record_ai_validation(
+        &self,
+        document_id: &str,
+        validator_name: &str,
+        results_json: &str,
+        severity_summary: &str,
+    ) -> AppResult<AiValidation> {
+        ai_validations::record(
+            &self.conn.lock().unwrap(),
+            document_id,
+            validator_name,
+            results_json,
+            severity_summary,
+        )
+    }
+
+    fn list_ai_validations(&self, document_id: &str) -> AppResult<Vec<AiValidation>> {
+        ai_validations::list_for_document(&self.conn.lock().unwrap(), document_id)
     }
 
     fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {

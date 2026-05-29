@@ -4,6 +4,7 @@
 pub mod ai;
 pub mod ai_openrouter;
 pub mod ai_prompts;
+pub mod ai_validators;
 pub mod asr;
 pub mod backup;
 pub mod bibliography;
@@ -31,6 +32,10 @@ pub use ai::{
 };
 pub use ai_openrouter::{ByokAIService, OPENROUTER_KEY};
 pub use ai_prompts::{build_messages, parse_action, ActionInput, AiAction, RewriteMode};
+pub use ai_validators::{
+    codex_coverage, summarize, AIValidatorService, CoverageReport, Finding, OpenRouterValidators,
+    ValidationInput, ValidatorKind,
+};
 pub use asr::{ASRService, NoOpASR, Transcript, TranscriptSegment};
 pub use backup::{BackupKind, BackupRecord, BackupService, LocalBackupService, NoOpBackup};
 pub use bibliography::{BibliographyService, LocalBibliographyService, ParseSummary};
