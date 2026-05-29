@@ -28,6 +28,8 @@ jobs:
       - run: pnpm lint:js
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Coverage gate (TS, floor levels)
+        run: pnpm --filter @draffity/ui test:coverage
 
   lint-and-test-rs:
     name: Lint & test (Rust)
@@ -52,6 +54,41 @@ jobs:
       - run: cargo fmt --manifest-path apps/desktop/Cargo.toml --all -- --check
       - run: cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --manifest-path apps/desktop/Cargo.toml --all
+
+  coverage-rs:
+    name: Coverage gate (Rust ≥80%)
+    needs: [lint-and-test-rs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - name: Install Tauri Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file libxdo-dev \
+            libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Run coverage with 80% line threshold
+        # We measure the surfaces that hold business logic — `domain/` and
+        # `services/` — and exclude wiring / boot code (`commands/`,
+        # `lib.rs`, `state.rs`), the Tauri capability shim and the tests
+        # themselves. Falling below 80% lines fails the job.
+        run: |
+          cargo llvm-cov \
+            --manifest-path apps/desktop/Cargo.toml \
+            --lib \
+            --ignore-filename-regex 'src/commands/|src/lib\.rs$|src/state\.rs$|src/capabilities\.rs$|src/events\.rs$|src/logging\.rs$|tests/|examples/' \
+            --fail-under-lines 80
 
   validate-epub:
     name: Validate fixture EPUB (epubcheck)

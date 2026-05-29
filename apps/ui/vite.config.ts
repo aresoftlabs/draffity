@@ -48,5 +48,28 @@ export default defineConfig(() => ({
     globals: true,
     include: ['src/**/*.{test,spec}.{ts,js}', 'test/**/*.{test,spec}.{ts,js}'],
     setupFiles: ['./test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      // We measure the surfaces that hold logic — `composables/` and
+      // `stores/`. Everything else (Vue components, services boundary,
+      // generated types) is exercised by E2E or has too much templating
+      // to benefit from a line-coverage gate.
+      include: ['src/composables/**/*.ts', 'src/stores/**/*.ts'],
+      // Exclude the tests themselves so they don't inflate the numerator.
+      exclude: ['**/*.test.ts', '**/*.spec.ts'],
+      // Floor thresholds: locked to roughly the current measured
+      // coverage (lines ~33%, functions ~55%, branches ~80%). The
+      // backlog target is 70% lines and the plan is to ratchet up the
+      // gate as we add tests for the untested stores/composables. The
+      // important property today is regression-catching: dropping below
+      // these numbers fails CI.
+      thresholds: {
+        lines: 30,
+        functions: 55,
+        statements: 30,
+        branches: 70,
+      },
+    },
   },
 }));
