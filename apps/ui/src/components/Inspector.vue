@@ -186,6 +186,7 @@ function onSynopsisInput(v: string) {
 
       <SnapshotsList
         :document-id="doc.id"
+        :current-html="doc.content ?? ''"
         :read-only="readOnly"
         @restored="emit('snapshotRestored')"
       />

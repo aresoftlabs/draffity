@@ -7,9 +7,13 @@ import { useConfirm } from 'primevue/useconfirm';
 import type { Snapshot } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
 import { useIpcError } from '@/composables/useIpcError';
+import SnapshotDiffView from './SnapshotDiffView.vue';
 
 const props = defineProps<{
   documentId: string | null;
+  /** Current editor HTML — used by the diff view as the "after" side
+   *  when comparing a saved snapshot against the live document. */
+  currentHtml?: string;
   readOnly?: boolean;
 }>();
 
@@ -87,6 +91,18 @@ function formatDate(ts: number): string {
     return new Date(ts).toLocaleString(locale.value);
   }
 }
+
+const diffSnapshot = ref<Snapshot | null>(null);
+const diffVisible = computed({
+  get: () => diffSnapshot.value !== null,
+  set: (v: boolean) => {
+    if (!v) diffSnapshot.value = null;
+  },
+});
+
+function onCompare(s: Snapshot) {
+  diffSnapshot.value = s;
+}
 </script>
 
 <template>
@@ -121,16 +137,25 @@ function formatDate(ts: number): string {
           <span class="truncate">{{ s.label || t('snapshots.unlabeled') }}</span>
           <span class="text-xs opacity-60 font-mono">{{ formatDate(s.createdAt) }}</span>
         </span>
-        <Button
-          v-if="!readOnly"
-          icon="pi pi-history"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('snapshots.restore')"
-          class="opacity-0 group-hover:opacity-100 transition-opacity"
-          @click="onRestore(s)"
-        />
+        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            icon="pi pi-eye"
+            text
+            severity="secondary"
+            size="small"
+            :aria-label="t('snapshots.compare')"
+            @click="onCompare(s)"
+          />
+          <Button
+            v-if="!readOnly"
+            icon="pi pi-history"
+            text
+            severity="secondary"
+            size="small"
+            :aria-label="t('snapshots.restore')"
+            @click="onRestore(s)"
+          />
+        </div>
       </li>
     </ul>
     <p v-else class="text-xs opacity-60">{{ t('snapshots.empty') }}</p>
@@ -143,5 +168,17 @@ function formatDate(ts: number): string {
     >
       {{ t('snapshots.more') }}
     </button>
+
+    <SnapshotDiffView
+      v-model:visible="diffVisible"
+      :before-label="
+        diffSnapshot
+          ? `${diffSnapshot.label ?? t('snapshots.unlabeled')} · ${formatDate(diffSnapshot.createdAt)}`
+          : ''
+      "
+      :after-label="t('diff.current')"
+      :before-html="diffSnapshot?.content ?? ''"
+      :after-html="currentHtml ?? ''"
+    />
   </section>
 </template>

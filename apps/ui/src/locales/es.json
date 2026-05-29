@@ -257,9 +257,18 @@
     "labelPlaceholder": "Etiqueta opcional",
     "unlabeled": "(sin etiqueta)",
     "restore": "Restaurar",
+    "compare": "Comparar con actual",
     "confirmRestore": "Esta versión sobreescribirá el contenido actual del documento. La versión actual se guardará automáticamente como auto-restore. ¿Continuar?",
     "empty": "Sin versiones aún.",
     "more": "Mostrar más"
+  },
+  "diff": {
+    "title": "Comparar versiones",
+    "before": "Antes",
+    "after": "Después",
+    "current": "Actual",
+    "identical": "Las dos versiones son idénticas.",
+    "close": "Cerrar"
   },
   "export": {
     "title": "Exportar proyecto",

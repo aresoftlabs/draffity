@@ -257,9 +257,18 @@
     "labelPlaceholder": "Optional label",
     "unlabeled": "(unlabeled)",
     "restore": "Restore",
+    "compare": "Compare with current",
     "confirmRestore": "This version will overwrite the document's current content. The current state will be saved automatically as auto-restore. Continue?",
     "empty": "No versions yet.",
     "more": "Show more"
+  },
+  "diff": {
+    "title": "Compare versions",
+    "before": "Before",
+    "after": "After",
+    "current": "Current",
+    "identical": "The two versions are identical.",
+    "close": "Close"
   },
   "export": {
     "title": "Export project",
