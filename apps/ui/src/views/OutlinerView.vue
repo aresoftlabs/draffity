@@ -7,13 +7,15 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
 import Tag from 'primevue/tag';
-import type { DocNode, DocumentStatus } from '@draffity/shared-types';
+import type { CustomField, DocNode, DocumentStatus } from '@draffity/shared-types';
 import { countWords } from '@/stores/document';
 import LabelChips from '@/components/LabelChips.vue';
 
 const props = defineProps<{
   documents: DocNode[];
   selectedId: string | null;
+  /** Project custom metadata fields, rendered as sortable columns (I-09). */
+  customFields?: CustomField[];
   readOnly?: boolean;
 }>();
 
@@ -183,6 +185,20 @@ function onRowClick(event: { data: DocNode }) {
               class="!text-[10px] !py-0 !px-1.5"
             />
           </div>
+          <span v-else class="italic opacity-40 text-xs">—</span>
+        </template>
+      </Column>
+
+      <Column
+        v-for="f in customFields ?? []"
+        :key="f.id"
+        :field="`metadata.${f.id}`"
+        :header="f.name"
+        sortable
+        :style="{ minWidth: '8rem' }"
+      >
+        <template #body="{ data }">
+          <span v-if="data.metadata[f.id]" class="text-xs">{{ data.metadata[f.id] }}</span>
           <span v-else class="italic opacity-40 text-xs">—</span>
         </template>
       </Column>

@@ -580,6 +580,28 @@
     "confirmDelete": "¿Eliminar el marcador «{name}»?",
     "error": "No se pudo completar la operación de marcadores."
   },
+  "customFields": {
+    "label": "Campos personalizados",
+    "manageTitle": "Gestionar campos",
+    "newTitle": "Nuevo campo",
+    "editTitle": "Editar campo",
+    "empty": "Sin campos personalizados todavía.",
+    "namePlaceholder": "Nombre del campo",
+    "options": "Opciones",
+    "optionsPlaceholder": "Añadir opción y pulsar Enter…",
+    "selectPlaceholder": "Elegir…",
+    "add": "Añadir",
+    "edit": "Editar campo",
+    "delete": "Eliminar campo",
+    "confirmDelete": "¿Eliminar el campo «{name}» y todos sus valores?",
+    "error": "No se pudo completar la operación de campos.",
+    "kind": {
+      "text": "Texto",
+      "number": "Número",
+      "date": "Fecha",
+      "select": "Lista"
+    }
+  },
   "voice": {
     "dictation": {
       "button": "Dictar (Ctrl+Shift+M)",

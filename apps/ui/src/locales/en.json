@@ -580,6 +580,28 @@
     "confirmDelete": "Delete the label “{name}”?",
     "error": "Could not complete the labels operation."
   },
+  "customFields": {
+    "label": "Custom fields",
+    "manageTitle": "Manage fields",
+    "newTitle": "New field",
+    "editTitle": "Edit field",
+    "empty": "No custom fields yet.",
+    "namePlaceholder": "Field name",
+    "options": "Options",
+    "optionsPlaceholder": "Add option and press Enter…",
+    "selectPlaceholder": "Choose…",
+    "add": "Add",
+    "edit": "Edit field",
+    "delete": "Delete field",
+    "confirmDelete": "Delete the field “{name}” and all its values?",
+    "error": "Could not complete the fields operation.",
+    "kind": {
+      "text": "Text",
+      "number": "Number",
+      "date": "Date",
+      "select": "List"
+    }
+  },
   "voice": {
     "dictation": {
       "button": "Dictate (Ctrl+Shift+M)",

@@ -17,6 +17,8 @@ declare module 'vue' {
     CodexRefPickerDialog: typeof import('./components/CodexRefPickerDialog.vue')['default']
     CollectionEditorDialog: typeof import('./components/CollectionEditorDialog.vue')['default']
     CollectionsPanel: typeof import('./components/CollectionsPanel.vue')['default']
+    CustomFieldsEditor: typeof import('./components/CustomFieldsEditor.vue')['default']
+    CustomFieldsManagerDialog: typeof import('./components/CustomFieldsManagerDialog.vue')['default']
     DictationOverlay: typeof import('./components/DictationOverlay.vue')['default']
     ExportDialog: typeof import('./components/ExportDialog.vue')['default']
     FindReplaceBar: typeof import('./components/FindReplaceBar.vue')['default']

@@ -6,9 +6,10 @@ import Chips from 'primevue/chips';
 import MultiSelect from 'primevue/multiselect';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
-import type { DocNode, DocumentStatus, Label } from '@draffity/shared-types';
+import type { CustomField, DocNode, DocumentStatus, Label } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
+import CustomFieldsEditor from '@/components/CustomFieldsEditor.vue';
 
 const props = defineProps<{
   doc: DocNode | null;
@@ -17,6 +18,8 @@ const props = defineProps<{
   sessionWordCount?: number;
   /** Project labels available to assign (I-05/I-06). */
   labels?: Label[];
+  /** Project custom metadata fields (I-08/I-09). */
+  customFields?: CustomField[];
   readOnly?: boolean;
 }>();
 
@@ -26,6 +29,8 @@ const emit = defineEmits<{
   tagsChange: [tags: string[]];
   labelsChange: [labelIds: string[]];
   manageLabels: [];
+  metadataChange: [fieldId: string, value: string | null];
+  manageFields: [];
   goalChange: [goal: number | null];
   synopsisChange: [synopsis: string | null];
 }>();
@@ -233,6 +238,30 @@ function onSynopsisInput(v: string) {
           class="w-full"
           @update:model-value="onTagsChange"
         />
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-semibold uppercase tracking-wide opacity-60">
+            {{ t('customFields.label') }}
+          </h4>
+          <Button
+            icon="pi pi-cog"
+            text
+            size="small"
+            :pt="{ root: { class: '!w-6 !h-6 !p-0' } }"
+            :aria-label="t('customFields.manageTitle')"
+            @click="emit('manageFields')"
+          />
+        </div>
+        <CustomFieldsEditor
+          v-if="customFields && customFields.length > 0"
+          :fields="customFields"
+          :values="doc.metadata"
+          :read-only="readOnly"
+          @change="(fieldId, value) => emit('metadataChange', fieldId, value)"
+        />
+        <p v-else class="text-xs opacity-50">{{ t('customFields.empty') }}</p>
       </section>
 
       <SnapshotsList

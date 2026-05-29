@@ -110,6 +110,12 @@ export const useDocumentStore = defineStore('document', () => {
     if (idx !== -1) documents.value[idx] = updated;
   }
 
+  async function setMetadata(id: string, fieldId: string, value: string | null) {
+    const updated = await ipc.setDocumentMetadata(id, fieldId, value);
+    const idx = documents.value.findIndex((d) => d.id === id);
+    if (idx !== -1) documents.value[idx] = updated;
+  }
+
   async function setGoal(id: string, goal: number | null) {
     const updated = await ipc.setDocumentGoal({ id, goal });
     const idx = documents.value.findIndex((d) => d.id === id);
@@ -162,6 +168,7 @@ export const useDocumentStore = defineStore('document', () => {
     setStatus,
     setTags,
     setLabels,
+    setMetadata,
     setGoal,
     setSynopsis,
     reset,

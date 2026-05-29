@@ -23,6 +23,7 @@ import Binder from '@/components/Binder.vue';
 import CollectionsPanel from '@/components/CollectionsPanel.vue';
 import Inspector from '@/components/Inspector.vue';
 import LabelManagerDialog from '@/components/LabelManagerDialog.vue';
+import CustomFieldsManagerDialog from '@/components/CustomFieldsManagerDialog.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import BibliographyDialog from '@/components/BibliographyDialog.vue';
@@ -36,6 +37,7 @@ import SplitSecondaryPane from '@/components/SplitSecondaryPane.vue';
 import { useCodexStore } from '@/stores/codex';
 import { useMediaStore } from '@/stores/media';
 import { useLabelStore } from '@/stores/labels';
+import { useCustomFieldStore } from '@/stores/customFields';
 import { ipc } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
@@ -63,9 +65,11 @@ const projectStore = useProjectStore();
 const docStore = useDocumentStore();
 const uiStore = useUiStore();
 const labelStore = useLabelStore();
+const customFieldStore = useCustomFieldStore();
 const { run } = useIpcError();
 
 const labelManagerVisible = ref(false);
+const fieldsManagerVisible = ref(false);
 
 const focusMode = computed(() => uiStore.focusMode);
 const typewriterEnabled = computed(() => uiStore.typewriterMode);
@@ -192,6 +196,7 @@ async function loadProject() {
   }
   await run(t('errors.loadDocuments'), () => docStore.loadFor(projectId.value));
   await run(t('labels.error'), () => labelStore.loadFor(projectId.value));
+  await run(t('customFields.error'), () => customFieldStore.loadFor(projectId.value));
   // Snapshot the word count at load time so the inspector + app shell can
   // show "words written this session" without a roundtrip.
   uiStore.captureSessionStart(totalWordCount.value);
@@ -224,6 +229,7 @@ watch(projectId, async (next, prev) => {
     docStore.reset();
     mediaStore.reset();
     labelStore.reset();
+    customFieldStore.reset();
     await loadProject();
   }
 });
@@ -388,6 +394,13 @@ async function onTagsChange(tags: string[]) {
 async function onLabelsChange(labelIds: string[]) {
   if (!selected.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => docStore.setLabels(selected.value!.id, labelIds));
+}
+
+async function onMetadataChange(fieldId: string, value: string | null) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () =>
+    docStore.setMetadata(selected.value!.id, fieldId, value),
+  );
 }
 
 async function onDocGoalChange(goal: number | null) {
@@ -756,6 +769,7 @@ onBeforeUnmount(() => {
           v-else-if="viewMode === 'outliner'"
           :documents="docStore.documents"
           :selected-id="docStore.selectedId"
+          :custom-fields="customFieldStore.fields"
           :read-only="readOnly"
           @select="onSelect"
           @update-title="onOutlinerTitle"
@@ -772,12 +786,15 @@ onBeforeUnmount(() => {
           :word-count-total="totalWordCount"
           :session-word-count="sessionWordCount"
           :labels="labelStore.labels"
+          :custom-fields="customFieldStore.fields"
           :read-only="readOnly"
           @snapshot-restored="onSnapshotRestored"
           @status-change="onStatusChange"
           @tags-change="onTagsChange"
           @labels-change="onLabelsChange"
           @manage-labels="labelManagerVisible = true"
+          @metadata-change="onMetadataChange"
+          @manage-fields="fieldsManagerVisible = true"
           @goal-change="onDocGoalChange"
           @synopsis-change="onSynopsisChange"
         />
@@ -785,5 +802,6 @@ onBeforeUnmount(() => {
     </Splitter>
 
     <LabelManagerDialog v-model:visible="labelManagerVisible" :project-id="projectId" />
+    <CustomFieldsManagerDialog v-model:visible="fieldsManagerVisible" :project-id="projectId" />
   </div>
 </template>
