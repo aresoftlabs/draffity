@@ -11,6 +11,7 @@ import { useToast } from 'primevue/usetoast';
 import type { CodexEntry, CodexKind } from '@draffity/shared-types';
 import { useCodexStore } from '@/stores/codex';
 import { useIpcError } from '@/composables/useIpcError';
+import NameGeneratorDialog from '@/components/NameGeneratorDialog.vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -35,6 +36,7 @@ const body = ref('');
 const tags = ref<string[]>([]);
 const tagSuggestions = ref<string[]>([]);
 const saving = ref(false);
+const showNameGenerator = ref(false);
 
 const isEdit = computed(() => !!props.entry);
 
@@ -137,7 +139,17 @@ async function onSave() {
       <div class="grid grid-cols-3 gap-3">
         <div class="col-span-2 flex flex-col gap-1">
           <label for="codex-name" class="text-sm font-medium">{{ t('codex.name') }}</label>
-          <InputText id="codex-name" v-model="name" autofocus />
+          <div class="flex gap-1">
+            <InputText id="codex-name" v-model="name" autofocus class="flex-1" />
+            <Button
+              v-tooltip.bottom="t('nameGen.title')"
+              icon="pi pi-bolt"
+              text
+              severity="secondary"
+              :aria-label="t('nameGen.title')"
+              @click="showNameGenerator = true"
+            />
+          </div>
         </div>
         <div class="flex flex-col gap-1">
           <label for="codex-kind" class="text-sm font-medium">{{ t('codex.kindLabel') }}</label>
@@ -176,5 +188,7 @@ async function onSave() {
         @click="onSave"
       />
     </template>
+
+    <NameGeneratorDialog v-model:visible="showNameGenerator" @select="(n) => (name = n)" />
   </Dialog>
 </template>

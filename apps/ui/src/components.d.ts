@@ -29,6 +29,7 @@ declare module 'vue' {
     LabelChips: typeof import('./components/LabelChips.vue')['default']
     LabelManagerDialog: typeof import('./components/LabelManagerDialog.vue')['default']
     LegalDialog: typeof import('./components/LegalDialog.vue')['default']
+    NameGeneratorDialog: typeof import('./components/NameGeneratorDialog.vue')['default']
     NewProjectWizard: typeof import('./components/NewProjectWizard.vue')['default']
     OnboardingDialog: typeof import('./components/OnboardingDialog.vue')['default']
     PacemakerWidget: typeof import('./components/PacemakerWidget.vue')['default']

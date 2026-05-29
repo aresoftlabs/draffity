@@ -65,6 +65,10 @@ export const useUiStore = defineStore('ui', () => {
   const readingWpm = ref<number>(loadNumber('readingWpm') ?? 200);
   // Repetition heatmap (J-08): highlight over-used words/phrases in the editor.
   const repetitionHeatmap = ref(loadBool('repetitionHeatmap', false));
+  // User-imported name lists for the generator (K-07). Treated as unisex pools.
+  const customNameLists = ref<{ id: string; label: string; names: string[] }[]>(
+    loadJson('customNameLists', []),
+  );
   // One-shot flag set by onboarding to ask the dashboard to open the
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
@@ -92,6 +96,7 @@ export const useUiStore = defineStore('ui', () => {
   watch(linguisticExtraWords, (v) => saveJson('linguisticExtraWords', v), { deep: true });
   watch(readingWpm, (v) => saveNumber('readingWpm', v));
   watch(repetitionHeatmap, (v) => saveBool('repetitionHeatmap', v));
+  watch(customNameLists, (v) => saveJson('customNameLists', v), { deep: true });
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
   watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
   watch(splitSecondaryIds, (v) => saveJson('splitSecondaryIds', v), { deep: true });
@@ -127,6 +132,17 @@ export const useUiStore = defineStore('ui', () => {
 
   function toggleRepetitionHeatmap() {
     repetitionHeatmap.value = !repetitionHeatmap.value;
+  }
+
+  function addCustomNameList(label: string, names: string[]) {
+    const clean = names.map((n) => n.trim()).filter(Boolean);
+    if (!label.trim() || clean.length === 0) return;
+    const id = `custom:${label.trim()}:${customNameLists.value.length}`;
+    customNameLists.value = [...customNameLists.value, { id, label: label.trim(), names: clean }];
+  }
+
+  function removeCustomNameList(id: string) {
+    customNameLists.value = customNameLists.value.filter((l) => l.id !== id);
   }
 
   function requestNewProject() {
@@ -183,6 +199,7 @@ export const useUiStore = defineStore('ui', () => {
     linguisticExtraWords,
     readingWpm,
     repetitionHeatmap,
+    customNameLists,
     pendingNewProject,
     sessionGoal,
     sessionStartTotal,
@@ -195,6 +212,8 @@ export const useUiStore = defineStore('ui', () => {
     toggleTypewriterMode,
     toggleLinguisticFocus,
     toggleRepetitionHeatmap,
+    addCustomNameList,
+    removeCustomNameList,
     requestNewProject,
     consumeNewProjectRequest,
     captureSessionStart,

@@ -625,6 +625,18 @@
     "minutes": "~{n} min",
     "lessThanMinute": "< 1 min"
   },
+  "nameGen": {
+    "title": "Generar nombre",
+    "generate": "Generar",
+    "masc": "Masc.",
+    "fem": "Fem.",
+    "unisex": "Unisex",
+    "copy": "Copiar",
+    "import": "Importar lista (.txt/.json)",
+    "importError": "No se pudo importar la lista.",
+    "empty": "Pulsá «Generar» para obtener nombres.",
+    "pickHint": "Clic en un nombre para usarlo."
+  },
   "pacemaker": {
     "setDeadline": "Fecha límite",
     "clear": "Quitar fecha límite",
