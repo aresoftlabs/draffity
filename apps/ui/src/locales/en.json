@@ -530,6 +530,15 @@
       "style": "Style"
     }
   },
+  "voice": {
+    "dictation": {
+      "button": "Dictate (Ctrl+Shift+M)",
+      "recording": "Recording…",
+      "transcribing": "Transcribing…",
+      "stop": "Done",
+      "cancel": "Cancel"
+    }
+  },
   "editor": {
     "image": {
       "missing": "Image unavailable"

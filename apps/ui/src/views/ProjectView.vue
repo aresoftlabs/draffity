@@ -45,7 +45,9 @@ import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
 import AiInlinePanel from '@/components/AiInlinePanel.vue';
 import ValidationDialog from '@/components/ValidationDialog.vue';
+import DictationOverlay from '@/components/DictationOverlay.vue';
 import { useCapability } from '@/composables/useCapability';
+import { useDictation } from '@/composables/useDictation';
 import { findMatches } from '@/composables/useProseMirrorSearch';
 
 const route = useRoute();
@@ -124,6 +126,16 @@ const showSaveAsTemplate = ref(false);
 const showSearch = ref(false);
 const showValidation = ref(false);
 const aiInline = useCapability('ai_inline');
+const voiceDictation = useCapability('voice_dictation');
+const dictation = useDictation(editor);
+
+function onDictateKey(e: KeyboardEvent) {
+  if (e.ctrlKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+    if (!voiceDictation.value || readOnly.value || !editor.value) return;
+    e.preventDefault();
+    dictation.toggle();
+  }
+}
 const findVisible = ref(false);
 const findMode = ref<'find' | 'replace'>('find');
 
@@ -429,11 +441,13 @@ onMounted(() => {
   loadProject();
   window.addEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
   window.addEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
+  window.addEventListener('keydown', onDictateKey);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
   window.removeEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
+  window.removeEventListener('keydown', onDictateKey);
 });
 </script>
 
@@ -520,6 +534,18 @@ onBeforeUnmount(() => {
         @click="showValidation = true"
       />
       <Button
+        v-if="voiceDictation"
+        v-tooltip.bottom="t('voice.dictation.button')"
+        icon="pi pi-microphone"
+        text
+        :severity="dictation.phase.value === 'recording' ? 'danger' : 'secondary'"
+        size="small"
+        :disabled="readOnly"
+        :aria-label="t('voice.dictation.button')"
+        :aria-pressed="dictation.phase.value !== 'idle'"
+        @click="dictation.toggle()"
+      />
+      <Button
         icon="pi pi-download"
         text
         severity="secondary"
@@ -554,6 +580,12 @@ onBeforeUnmount(() => {
       :project-id="project.id"
       :document-id="docStore.selectedId"
       @locate="onLocate"
+    />
+    <DictationOverlay
+      :phase="dictation.phase.value"
+      :level="dictation.level.value"
+      @stop="dictation.stopAndInsert"
+      @cancel="dictation.cancel"
     />
 
     <Splitter
