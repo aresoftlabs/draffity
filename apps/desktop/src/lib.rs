@@ -89,6 +89,12 @@ pub fn run() {
             commands::check_codex_coverage,
             commands::run_validators,
             commands::list_validations,
+            // voice (épica h)
+            commands::get_voice_status,
+            commands::list_voice_models,
+            commands::download_voice_model,
+            commands::delete_voice_model,
+            commands::import_voice_binary,
             // projects
             commands::create_project,
             commands::list_projects,

@@ -3,6 +3,7 @@
 //! IPC commands via `State<AppState>`.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -63,9 +64,9 @@ pub struct AppState {
     pub validators: Arc<dyn AIValidatorService>,
     #[allow(dead_code)]
     pub sync: Arc<dyn CloudSyncService>,
-    #[allow(dead_code)]
+    /// Local Whisper ASR (H). Consumed by the voice commands.
     pub asr: Arc<dyn ASRService>,
-    #[allow(dead_code)] // consumed by PiperTTSService wiring in Épica H
+    #[allow(dead_code)] // consumed by PiperTTSService wiring in Épica H slice 3
     pub tts: Arc<dyn TTSService>,
     pub exporter: Arc<dyn ExportService>,
     pub importer: Arc<dyn ImportService>,
@@ -80,6 +81,8 @@ pub struct AppState {
     pub license_validator: Arc<dyn LicenseValidator>,
     /// In-flight AI stream cancellation flags (F-06).
     pub ai_cancel: Arc<AiCancelRegistry>,
+    /// App data dir — voice commands resolve binary/model paths (H).
+    pub app_data_dir: PathBuf,
     /// Keeps the non-blocking log writers alive for the whole app lifecycle.
     /// Dropping these guards flushes any pending log lines.
     #[allow(dead_code)]
@@ -109,6 +112,7 @@ impl AppState {
             secrets: bundle.secrets,
             license_validator: bundle.license_validator,
             ai_cancel: Arc::new(AiCancelRegistry::default()),
+            app_data_dir: bundle.app_data_dir,
             _log_guards: log_guards,
         }
     }

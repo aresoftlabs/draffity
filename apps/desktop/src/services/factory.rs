@@ -8,7 +8,7 @@
 //! because the `WorkerGuard` must outlive the whole app and the factory is
 //! also useful in tests where logging is irrelevant.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::capabilities::Tier;
@@ -20,9 +20,9 @@ use crate::services::{
     LayeredTemplatesService, LexicalProjectMemory, LicenseValidator, LocalBackupService,
     LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
     LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, MutableTier,
-    NoOpASR, NoOpCrashReporter, NoOpSync, NoOpTTS, OpenRouterValidators, ProjectManagerService,
+    NoOpCrashReporter, NoOpSync, NoOpTTS, OpenRouterValidators, ProjectManagerService,
     ProjectMemoryService, SecretStorage, StorageService, TTSService, TemplatesService, TierService,
-    UserTemplatesLoader,
+    UserTemplatesLoader, WhisperLocalASR,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -47,6 +47,8 @@ pub struct ServiceBundle {
     pub crash_reporter: Arc<dyn CrashReporterService>,
     pub secrets: Arc<dyn SecretStorage>,
     pub license_validator: Arc<dyn LicenseValidator>,
+    /// App data dir — voice commands resolve binary/model paths from it.
+    pub app_data_dir: PathBuf,
 }
 
 /// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
@@ -82,6 +84,12 @@ impl ServiceFactory {
             Arc::new(LexicalProjectMemory::new(storage.clone()));
         let validators: Arc<dyn AIValidatorService> =
             Arc::new(OpenRouterValidators::new(ai.clone()));
+        // Local Whisper ASR (H). Gated by tier + installed binary/model; with
+        // nothing installed `available()` is false, like the old NoOpASR.
+        let asr: Arc<dyn ASRService> = Arc::new(WhisperLocalASR::new(
+            app_data_dir.to_path_buf(),
+            tier_service.clone(),
+        ));
 
         Ok(ServiceBundle {
             storage,
@@ -93,7 +101,7 @@ impl ServiceFactory {
             memory,
             validators,
             sync: Self::build_sync(tier),
-            asr: Self::build_asr(tier),
+            asr,
             tts: Self::build_tts(tier),
             exporter: Arc::new(LocalExporter),
             importer: Arc::new(LocalImporter),
@@ -103,6 +111,7 @@ impl ServiceFactory {
             crash_reporter,
             secrets,
             license_validator: Self::build_license_validator(),
+            app_data_dir: app_data_dir.to_path_buf(),
         })
     }
 
@@ -181,10 +190,6 @@ impl ServiceFactory {
 
     fn build_sync(_tier: Tier) -> Arc<dyn CloudSyncService> {
         Arc::new(NoOpSync)
-    }
-
-    fn build_asr(_tier: Tier) -> Arc<dyn ASRService> {
-        Arc::new(NoOpASR)
     }
 
     fn build_tts(_tier: Tier) -> Arc<dyn TTSService> {

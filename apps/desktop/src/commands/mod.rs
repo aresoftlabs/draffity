@@ -15,6 +15,7 @@ pub mod search;
 pub mod system;
 pub mod templates;
 pub mod validators;
+pub mod voice;
 
 pub use ai::*;
 pub use backup::*;
@@ -30,3 +31,4 @@ pub use search::*;
 pub use system::*;
 pub use templates::*;
 pub use validators::*;
+pub use voice::*;
