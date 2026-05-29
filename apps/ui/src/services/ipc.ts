@@ -23,6 +23,19 @@ import type {
   WritingStats,
 } from '@draffity/shared-types';
 
+/** Premium activation status reported by the backend (E-07). */
+export interface PremiumStatus {
+  /** `'free'` or `'premium'`. */
+  tier: string;
+  /** Convenience flag: `tier === 'premium'`. */
+  active: boolean;
+  /** Whether this build can validate licenses (has a public key baked in).
+   * When false the UI hides the activation field. */
+  licensingConfigured: boolean;
+  /** Holder string from the validated license, when just activated. */
+  holder: string | null;
+}
+
 /**
  * Thin typed wrapper over Tauri IPC commands.
  * Keep this file as the single boundary between Vue and Rust.
@@ -40,6 +53,11 @@ export const ipc = {
     invoke<{ active: boolean; enabled: boolean }>('get_crash_reporting_status'),
   setCrashReportingEnabled: (enabled: boolean) =>
     invoke<void>('set_crash_reporting_enabled', { enabled }),
+
+  // Premium / license
+  getPremiumStatus: () => invoke<PremiumStatus>('get_premium_status'),
+  activatePremium: (key: string) => invoke<PremiumStatus>('activate_premium', { key }),
+  deactivatePremium: () => invoke<PremiumStatus>('deactivate_premium'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),
