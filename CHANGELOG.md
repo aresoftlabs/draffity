@@ -129,6 +129,27 @@ premium (IA BYOK + voz). Aún sin release versionada.
   dots, tipo specta) y se solapa con Labels, que ya da taxonomía de color por
   proyecto. Se revisará si aparece demanda real del _pipeline_ configurable.
 
+### Added — Épica J: goals avanzados + linguistic focus (J-01..J-09)
+
+- **Deadline + Pacemaker** (J-02/J-03): migración 019 (`projects.deadline`
+  aditiva, epoch ms). `usePacemaker` (puro) calcula palabras/día = restantes /
+  días, con estado según el avance de la sesión (ontrack/close/behind/overdue/
+  done). `PacemakerWidget` en el header: chip de color + DatePicker para fijar /
+  limpiar el plazo. Barra de progreso por documento en el outliner (J-01).
+- **Meta diaria + racha de meta cumplida** (J-04/J-05): migración 020
+  (`daily_writing` gana `goal_words` + `goal_met`). Meta diaria como setting
+  backend; `record_daily` snapshotea la meta y recomputa `goal_met`.
+  `WritingStats.goalMetStreak` = días consecutivos con meta cumplida. UI en
+  Settings (input + racha). `no_trash_days` diferido (semántica ambigua).
+- **Foco lingüístico** (J-06/J-07): extensión TipTap `LinguisticFocus` con
+  detección pura y decoraciones (no toca el documento) — resalta adverbios
+  (`-mente`/`-ly`), pasiva (heurística conservadora) y diálogo. Toggle en la
+  toolbar, persistido; palabras extra configurables en Settings (J-07).
+- **Mapa de repeticiones** (J-08): extensión `RepetitionHeatmap` local (sin IA)
+  que marca palabras de contenido y bigramas repetidos con 3 niveles de calor.
+- **Tiempo de lectura** (J-09): estimación palabras/wpm en el inspector, WPM
+  configurable en Settings (default 200).
+
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03 →
