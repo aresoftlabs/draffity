@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import Tag from 'primevue/tag';
 import type { DocNode } from '@draffity/shared-types';
 import { countWords } from '@/stores/document';
+import LabelChips from '@/components/LabelChips.vue';
 
 const props = defineProps<{
   documents: DocNode[];
@@ -94,6 +95,8 @@ function isFolder(d: DocNode): boolean {
           <p v-else class="text-xs italic opacity-40 flex-1">
             {{ t('corkboard.noSynopsis') }}
           </p>
+
+          <LabelChips v-if="doc.labelIds.length > 0" :label-ids="doc.labelIds" />
 
           <footer class="flex items-center justify-between gap-2 mt-auto">
             <span class="text-xs font-mono opacity-70">

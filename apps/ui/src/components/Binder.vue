@@ -7,12 +7,15 @@ import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import Select from 'primevue/select';
 import { ref } from 'vue';
-import type { DocNode, DocumentStatus, DocumentType } from '@draffity/shared-types';
+import type { DocNode, DocumentStatus, DocumentType, Label } from '@draffity/shared-types';
 import type { ReorderOp } from '@/stores/document';
+import LabelChips from '@/components/LabelChips.vue';
 
 const props = defineProps<{
   documents: DocNode[];
   selectedId: string | null;
+  /** Project labels, for the label filter dropdown (I-06). */
+  labels?: Label[];
   readOnly?: boolean;
 }>();
 
@@ -24,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const tagFilter = ref<string | null>(null);
+const labelFilter = ref<string | null>(null);
 
 const availableTags = computed(() => {
   const set = new Set<string>();
@@ -33,14 +37,31 @@ const availableTags = computed(() => {
   return Array.from(set).sort((a, b) => a.localeCompare(b));
 });
 
-/** Docs that pass the current tag filter. When a tag is selected we also
- * keep its ancestors so the tree can render the path (folders without the
- * tag stay visible as scaffolding). */
+/** Labels that are actually assigned to at least one document, as `{id,name}`
+ * options for the filter dropdown. */
+const availableLabels = computed(() => {
+  const used = new Set<string>();
+  for (const d of props.documents) for (const id of d.labelIds) used.add(id);
+  return (props.labels ?? [])
+    .filter((l) => used.has(l.id))
+    .map((l) => ({ value: l.id, label: l.name }));
+});
+
+/** Whether a document satisfies every active filter (tag AND label). */
+function matchesFilters(d: DocNode): boolean {
+  if (tagFilter.value && !d.tags.includes(tagFilter.value)) return false;
+  if (labelFilter.value && !d.labelIds.includes(labelFilter.value)) return false;
+  return true;
+}
+
+/** Docs that pass the active filters. When a filter is set we also keep the
+ * matches' ancestors so the tree can render the path (folders without the
+ * match stay visible as scaffolding). Returns null when no filter is active. */
 const visibleIds = computed(() => {
-  if (!tagFilter.value) return null;
+  if (!tagFilter.value && !labelFilter.value) return null;
   const direct = new Set<string>();
   for (const d of props.documents) {
-    if (d.tags.includes(tagFilter.value!)) direct.add(d.id);
+    if (matchesFilters(d)) direct.add(d.id);
   }
   // Walk ancestors of each matching doc and add them.
   const byId = new Map(props.documents.map((d) => [d.id, d] as const));
@@ -226,13 +247,25 @@ const newMenuItems = computed(() => [
     </header>
 
     <div
-      v-if="availableTags.length > 0"
-      class="px-3 py-2 border-b border-surface-200 dark:border-surface-700"
+      v-if="availableTags.length > 0 || availableLabels.length > 0"
+      class="px-3 py-2 border-b border-surface-200 dark:border-surface-700 space-y-2"
     >
       <Select
+        v-if="availableTags.length > 0"
         v-model="tagFilter"
         :options="availableTags"
         :placeholder="t('tags.filterPlaceholder')"
+        :show-clear="true"
+        class="w-full !text-xs"
+        size="small"
+      />
+      <Select
+        v-if="availableLabels.length > 0"
+        v-model="labelFilter"
+        :options="availableLabels"
+        option-label="label"
+        option-value="value"
+        :placeholder="t('labels.filterPlaceholder')"
         :show-clear="true"
         class="w-full !text-xs"
         size="small"
@@ -262,6 +295,12 @@ const newMenuItems = computed(() => [
             :aria-label="t(`status.${(node.data as DocNode).status}`)"
           />
           <span class="text-sm truncate">{{ node.label }}</span>
+          <LabelChips
+            v-if="node.data"
+            :label-ids="(node.data as DocNode).labelIds"
+            :max="3"
+            class="shrink-0"
+          />
         </span>
       </template>
     </Tree>

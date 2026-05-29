@@ -9,6 +9,7 @@ import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import type { DocNode, DocumentStatus } from '@draffity/shared-types';
 import { countWords } from '@/stores/document';
+import LabelChips from '@/components/LabelChips.vue';
 
 const props = defineProps<{
   documents: DocNode[];
@@ -161,6 +162,13 @@ function onRowClick(event: { data: DocNode }) {
             @update:model-value="(v: DocumentStatus) => onStatusChange(data, v)"
             @click.stop
           />
+        </template>
+      </Column>
+
+      <Column field="labels" :header="t('labels.label')" :style="{ minWidth: '9rem' }">
+        <template #body="{ data }">
+          <LabelChips v-if="data.labelIds.length > 0" :label-ids="data.labelIds" />
+          <span v-else class="italic opacity-40 text-xs">—</span>
         </template>
       </Column>
 

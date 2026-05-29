@@ -20,6 +20,7 @@ function makeDoc(over: Partial<DocNode> = {}): DocNode {
     position: over.position ?? 0,
     status: over.status ?? 'draft',
     tags: over.tags ?? [],
+    labelIds: over.labelIds ?? [],
     createdAt: over.createdAt ?? now,
     updatedAt: over.updatedAt ?? now,
   };

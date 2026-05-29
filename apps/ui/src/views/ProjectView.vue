@@ -22,6 +22,7 @@ import { useTypewriterScroll } from '@/composables/useTypewriterScroll';
 import Binder from '@/components/Binder.vue';
 import CollectionsPanel from '@/components/CollectionsPanel.vue';
 import Inspector from '@/components/Inspector.vue';
+import LabelManagerDialog from '@/components/LabelManagerDialog.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import BibliographyDialog from '@/components/BibliographyDialog.vue';
@@ -34,6 +35,7 @@ import FootnoteDialog from '@/components/FootnoteDialog.vue';
 import SplitSecondaryPane from '@/components/SplitSecondaryPane.vue';
 import { useCodexStore } from '@/stores/codex';
 import { useMediaStore } from '@/stores/media';
+import { useLabelStore } from '@/stores/labels';
 import { ipc } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
@@ -60,7 +62,10 @@ const { t } = useI18n();
 const projectStore = useProjectStore();
 const docStore = useDocumentStore();
 const uiStore = useUiStore();
+const labelStore = useLabelStore();
 const { run } = useIpcError();
+
+const labelManagerVisible = ref(false);
 
 const focusMode = computed(() => uiStore.focusMode);
 const typewriterEnabled = computed(() => uiStore.typewriterMode);
@@ -186,6 +191,7 @@ async function loadProject() {
     return;
   }
   await run(t('errors.loadDocuments'), () => docStore.loadFor(projectId.value));
+  await run(t('labels.error'), () => labelStore.loadFor(projectId.value));
   // Snapshot the word count at load time so the inspector + app shell can
   // show "words written this session" without a roundtrip.
   uiStore.captureSessionStart(totalWordCount.value);
@@ -217,6 +223,7 @@ watch(projectId, async (next, prev) => {
   if (next !== prev) {
     docStore.reset();
     mediaStore.reset();
+    labelStore.reset();
     await loadProject();
   }
 });
@@ -376,6 +383,11 @@ async function onStatusChange(status: DocumentStatus) {
 async function onTagsChange(tags: string[]) {
   if (!selected.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => docStore.setTags(selected.value!.id, tags));
+}
+
+async function onLabelsChange(labelIds: string[]) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setLabels(selected.value!.id, labelIds));
 }
 
 async function onDocGoalChange(goal: number | null) {
@@ -641,6 +653,7 @@ onBeforeUnmount(() => {
             <Binder
               :documents="docStore.documents"
               :selected-id="docStore.selectedId"
+              :labels="labelStore.labels"
               :read-only="readOnly"
               @select="onSelect"
               @create="onCreate"
@@ -758,14 +771,19 @@ onBeforeUnmount(() => {
           :word-count-here="wordCount"
           :word-count-total="totalWordCount"
           :session-word-count="sessionWordCount"
+          :labels="labelStore.labels"
           :read-only="readOnly"
           @snapshot-restored="onSnapshotRestored"
           @status-change="onStatusChange"
           @tags-change="onTagsChange"
+          @labels-change="onLabelsChange"
+          @manage-labels="labelManagerVisible = true"
           @goal-change="onDocGoalChange"
           @synopsis-change="onSynopsisChange"
         />
       </SplitterPanel>
     </Splitter>
+
+    <LabelManagerDialog v-model:visible="labelManagerVisible" :project-id="projectId" />
   </div>
 </template>

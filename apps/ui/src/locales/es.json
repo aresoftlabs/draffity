@@ -157,7 +157,8 @@
     "delete": "Eliminar",
     "export": "Exportar",
     "rename": "Renombrar",
-    "back": "Volver"
+    "back": "Volver",
+    "close": "Cerrar"
   },
   "toolbar": {
     "label": "Herramientas del editor",
@@ -562,6 +563,22 @@
       "final": "Final",
       "trashed": "Papelera"
     }
+  },
+  "labels": {
+    "label": "Marcadores",
+    "manageTitle": "Gestionar marcadores",
+    "newTitle": "Nuevo marcador",
+    "editTitle": "Editar marcador",
+    "empty": "Sin marcadores todavía.",
+    "namePlaceholder": "Nombre del marcador",
+    "assignPlaceholder": "Asignar marcadores…",
+    "filterPlaceholder": "Filtrar por marcador",
+    "color": "Color",
+    "add": "Añadir",
+    "edit": "Editar marcador",
+    "delete": "Eliminar marcador",
+    "confirmDelete": "¿Eliminar el marcador «{name}»?",
+    "error": "No se pudo completar la operación de marcadores."
   },
   "voice": {
     "dictation": {

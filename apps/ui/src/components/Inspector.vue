@@ -3,8 +3,10 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Select from 'primevue/select';
 import Chips from 'primevue/chips';
+import MultiSelect from 'primevue/multiselect';
+import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
-import type { DocNode, DocumentStatus } from '@draffity/shared-types';
+import type { DocNode, DocumentStatus, Label } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 
@@ -13,6 +15,8 @@ const props = defineProps<{
   wordCountHere: number;
   wordCountTotal: number;
   sessionWordCount?: number;
+  /** Project labels available to assign (I-05/I-06). */
+  labels?: Label[];
   readOnly?: boolean;
 }>();
 
@@ -20,6 +24,8 @@ const emit = defineEmits<{
   snapshotRestored: [];
   statusChange: [status: DocumentStatus];
   tagsChange: [tags: string[]];
+  labelsChange: [labelIds: string[]];
+  manageLabels: [];
   goalChange: [goal: number | null];
   synopsisChange: [synopsis: string | null];
 }>();
@@ -48,6 +54,11 @@ function onStatusChange(value: DocumentStatus) {
   if (!props.doc || props.readOnly) return;
   if (value === props.doc.status) return;
   emit('statusChange', value);
+}
+
+function onLabelsChange(next: string[]) {
+  if (!props.doc || props.readOnly) return;
+  emit('labelsChange', next);
 }
 
 function onTagsChange(next: string[]) {
@@ -168,6 +179,46 @@ function onSynopsisInput(v: string) {
             <dd class="font-mono">{{ sessionWordCount }}</dd>
           </div>
         </dl>
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-semibold uppercase tracking-wide opacity-60">
+            {{ t('labels.label') }}
+          </h4>
+          <Button
+            icon="pi pi-cog"
+            text
+            size="small"
+            :pt="{ root: { class: '!w-6 !h-6 !p-0' } }"
+            :aria-label="t('labels.manageTitle')"
+            @click="emit('manageLabels')"
+          />
+        </div>
+        <MultiSelect
+          :model-value="doc.labelIds"
+          :options="labels ?? []"
+          option-label="name"
+          option-value="id"
+          :disabled="readOnly"
+          display="chip"
+          filter
+          :placeholder="t('labels.assignPlaceholder')"
+          :empty-message="t('labels.empty')"
+          class="w-full !text-sm"
+          @update:model-value="onLabelsChange"
+        >
+          <template #option="{ option }">
+            <span class="flex items-center gap-2">
+              <span
+                class="w-2.5 h-2.5 rounded-full shrink-0"
+                :style="{ backgroundColor: option.color }"
+                aria-hidden="true"
+              />
+              <span class="truncate">{{ option.name }}</span>
+            </span>
+          </template>
+        </MultiSelect>
       </section>
 
       <section>

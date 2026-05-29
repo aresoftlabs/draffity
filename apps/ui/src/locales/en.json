@@ -157,7 +157,8 @@
     "delete": "Delete",
     "export": "Export",
     "rename": "Rename",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close"
   },
   "toolbar": {
     "label": "Editor toolbar",
@@ -562,6 +563,22 @@
       "final": "Final",
       "trashed": "Trashed"
     }
+  },
+  "labels": {
+    "label": "Labels",
+    "manageTitle": "Manage labels",
+    "newTitle": "New label",
+    "editTitle": "Edit label",
+    "empty": "No labels yet.",
+    "namePlaceholder": "Label name",
+    "assignPlaceholder": "Assign labels…",
+    "filterPlaceholder": "Filter by label",
+    "color": "Color",
+    "add": "Add",
+    "edit": "Edit label",
+    "delete": "Delete label",
+    "confirmDelete": "Delete the label “{name}”?",
+    "error": "Could not complete the labels operation."
   },
   "voice": {
     "dictation": {

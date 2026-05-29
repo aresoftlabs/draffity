@@ -14,6 +14,8 @@ import type {
   ExportConfig,
   ExportFormat,
   ImportFormat,
+  Label,
+  LabelInput,
   MediaAsset,
   Project,
   ProjectInput,
@@ -312,6 +314,15 @@ export const ipc = {
   setCollectionMembers: (collectionId: string, orderedIds: string[]) =>
     invoke<void>('set_collection_members', { collectionId, orderedIds }),
   resolveCollection: (id: string) => invoke<DocNode[]>('resolve_collection', { id }),
+
+  // Labels (Épica I — I-05/I-06)
+  createLabel: (input: LabelInput) => invoke<Label>('create_label', { input }),
+  listLabels: (projectId: string) => invoke<Label[]>('list_labels', { projectId }),
+  updateLabel: (id: string, name: string, color: string) =>
+    invoke<Label>('update_label', { id, name, color }),
+  deleteLabel: (id: string) => invoke<void>('delete_label', { id }),
+  setDocumentLabels: (documentId: string, labelIds: string[]) =>
+    invoke<DocNode>('set_document_labels', { documentId, labelIds }),
 
   // Search
   searchDocuments: (params: { projectId: string; query: string }) =>
