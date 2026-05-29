@@ -54,6 +54,15 @@ jobs:
       - run: cargo fmt --manifest-path apps/desktop/Cargo.toml --all -- --check
       - run: cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --manifest-path apps/desktop/Cargo.toml --all
+      - name: Regenerate TypeScript types from Rust (D-01)
+        run: cargo run --manifest-path apps/desktop/Cargo.toml --bin gen-types
+      - name: Fail on shared-types drift
+        run: |
+          if ! git diff --quiet packages/shared-types/src/generated.ts; then
+            echo "::error::generated.ts is out of date. Run 'cargo run --bin gen-types' locally and commit." >&2
+            git --no-pager diff packages/shared-types/src/generated.ts
+            exit 1
+          fi
 
   coverage-rs:
     name: Coverage gate (Rust ≥80%)

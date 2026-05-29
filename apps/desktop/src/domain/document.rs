@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{AppError, AppResult};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum DocumentType {
     Chapter,
@@ -40,7 +40,7 @@ impl DocumentType {
 /// Position in the writing pipeline. New documents land in `Draft`;
 /// the user moves them through `Revised` → `Final`. `Trashed` is a soft
 /// delete that still lives in storage so the user can recover it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum DocumentStatus {
     #[default]

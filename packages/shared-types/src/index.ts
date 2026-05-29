@@ -1,8 +1,15 @@
 // Shared types between Rust (apps/desktop) and Vue (apps/ui).
 // Aligned with the SQLite v1 schema and the camelCase serde projection.
-// Phase 1+ may auto-generate this file from Rust via specta or ts-rs.
+//
+// **Migration in progress (D-01)**: simple enums move to `generated.ts`
+// produced by `cargo run --bin gen-types`. CI verifies no drift. Types
+// still defined here use `serde_json::Value` or other shapes specta's
+// TypeScript exporter doesn't round-trip cleanly yet — they migrate one
+// by one as the exporter grows support or as the type's shape changes
+// to something specta handles.
 
-export type ProjectStatus = 'active' | 'archived';
+import type { CodexKind, DocumentStatus, DocumentType, ProjectStatus } from './generated';
+export type { CodexKind, DocumentStatus, DocumentType, ProjectStatus };
 
 export interface Project {
   id: string;
@@ -21,11 +28,6 @@ export interface ProjectInput {
   templateId: string;
   metadata?: Record<string, unknown> | null;
 }
-
-export type DocumentType = 'chapter' | 'scene' | 'note' | 'folder' | 'manga_page';
-
-/** Position in the writing pipeline. Defaults to `draft` on new documents. */
-export type DocumentStatus = 'draft' | 'revised' | 'final' | 'trashed';
 
 export interface DocNode {
   id: string;
@@ -159,8 +161,6 @@ export interface BackupRecord {
 }
 
 // Codex
-
-export type CodexKind = 'character' | 'place' | 'object' | 'note';
 
 export interface CodexEntry {
   id: string;
