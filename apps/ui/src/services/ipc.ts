@@ -23,6 +23,28 @@ import type {
   WritingStats,
 } from '@draffity/shared-types';
 
+/** A collection of documents (I-01..I-03). */
+export type CollectionKind = 'manual' | 'smart';
+export interface CollectionQuery {
+  tagsAny?: string[];
+  statuses?: DocumentStatus[];
+  titleContains?: string | null;
+}
+export interface Collection {
+  id: string;
+  projectId: string;
+  name: string;
+  kind: CollectionKind;
+  query?: CollectionQuery | null;
+  createdAt: number;
+}
+export interface CollectionInput {
+  projectId: string;
+  name: string;
+  kind: CollectionKind;
+  query?: CollectionQuery | null;
+}
+
 /** BYOK AI status reported by the backend (F-01). */
 export interface AiStatus {
   /** AI usable now: premium active AND a key stored. */
@@ -278,6 +300,18 @@ export const ipc = {
     locale?: string;
   }) => invoke<Template>('save_project_as_template', params),
   deleteUserTemplate: (id: string) => invoke<void>('delete_user_template', { id }),
+
+  // Collections (Épica I)
+  createCollection: (input: CollectionInput) => invoke<Collection>('create_collection', { input }),
+  listCollections: (projectId: string) => invoke<Collection[]>('list_collections', { projectId }),
+  renameCollection: (id: string, name: string) =>
+    invoke<Collection>('rename_collection', { id, name }),
+  setCollectionQuery: (id: string, query: CollectionQuery) =>
+    invoke<Collection>('set_collection_query', { id, query }),
+  deleteCollection: (id: string) => invoke<void>('delete_collection', { id }),
+  setCollectionMembers: (collectionId: string, orderedIds: string[]) =>
+    invoke<void>('set_collection_members', { collectionId, orderedIds }),
+  resolveCollection: (id: string) => invoke<DocNode[]>('resolve_collection', { id }),
 
   // Search
   searchDocuments: (params: { projectId: string; query: string }) =>

@@ -535,6 +535,34 @@
       "style": "Style"
     }
   },
+  "collections": {
+    "title": "Collections",
+    "newTitle": "New collection",
+    "editTitle": "Edit collection",
+    "empty": "No collections yet.",
+    "noDocs": "No documents.",
+    "addCurrent": "Add current document",
+    "remove": "Remove from collection",
+    "delete": "Delete collection",
+    "confirmDelete": "Delete the collection \"{name}\"?",
+    "error": "Could not complete the collections operation.",
+    "namePlaceholder": "Collection name",
+    "kindManual": "Manual",
+    "kindSmart": "Smart (filter)",
+    "filterTags": "Tags (any)",
+    "anyTag": "Any tag",
+    "filterStatus": "Status",
+    "anyStatus": "Any status",
+    "filterTitle": "Title contains",
+    "titlePlaceholder": "text in title…",
+    "needFilter": "A smart collection needs at least one filter.",
+    "status": {
+      "draft": "Draft",
+      "revised": "Revised",
+      "final": "Final",
+      "trashed": "Trashed"
+    }
+  },
   "voice": {
     "dictation": {
       "button": "Dictate (Ctrl+Shift+M)",

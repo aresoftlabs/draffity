@@ -20,6 +20,7 @@ import { useShortcuts } from '@/composables/useShortcuts';
 import { useTypewriterScroll } from '@/composables/useTypewriterScroll';
 
 import Binder from '@/components/Binder.vue';
+import CollectionsPanel from '@/components/CollectionsPanel.vue';
 import Inspector from '@/components/Inspector.vue';
 import SaveIndicator from '@/components/SaveIndicator.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
@@ -635,14 +636,24 @@ onBeforeUnmount(() => {
       style-class="h-full"
     >
       <SplitterPanel v-if="!focusMode" :size="22" :min-size="14" class="!min-w-0">
-        <Binder
-          :documents="docStore.documents"
-          :selected-id="docStore.selectedId"
-          :read-only="readOnly"
-          @select="onSelect"
-          @create="onCreate"
-          @reorder="onReorder"
-        />
+        <div class="h-full flex flex-col min-h-0">
+          <div class="flex-1 min-h-0 overflow-auto">
+            <Binder
+              :documents="docStore.documents"
+              :selected-id="docStore.selectedId"
+              :read-only="readOnly"
+              @select="onSelect"
+              @create="onCreate"
+              @reorder="onReorder"
+            />
+          </div>
+          <CollectionsPanel
+            :project-id="project.id"
+            :current-doc-id="docStore.selectedId"
+            :read-only="readOnly"
+            @select="onSelect"
+          />
+        </div>
       </SplitterPanel>
 
       <SplitterPanel :size="focusMode ? 100 : 56" :min-size="30" class="!min-w-0 flex flex-col">
