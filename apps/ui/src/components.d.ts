@@ -31,6 +31,7 @@ declare module 'vue' {
     LegalDialog: typeof import('./components/LegalDialog.vue')['default']
     NewProjectWizard: typeof import('./components/NewProjectWizard.vue')['default']
     OnboardingDialog: typeof import('./components/OnboardingDialog.vue')['default']
+    PacemakerWidget: typeof import('./components/PacemakerWidget.vue')['default']
     PomodoroWidget: typeof import('./components/PomodoroWidget.vue')['default']
     ProjectCard: typeof import('./components/ProjectCard.vue')['default']
     ProjectViewToggle: typeof import('./components/ProjectViewToggle.vue')['default']

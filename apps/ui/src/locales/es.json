@@ -608,6 +608,14 @@
     "toggle": "Marcar como material de investigación",
     "hint": "El material de investigación no cuenta en las estadísticas ni se exporta por defecto."
   },
+  "pacemaker": {
+    "setDeadline": "Fecha límite",
+    "clear": "Quitar fecha límite",
+    "perDay": "{n} palabras/día",
+    "done": "¡Meta alcanzada!",
+    "overdue": "Plazo vencido",
+    "tooltip": "Faltan {words} palabras en {days} días"
+  },
   "voice": {
     "dictation": {
       "button": "Dictar (Ctrl+Shift+M)",

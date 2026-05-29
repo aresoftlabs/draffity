@@ -41,6 +41,7 @@ import { useCustomFieldStore } from '@/stores/customFields';
 import { ipc } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
+import PacemakerWidget from '@/components/PacemakerWidget.vue';
 import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
 import OutlinerView from '@/views/OutlinerView.vue';
@@ -438,6 +439,11 @@ async function onProjectGoalChange(goal: number | null) {
   await run(t('errors.saveDocument'), () => projectStore.setGoal(project.value!.id, goal));
 }
 
+async function onProjectDeadlineChange(deadline: number | null) {
+  if (!project.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => projectStore.setDeadline(project.value!.id, deadline));
+}
+
 useShortcuts({
   flushSave: () => {
     void auto.flush();
@@ -514,6 +520,14 @@ onBeforeUnmount(() => {
           @update:goal="onProjectGoalChange"
         />
       </div>
+      <PacemakerWidget
+        :goal-words="project.goalWords ?? null"
+        :current-words="totalWordCount"
+        :deadline="project.deadline ?? null"
+        :words-this-session="sessionWordCount"
+        :read-only="readOnly"
+        @update:deadline="onProjectDeadlineChange"
+      />
       <span class="flex-1" />
       <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
       <Button

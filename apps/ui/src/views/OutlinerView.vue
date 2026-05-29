@@ -148,6 +148,19 @@ function onRowClick(event: { data: DocNode }) {
           <span v-if="progressOf(data) !== null" class="ml-1 opacity-60">
             ({{ progressOf(data) }}%)
           </span>
+          <div
+            v-if="progressOf(data) !== null"
+            class="mt-0.5 h-1 rounded-full bg-surface-200 dark:bg-surface-700 overflow-hidden"
+          >
+            <div
+              class="h-full bg-primary-400"
+              :style="{ width: (progressOf(data) ?? 0) + '%' }"
+              role="progressbar"
+              :aria-valuenow="progressOf(data) ?? 0"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            />
+          </div>
         </template>
       </Column>
 

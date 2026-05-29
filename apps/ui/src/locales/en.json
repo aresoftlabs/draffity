@@ -608,6 +608,14 @@
     "toggle": "Mark as research material",
     "hint": "Research material is excluded from stats and from export by default."
   },
+  "pacemaker": {
+    "setDeadline": "Deadline",
+    "clear": "Clear deadline",
+    "perDay": "{n} words/day",
+    "done": "Goal reached!",
+    "overdue": "Past deadline",
+    "tooltip": "{words} words left in {days} days"
+  },
   "voice": {
     "dictation": {
       "button": "Dictate (Ctrl+Shift+M)",
