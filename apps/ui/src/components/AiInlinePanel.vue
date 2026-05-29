@@ -38,6 +38,10 @@ async function refreshAvailability() {
 const panelRef = ref<HTMLElement | null>(null);
 const showRewriteSub = ref(false);
 const customPrompt = ref('');
+// Slash-command mode (F-05): "/" at the start of a line opens a cursor-anchored
+// menu. Only Continue applies with no selection; the other actions need one.
+const slashActive = ref(false);
+let slashPos: number | null = null;
 
 const REWRITE_MODES: { mode: RewriteSubMode; key: string }[] = [
   { mode: 'rephrase', key: 'ai.rewrite.rephrase' },
@@ -57,7 +61,7 @@ const tokensLabel = computed(() => {
   return t('ai.preview.tokens', { sent: u.prompt, received: u.completion });
 });
 
-// --- selection detection on the editor ---
+// --- selection / slash detection on the editor ---
 function selectionRect(ed: Editor, from: number, to: number): DOMRect {
   const start = ed.view.coordsAtPos(from);
   const end = ed.view.coordsAtPos(to);
@@ -68,29 +72,75 @@ function selectionRect(ed: Editor, from: number, to: number): DOMRect {
   return new DOMRect(left, top, right - left, bottom - top);
 }
 
-function onSelectionUpdate() {
+function cursorRect(ed: Editor, pos: number): DOMRect {
+  const c = ed.view.coordsAtPos(pos);
+  return new DOMRect(c.left, c.top, 1, c.bottom - c.top);
+}
+
+function closeMenus() {
+  slashActive.value = false;
+  slashPos = null;
+  showRewriteSub.value = false;
+  ai.hideMenu();
+}
+
+/** Single source of truth for whether/which menu to show. Bound to both
+ * `selectionUpdate` (cursor moves) and `update` (typing), so slash detection
+ * and selection detection never fight over the menu. */
+function evaluateContext() {
   const ed = props.editor;
   if (!ed) return;
-  // Freeze the panel while a generation is in flight or under review.
+  // Freeze while a generation is in flight or under review.
   if (ai.phase.value !== 'idle' && ai.phase.value !== 'menu') return;
   if (props.disabled || !available.value) {
-    ai.hideMenu();
+    closeMenus();
     return;
   }
   const { from, to, empty } = ed.state.selection;
-  if (empty) {
-    ai.hideMenu();
-    showRewriteSub.value = false;
+  if (!empty) {
+    slashActive.value = false;
+    ai.showMenuAt(selectionRect(ed, from, to));
     return;
   }
-  ai.showMenuAt(selectionRect(ed, from, to));
+  // Empty selection: detect a "/" trigger at the start of a line/after space.
+  if (from > 0 && ed.state.doc.textBetween(from - 1, from) === '/') {
+    const $pos = ed.state.doc.resolve(from - 1);
+    const prevChar = $pos.parentOffset > 0 ? ed.state.doc.textBetween(from - 2, from - 1) : '';
+    if ($pos.parentOffset === 0 || /\s/.test(prevChar)) {
+      slashActive.value = true;
+      slashPos = from - 1;
+      ai.showMenuAt(cursorRect(ed, from));
+      return;
+    }
+  }
+  closeMenus();
+}
+
+function runSlashContinue() {
+  const ed = props.editor;
+  if (!ed || slashPos === null) return;
+  const pos = slashPos;
+  slashActive.value = false;
+  slashPos = null;
+  // Remove the "/" trigger before generating.
+  ed.chain()
+    .focus()
+    .deleteRange({ from: pos, to: pos + 1 })
+    .run();
+  void ai.run('continue');
 }
 
 let attached: Editor | null = null;
 function attach(ed: Editor | null) {
-  if (attached) attached.off('selectionUpdate', onSelectionUpdate);
+  if (attached) {
+    attached.off('selectionUpdate', evaluateContext);
+    attached.off('update', evaluateContext);
+  }
   attached = ed;
-  if (ed) ed.on('selectionUpdate', onSelectionUpdate);
+  if (ed) {
+    ed.on('selectionUpdate', evaluateContext);
+    ed.on('update', evaluateContext);
+  }
 }
 watch(() => props.editor, attach, { immediate: true });
 
@@ -115,6 +165,11 @@ watch([() => ai.phase.value, ai.anchorRect, () => ai.streamedText.value, showRew
 // --- keyboard: Enter accepts in preview, Esc rejects/cancels ---
 function onKeydown(e: KeyboardEvent) {
   const phase = ai.phase.value;
+  if (phase === 'menu' && e.key === 'Escape') {
+    e.preventDefault();
+    closeMenus();
+    return;
+  }
   if (phase === 'preview' && e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     ai.accept();
@@ -157,8 +212,15 @@ onBeforeUnmount(() => {
     style="top: 0; left: 0"
     @mousedown.prevent
   >
-    <!-- Action menu -->
-    <div v-if="ai.phase.value === 'menu'" class="p-1 flex flex-col min-w-[12rem]">
+    <!-- Slash menu (cursor, no selection): Continue only -->
+    <div v-if="ai.phase.value === 'menu' && slashActive" class="p-1 flex flex-col min-w-[12rem]">
+      <button class="ai-menu-item" @click="runSlashContinue">
+        <i class="pi pi-forward" /> {{ t('ai.menu.continue') }}
+      </button>
+    </div>
+
+    <!-- Selection action menu -->
+    <div v-else-if="ai.phase.value === 'menu'" class="p-1 flex flex-col min-w-[12rem]">
       <button class="ai-menu-item" @click="ai.run('continue')">
         <i class="pi pi-forward" /> {{ t('ai.menu.continue') }}
       </button>
