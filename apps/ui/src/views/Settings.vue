@@ -19,6 +19,7 @@ import { useProjectStore } from '@/stores/project';
 import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
 import { useCapability, refreshCapabilities } from '@/composables/useCapability';
+import { useAiUsageStore } from '@/stores/aiUsage';
 import { ipc, type AiStatus, type PremiumStatus } from '@/services/ipc';
 import type { BackupRecord, DailyWriting, MediaAsset, WritingStats } from '@draffity/shared-types';
 
@@ -198,6 +199,7 @@ const voiceEnabled = useCapability('voice_to_text');
 const aiStatus = ref<AiStatus | null>(null);
 const openrouterKey = ref('');
 const savingKey = ref(false);
+const aiUsage = useAiUsageStore();
 
 async function loadAiStatus() {
   try {
@@ -330,6 +332,7 @@ onMounted(async () => {
   await loadCrashReporting();
   await loadPremium();
   await loadAiStatus();
+  aiUsage.rollIfNeeded();
 });
 
 async function loadBackups() {
@@ -675,6 +678,31 @@ function kindLabel(kind: BackupRecord['kind']): string {
         >
           {{ t('settings.aiKeyGetLink') }}
         </a>
+
+        <div class="mt-4 pt-3 border-t border-surface-200 dark:border-surface-700">
+          <div class="flex items-center justify-between gap-2 text-xs">
+            <span class="opacity-70">
+              {{
+                t('settings.aiUsageThisMonth', { sent: aiUsage.sent, received: aiUsage.received })
+              }}
+            </span>
+            <Button
+              :label="t('settings.aiUsageReset')"
+              size="small"
+              text
+              severity="secondary"
+              @click="aiUsage.reset()"
+            />
+          </div>
+          <a
+            class="text-xs underline opacity-60 hover:opacity-100 mt-1 inline-block"
+            href="https://openrouter.ai/activity"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t('settings.aiUsageCostsLink') }}
+          </a>
+        </div>
       </section>
 
       <section v-if="voiceEnabled">

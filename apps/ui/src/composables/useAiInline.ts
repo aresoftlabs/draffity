@@ -2,6 +2,7 @@ import { computed, onMounted, onUnmounted, ref, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { ipc, type AiActionRequestInput, type AiDeltaEvent } from '@/services/ipc';
+import { useAiUsageStore } from '@/stores/aiUsage';
 
 /**
  * Inline AI orchestration (F-06/F-07 + F-08..F-11). Owns the state machine for
@@ -42,6 +43,7 @@ interface RunMeta {
 }
 
 export function useAiInline(opts: Options) {
+  const usageStore = useAiUsageStore();
   const phase = ref<AiPhase>('idle');
   const anchorRect = ref<DOMRect | null>(null);
   const streamedText = ref('');
@@ -136,6 +138,8 @@ export function useAiInline(opts: Options) {
         prompt: result.promptTokens ?? 0,
         completion: result.completionTokens ?? 0,
       };
+      // Tokens are spent on generation regardless of accept/reject (F-13).
+      usageStore.record(usage.value.prompt, usage.value.completion);
       phase.value = 'preview';
     } catch (e) {
       errorMsg.value = String((e as { message?: string })?.message ?? e);
