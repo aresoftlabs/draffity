@@ -23,6 +23,14 @@ import type {
   WritingStats,
 } from '@draffity/shared-types';
 
+/** BYOK AI status reported by the backend (F-01). */
+export interface AiStatus {
+  /** AI usable now: premium active AND a key stored. */
+  available: boolean;
+  /** A key is stored (independent of tier). */
+  hasKey: boolean;
+}
+
 /** Premium activation status reported by the backend (E-07). */
 export interface PremiumStatus {
   /** `'free'` or `'premium'`. */
@@ -58,6 +66,11 @@ export const ipc = {
   getPremiumStatus: () => invoke<PremiumStatus>('get_premium_status'),
   activatePremium: (key: string) => invoke<PremiumStatus>('activate_premium', { key }),
   deactivatePremium: () => invoke<PremiumStatus>('deactivate_premium'),
+
+  // AI (BYOK)
+  getAiStatus: () => invoke<AiStatus>('get_ai_status'),
+  setOpenrouterKey: (key: string) => invoke<AiStatus>('set_openrouter_key', { key }),
+  clearOpenrouterKey: () => invoke<AiStatus>('clear_openrouter_key'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

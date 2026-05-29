@@ -19,7 +19,7 @@ import { useProjectStore } from '@/stores/project';
 import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
 import { useCapability, refreshCapabilities } from '@/composables/useCapability';
-import { ipc, type PremiumStatus } from '@/services/ipc';
+import { ipc, type AiStatus, type PremiumStatus } from '@/services/ipc';
 import type { BackupRecord, DailyWriting, MediaAsset, WritingStats } from '@draffity/shared-types';
 
 const { t, locale } = useI18n();
@@ -192,6 +192,53 @@ async function onToggleCrashReporting(value: boolean) {
 // activation field itself only shows when the build can validate licenses.
 const aiEnabled = useCapability('ai_features');
 const voiceEnabled = useCapability('voice_to_text');
+
+// BYOK OpenRouter key (F-01 commands). Shown inside the premium-gated "IA"
+// section so it never leaks to free users.
+const aiStatus = ref<AiStatus | null>(null);
+const openrouterKey = ref('');
+const savingKey = ref(false);
+
+async function loadAiStatus() {
+  try {
+    aiStatus.value = await ipc.getAiStatus();
+  } catch {
+    aiStatus.value = null;
+  }
+}
+
+async function onSaveOpenrouterKey() {
+  const key = openrouterKey.value.trim();
+  if (!key) return;
+  savingKey.value = true;
+  try {
+    aiStatus.value = await ipc.setOpenrouterKey(key);
+    openrouterKey.value = '';
+    toast.add({
+      severity: 'success',
+      summary: t('settings.aiTitle'),
+      detail: t('settings.aiKeySavedToast'),
+      life: 3000,
+    });
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.aiTitle'),
+      detail: t('settings.aiKeyError'),
+      life: 5000,
+    });
+  } finally {
+    savingKey.value = false;
+  }
+}
+
+async function onClearOpenrouterKey() {
+  try {
+    aiStatus.value = await ipc.clearOpenrouterKey();
+  } catch {
+    // best-effort
+  }
+}
 const premium = ref<PremiumStatus | null>(null);
 const licenseKey = ref('');
 const activatingPremium = ref(false);
@@ -282,6 +329,7 @@ onMounted(async () => {
   await loadCustomFonts();
   await loadCrashReporting();
   await loadPremium();
+  await loadAiStatus();
 });
 
 async function loadBackups() {
@@ -585,7 +633,48 @@ function kindLabel(kind: BackupRecord['kind']): string {
         <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
           {{ t('settings.aiTitle') }}
         </h2>
-        <p class="text-xs opacity-60">{{ t('settings.aiPlaceholder') }}</p>
+        <p class="text-xs opacity-60 mb-2">{{ t('settings.aiKeyHint') }}</p>
+        <div
+          v-if="aiStatus?.hasKey"
+          class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm"
+        >
+          <span>
+            <i class="pi pi-check-circle text-green-500 mr-1" />
+            {{ t('settings.aiKeySaved') }}
+          </span>
+          <Button
+            :label="t('settings.aiKeyClear')"
+            size="small"
+            text
+            severity="danger"
+            @click="onClearOpenrouterKey"
+          />
+        </div>
+        <div v-else class="flex items-center gap-2">
+          <InputText
+            v-model="openrouterKey"
+            type="password"
+            class="flex-1 font-mono text-xs"
+            :placeholder="t('settings.aiKeyPlaceholder')"
+            :aria-label="t('settings.aiKeyLabel')"
+            @keydown.enter="onSaveOpenrouterKey"
+          />
+          <Button
+            :label="t('settings.aiKeySave')"
+            size="small"
+            :loading="savingKey"
+            :disabled="!openrouterKey.trim()"
+            @click="onSaveOpenrouterKey"
+          />
+        </div>
+        <a
+          class="text-xs underline opacity-60 hover:opacity-100 mt-2 inline-block"
+          href="https://openrouter.ai/keys"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t('settings.aiKeyGetLink') }}
+        </a>
       </section>
 
       <section v-if="voiceEnabled">
