@@ -13,15 +13,16 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
-    Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DailyWriting, DocNode, DocumentInput,
-    DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
-    TemplateNode, WritingStats,
+    AiHistoryEntry, Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate, DailyWriting,
+    DocNode, DocumentInput, DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus,
+    SearchHit, Snapshot, TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 use crate::services::importer::ImportTree;
 
 pub use citations::UpsertEntry as CitationUpsert;
 
+mod ai_history;
 mod citations;
 mod codex;
 mod document_positions;
@@ -50,6 +51,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (9, include_str!("../../migrations/009_codex.sql")),
     (10, include_str!("../../migrations/010_media.sql")),
     (11, include_str!("../../migrations/011_daily_writing.sql")),
+    (12, include_str!("../../migrations/012_ai_history.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -202,6 +204,19 @@ pub trait StorageService: Send + Sync {
     /// 50 hits ordered by FTS5 rank, each with a `<mark>`-wrapped excerpt.
     /// Empty or whitespace-only queries return `[]` without hitting the DB.
     fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>>;
+
+    // AI history (F-12). Append-only log of accepted generations.
+    /// Persist an accepted AI generation; returns the stored row.
+    fn record_ai_history(
+        &self,
+        project_id: &str,
+        doc_id: Option<&str>,
+        action: &str,
+        model: Option<&str>,
+        response: &str,
+    ) -> AppResult<AiHistoryEntry>;
+    /// List a project's accepted generations, newest first, capped at `limit`.
+    fn list_ai_history(&self, project_id: &str, limit: u32) -> AppResult<Vec<AiHistoryEntry>>;
 }
 
 /// Local SQLite-backed implementation. Single connection guarded by Mutex —
@@ -432,6 +447,28 @@ impl StorageService for LocalStorageService {
 
     fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>> {
         search::search(&self.conn.lock().unwrap(), project_id, query)
+    }
+
+    fn record_ai_history(
+        &self,
+        project_id: &str,
+        doc_id: Option<&str>,
+        action: &str,
+        model: Option<&str>,
+        response: &str,
+    ) -> AppResult<AiHistoryEntry> {
+        ai_history::record(
+            &self.conn.lock().unwrap(),
+            project_id,
+            doc_id,
+            action,
+            model,
+            response,
+        )
+    }
+
+    fn list_ai_history(&self, project_id: &str, limit: u32) -> AppResult<Vec<AiHistoryEntry>> {
+        ai_history::list(&self.conn.lock().unwrap(), project_id, limit)
     }
 
     fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {

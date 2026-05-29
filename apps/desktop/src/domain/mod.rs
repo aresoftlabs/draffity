@@ -1,6 +1,7 @@
 //! Pure domain layer. No SQLite, no Tauri, no I/O.
 //! Entities + invariants + value objects, fully testable in isolation.
 
+pub mod ai_history;
 pub mod citation;
 pub mod codex;
 pub mod document;
@@ -11,6 +12,7 @@ pub mod snapshot;
 pub mod stats;
 pub mod template;
 
+pub use ai_history::AiHistoryEntry;
 pub use citation::Citation;
 pub use codex::{CodexEntry, CodexInput, CodexKind, CodexUpdate};
 pub use document::{DocNode, DocumentInput, DocumentStatus, DocumentType};

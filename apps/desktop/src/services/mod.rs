@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod ai_openrouter;
+pub mod ai_prompts;
 pub mod asr;
 pub mod backup;
 pub mod bibliography;
@@ -29,6 +30,7 @@ pub use ai::{
     AIService, ChatMessage, CompletionRequest, CompletionResponse, NoOpAI, Role, TokenUsage,
 };
 pub use ai_openrouter::{ByokAIService, OPENROUTER_KEY};
+pub use ai_prompts::{build_messages, parse_action, ActionInput, AiAction, RewriteMode};
 pub use asr::{ASRService, NoOpASR, Transcript, TranscriptSegment};
 pub use backup::{BackupKind, BackupRecord, BackupService, LocalBackupService, NoOpBackup};
 pub use bibliography::{BibliographyService, LocalBibliographyService, ParseSummary};

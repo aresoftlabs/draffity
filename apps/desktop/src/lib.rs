@@ -81,6 +81,10 @@ pub fn run() {
             commands::get_ai_status,
             commands::set_openrouter_key,
             commands::clear_openrouter_key,
+            commands::ai_run_action,
+            commands::ai_cancel,
+            commands::ai_record_accepted,
+            commands::list_ai_history,
             // projects
             commands::create_project,
             commands::list_projects,

@@ -2,7 +2,9 @@
 //! `ServiceBundle` (services) + `WorkerGuard` (log lifecycle), consumed by
 //! IPC commands via `State<AppState>`.
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use crate::logging::LogGuards;
 use crate::services::{
@@ -11,6 +13,40 @@ use crate::services::{
     ProjectManagerService, ProjectMemoryService, SecretStorage, ServiceBundle, StorageService,
     TTSService, TemplatesService, TierService, UserTemplatesLoader,
 };
+
+/// Per-request cancellation flags for in-flight AI streams (F-06). The
+/// streaming sink checks the flag and stops emitting deltas once set, so the
+/// UI preview halts promptly on Esc; the underlying HTTP request finishes in
+/// the background (bounded by timeout) and its result is discarded.
+#[derive(Default)]
+pub struct AiCancelRegistry {
+    flags: Mutex<HashMap<String, Arc<AtomicBool>>>,
+}
+
+impl AiCancelRegistry {
+    /// Register a fresh flag for `request_id` and return it for the sink.
+    pub fn register(&self, request_id: &str) -> Arc<AtomicBool> {
+        let flag = Arc::new(AtomicBool::new(false));
+        if let Ok(mut g) = self.flags.lock() {
+            g.insert(request_id.to_string(), flag.clone());
+        }
+        flag
+    }
+
+    pub fn cancel(&self, request_id: &str) {
+        if let Ok(g) = self.flags.lock() {
+            if let Some(f) = g.get(request_id) {
+                f.store(true, Ordering::Relaxed);
+            }
+        }
+    }
+
+    pub fn finish(&self, request_id: &str) {
+        if let Ok(mut g) = self.flags.lock() {
+            g.remove(request_id);
+        }
+    }
+}
 
 pub struct AppState {
     pub storage: Arc<dyn StorageService>,
@@ -41,6 +77,8 @@ pub struct AppState {
     pub secrets: Arc<dyn SecretStorage>,
     /// Offline Ed25519 license validator (E-07).
     pub license_validator: Arc<dyn LicenseValidator>,
+    /// In-flight AI stream cancellation flags (F-06).
+    pub ai_cancel: Arc<AiCancelRegistry>,
     /// Keeps the non-blocking log writers alive for the whole app lifecycle.
     /// Dropping these guards flushes any pending log lines.
     #[allow(dead_code)]
@@ -68,6 +106,7 @@ impl AppState {
             crash_reporter: bundle.crash_reporter,
             secrets: bundle.secrets,
             license_validator: bundle.license_validator,
+            ai_cancel: Arc::new(AiCancelRegistry::default()),
             _log_guards: log_guards,
         }
     }
