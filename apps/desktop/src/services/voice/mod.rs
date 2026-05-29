@@ -11,11 +11,16 @@
 use std::path::{Path, PathBuf};
 
 pub mod download;
+pub mod piper;
 pub mod registry;
 pub mod whisper;
 
 pub use download::download_to_file;
-pub use registry::{model_by_id, model_url, whisper_models, WhisperModelInfo};
+pub use piper::{parse_wav_pcm16, PiperTTSService};
+pub use registry::{
+    model_by_id, model_url, piper_voices, recommended_voice, voice_by_id, voice_config_filename,
+    whisper_models, PiperVoiceInfo, WhisperModelInfo,
+};
 pub use whisper::{autopunctuate, parse_whisper_json, WhisperLocalASR};
 
 /// Root of the voice runtime under the app data dir.
@@ -42,6 +47,26 @@ pub fn models_dir(app_data: &Path) -> PathBuf {
 
 pub fn model_path(app_data: &Path, filename: &str) -> PathBuf {
     models_dir(app_data).join(filename)
+}
+
+fn piper_binary_name() -> &'static str {
+    if cfg!(windows) {
+        "piper.exe"
+    } else {
+        "piper"
+    }
+}
+
+pub fn piper_bin_path(app_data: &Path) -> PathBuf {
+    voice_dir(app_data).join("bin").join(piper_binary_name())
+}
+
+pub fn voices_dir(app_data: &Path) -> PathBuf {
+    voice_dir(app_data).join("voices")
+}
+
+pub fn voice_file_path(app_data: &Path, filename: &str) -> PathBuf {
+    voices_dir(app_data).join(filename)
 }
 
 /// Filenames of installed (present on disk) whisper models, in registry order.

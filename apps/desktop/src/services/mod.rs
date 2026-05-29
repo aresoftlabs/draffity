@@ -63,4 +63,4 @@ pub use tier::{FreeTier, MutableTier, PremiumTier, TierService};
 pub use token_counter::{estimate_request_tokens, estimate_tokens};
 pub use tts::{NoOpTTS, SynthesizedAudio, TTSService, Voice};
 pub use user_templates::{template_from_project, UserTemplatesLoader};
-pub use voice::WhisperLocalASR;
+pub use voice::{PiperTTSService, WhisperLocalASR};

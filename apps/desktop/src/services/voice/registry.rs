@@ -68,6 +68,60 @@ pub fn recommended_model() -> Option<&'static WhisperModelInfo> {
     whisper_models().iter().find(|m| m.recommended)
 }
 
+// ---------------------------------------------------------------------------
+// Piper TTS voices (H-05). Each voice is an ONNX model + its `.onnx.json`
+// config, hosted on the rhasspy/piper-voices repo. The config filename is the
+// model filename + ".json"; both are downloaded together.
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy)]
+pub struct PiperVoiceInfo {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub lang: &'static str,
+    pub onnx_filename: &'static str,
+    /// Full URL of the ONNX model (config URL is this + ".json").
+    pub onnx_url: &'static str,
+    pub size_mb: u32,
+    pub recommended: bool,
+}
+
+pub fn piper_voices() -> &'static [PiperVoiceInfo] {
+    &[
+        PiperVoiceInfo {
+            id: "es_ES-davefx-medium",
+            name: "Dave (es)",
+            lang: "es",
+            onnx_filename: "es_ES-davefx-medium.onnx",
+            onnx_url: "https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
+            size_mb: 63,
+            recommended: true,
+        },
+        PiperVoiceInfo {
+            id: "en_US-amy-medium",
+            name: "Amy (en)",
+            lang: "en",
+            onnx_filename: "en_US-amy-medium.onnx",
+            onnx_url: "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx",
+            size_mb: 63,
+            recommended: false,
+        },
+    ]
+}
+
+pub fn voice_by_id(id: &str) -> Option<&'static PiperVoiceInfo> {
+    piper_voices().iter().find(|v| v.id == id)
+}
+
+/// Config (`.onnx.json`) filename for a voice.
+pub fn voice_config_filename(v: &PiperVoiceInfo) -> String {
+    format!("{}.json", v.onnx_filename)
+}
+
+pub fn recommended_voice() -> Option<&'static PiperVoiceInfo> {
+    piper_voices().iter().find(|v| v.recommended)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

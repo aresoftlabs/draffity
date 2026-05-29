@@ -20,7 +20,7 @@ use crate::services::{
     LayeredTemplatesService, LexicalProjectMemory, LicenseValidator, LocalBackupService,
     LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
     LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, MutableTier,
-    NoOpCrashReporter, NoOpSync, NoOpTTS, OpenRouterValidators, ProjectManagerService,
+    NoOpCrashReporter, NoOpSync, OpenRouterValidators, PiperTTSService, ProjectManagerService,
     ProjectMemoryService, SecretStorage, StorageService, TTSService, TemplatesService, TierService,
     UserTemplatesLoader, WhisperLocalASR,
 };
@@ -90,6 +90,11 @@ impl ServiceFactory {
             app_data_dir.to_path_buf(),
             tier_service.clone(),
         ));
+        // Local Piper TTS (H). Same gating: tier + installed binary/voice.
+        let tts: Arc<dyn TTSService> = Arc::new(PiperTTSService::new(
+            app_data_dir.to_path_buf(),
+            tier_service.clone(),
+        ));
 
         Ok(ServiceBundle {
             storage,
@@ -102,7 +107,7 @@ impl ServiceFactory {
             validators,
             sync: Self::build_sync(tier),
             asr,
-            tts: Self::build_tts(tier),
+            tts,
             exporter: Arc::new(LocalExporter),
             importer: Arc::new(LocalImporter),
             bibliography: Arc::new(LocalBibliographyService),
@@ -190,10 +195,6 @@ impl ServiceFactory {
 
     fn build_sync(_tier: Tier) -> Arc<dyn CloudSyncService> {
         Arc::new(NoOpSync)
-    }
-
-    fn build_tts(_tier: Tier) -> Arc<dyn TTSService> {
-        Arc::new(NoOpTTS)
     }
 }
 

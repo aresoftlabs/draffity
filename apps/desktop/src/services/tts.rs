@@ -5,11 +5,14 @@
 //! E-04 / H-06. Separate from `ASRService` because synthesis and recognition
 //! are independent concerns with independent premium impls.
 
+use serde::Serialize;
+
 use crate::error::AppResult;
 
 /// A voice the engine can speak with. `id` is the engine-specific model id;
 /// `lang` is a BCP-47-ish tag (e.g. `es`, `en`) for the picker.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Voice {
     pub id: String,
     pub name: String,
@@ -17,7 +20,8 @@ pub struct Voice {
 }
 
 /// Mono PCM16 audio ready to feed the Web Audio API in the UI.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SynthesizedAudio {
     pub samples_pcm16: Vec<i16>,
     pub sample_rate: u32,

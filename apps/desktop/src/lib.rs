@@ -96,6 +96,10 @@ pub fn run() {
             commands::delete_voice_model,
             commands::import_voice_binary,
             commands::transcribe_audio,
+            commands::list_voice_voices,
+            commands::import_piper_binary,
+            commands::download_voice_voice,
+            commands::synthesize_speech,
             // projects
             commands::create_project,
             commands::list_projects,

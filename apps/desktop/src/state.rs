@@ -66,7 +66,7 @@ pub struct AppState {
     pub sync: Arc<dyn CloudSyncService>,
     /// Local Whisper ASR (H). Consumed by the voice commands.
     pub asr: Arc<dyn ASRService>,
-    #[allow(dead_code)] // consumed by PiperTTSService wiring in Épica H slice 3
+    /// Local Piper TTS (H). Consumed by the read-aloud command.
     pub tts: Arc<dyn TTSService>,
     pub exporter: Arc<dyn ExportService>,
     pub importer: Arc<dyn ImportService>,
