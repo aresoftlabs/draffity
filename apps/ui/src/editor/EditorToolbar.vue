@@ -7,6 +7,8 @@ import Button from 'primevue/button';
 const props = defineProps<{
   editor: Editor | null;
   disabled?: boolean;
+  /** Linguistic Focus highlight overlay active state (J-06). */
+  linguisticFocusActive?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -14,6 +16,7 @@ const emit = defineEmits<{
   'open-codex-picker': [];
   'insert-image': [];
   'insert-footnote': [];
+  'toggle-linguistic-focus': [];
 }>();
 
 const { t } = useI18n();
@@ -250,6 +253,20 @@ const isInTable = computed(() => isActive('table'));
       severity="secondary"
       :disabled="!isReady"
       @click="emit('insert-footnote')"
+    />
+
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
+
+    <Button
+      v-tooltip.bottom="t('toolbar.linguisticFocus')"
+      :aria-label="t('toolbar.linguisticFocus')"
+      :aria-pressed="linguisticFocusActive"
+      icon="pi pi-eye"
+      text
+      severity="secondary"
+      :disabled="!isReady"
+      :class="{ 'p-button-outlined': linguisticFocusActive }"
+      @click="emit('toggle-linguistic-focus')"
     />
 
     <span class="flex-1" aria-hidden="true" />

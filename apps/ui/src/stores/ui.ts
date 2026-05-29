@@ -56,6 +56,9 @@ export const useUiStore = defineStore('ui', () => {
   const inspectorCollapsed = ref(loadBool('inspectorCollapsed', false));
   const focusMode = ref(false);
   const typewriterMode = ref(loadBool('typewriterMode', false));
+  // Linguistic Focus (J-06): highlight adverbs / passive voice / dialogue in
+  // the editor. Persisted so the mode survives restarts.
+  const linguisticFocus = ref(loadBool('linguisticFocus', false));
   // One-shot flag set by onboarding to ask the dashboard to open the
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
@@ -79,6 +82,7 @@ export const useUiStore = defineStore('ui', () => {
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
   watch(typewriterMode, (v) => saveBool('typewriterMode', v));
+  watch(linguisticFocus, (v) => saveBool('linguisticFocus', v));
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
   watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
   watch(splitSecondaryIds, (v) => saveJson('splitSecondaryIds', v), { deep: true });
@@ -106,6 +110,10 @@ export const useUiStore = defineStore('ui', () => {
 
   function toggleTypewriterMode() {
     typewriterMode.value = !typewriterMode.value;
+  }
+
+  function toggleLinguisticFocus() {
+    linguisticFocus.value = !linguisticFocus.value;
   }
 
   function requestNewProject() {
@@ -158,6 +166,7 @@ export const useUiStore = defineStore('ui', () => {
     inspectorCollapsed,
     focusMode,
     typewriterMode,
+    linguisticFocus,
     pendingNewProject,
     sessionGoal,
     sessionStartTotal,
@@ -168,6 +177,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleInspector,
     toggleFocusMode,
     toggleTypewriterMode,
+    toggleLinguisticFocus,
     requestNewProject,
     consumeNewProjectRequest,
     captureSessionStart,

@@ -96,3 +96,19 @@ body {
 .app-high-contrast [class*='border-surface'] {
   border-color: #fff !important;
 }
+
+/* ---- Linguistic Focus overlay (J-06) ----
+ * Read-only decorations from the linguistic-focus extension. Wavy underlines
+ * flag patterns without obscuring the text; dialogue gets a soft tint. */
+.tiptap-content .lf-adverb {
+  text-decoration: underline wavy rgba(245, 158, 11, 0.85);
+  text-underline-offset: 3px;
+}
+.tiptap-content .lf-passive {
+  text-decoration: underline wavy rgba(244, 63, 94, 0.85);
+  text-underline-offset: 3px;
+}
+.tiptap-content .lf-dialogue {
+  background: rgba(59, 130, 246, 0.13);
+  border-radius: 2px;
+}

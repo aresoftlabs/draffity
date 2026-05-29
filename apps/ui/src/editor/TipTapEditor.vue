@@ -14,6 +14,7 @@ import { Citation } from './extensions/citation';
 import { CodexRef } from './extensions/codex-ref';
 import { Footnote } from './extensions/footnote';
 import { Image } from './extensions/image';
+import { LinguisticFocus } from './extensions/linguistic-focus';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 import { useMediaStore } from '@/stores/media';
 
@@ -78,6 +79,9 @@ const editor = useEditor({
     // Footnotes — body lives inline as a node attribute; numbering at
     // export time. Click on a marker emits `draffity:open-footnote`.
     Footnote,
+    // Linguistic Focus (J-06): toggleable highlight overlay (adverbs, passive
+    // voice, dialogue) via decorations — never mutates the document.
+    LinguisticFocus,
   ],
   editorProps: {
     attributes: {

@@ -129,6 +129,17 @@ const editorContentJson = ref<string | null>(null);
 const editorRef = ref<InstanceType<typeof TipTapEditor> | null>(null);
 const editor = computed(() => editorRef.value?.editor ?? null);
 
+// Apply the Linguistic Focus overlay (J-06) whenever the editor becomes
+// available or the persisted toggle changes. The decoration plugin recomputes
+// on every doc change on its own, so this only flips the on/off flag.
+watch(
+  [editor, () => uiStore.linguisticFocus],
+  ([ed, enabled]) => {
+    ed?.commands.setLinguisticFocus(!!enabled);
+  },
+  { immediate: true },
+);
+
 const showExport = ref(false);
 const showBibliography = ref(false);
 const showCitationPicker = ref(false);
@@ -713,10 +724,12 @@ onBeforeUnmount(() => {
             v-if="selected?.docType !== 'folder'"
             :editor="editor"
             :disabled="readOnly"
+            :linguistic-focus-active="uiStore.linguisticFocus"
             @open-citation-picker="showCitationPicker = true"
             @open-codex-picker="showCodexPicker = true"
             @insert-image="onInsertImage"
             @insert-footnote="onInsertFootnote"
+            @toggle-linguistic-focus="uiStore.toggleLinguisticFocus()"
           />
           <FindReplaceBar
             v-if="selected?.docType !== 'folder'"
