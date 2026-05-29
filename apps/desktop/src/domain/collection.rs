@@ -141,6 +141,7 @@ mod tests {
             status,
             tags: tags.iter().map(|s| s.to_string()).collect(),
             label_ids: Vec::new(),
+            metadata: std::collections::HashMap::new(),
             goal_words: None,
             created_at: 0,
             updated_at: 0,

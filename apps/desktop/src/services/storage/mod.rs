@@ -14,9 +14,9 @@ use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::domain::{
     AiHistoryEntry, AiValidation, Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate,
-    Collection, CollectionInput, CollectionQuery, DailyWriting, DocNode, DocumentInput,
-    DocumentStatus, Label, LabelInput, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit,
-    Snapshot, TemplateNode, WritingStats,
+    Collection, CollectionInput, CollectionQuery, CustomField, CustomFieldInput, DailyWriting,
+    DocNode, DocumentInput, DocumentStatus, Label, LabelInput, MediaAsset, Project, ProjectInput,
+    ProjectStatus, SearchHit, Snapshot, TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 use crate::services::importer::ImportTree;
@@ -28,6 +28,7 @@ mod ai_validations;
 mod citations;
 mod codex;
 mod collections;
+mod custom_fields;
 mod document_positions;
 mod document_tags;
 mod documents;
@@ -60,6 +61,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (14, include_str!("../../migrations/014_voice_notes.sql")),
     (15, include_str!("../../migrations/015_collections.sql")),
     (16, include_str!("../../migrations/016_labels.sql")),
+    (17, include_str!("../../migrations/017_custom_metadata.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -266,6 +268,26 @@ pub trait StorageService: Send + Sync {
     fn delete_label(&self, id: &str) -> AppResult<()>;
     /// Replace the entire label set of a document atomically.
     fn set_document_labels(&self, document_id: &str, label_ids: &[String]) -> AppResult<DocNode>;
+
+    // Custom metadata fields (I-08/I-09): per-project field definitions +
+    // per-document values surfaced on `DocNode::metadata`.
+    fn create_custom_field(&self, input: CustomFieldInput) -> AppResult<CustomField>;
+    fn list_custom_fields(&self, project_id: &str) -> AppResult<Vec<CustomField>>;
+    /// Rename and/or change a field's options (kind is immutable).
+    fn update_custom_field(
+        &self,
+        id: &str,
+        name: &str,
+        options: &[String],
+    ) -> AppResult<CustomField>;
+    fn delete_custom_field(&self, id: &str) -> AppResult<()>;
+    /// Set or clear (`value=None`) a document's value for one field.
+    fn set_document_metadata(
+        &self,
+        document_id: &str,
+        field_id: &str,
+        value: Option<&str>,
+    ) -> AppResult<DocNode>;
 }
 
 /// Local SQLite-backed implementation. Single connection guarded by Mutex —
@@ -590,6 +612,36 @@ impl StorageService for LocalStorageService {
 
     fn set_document_labels(&self, document_id: &str, label_ids: &[String]) -> AppResult<DocNode> {
         labels::set_document(&mut self.conn.lock().unwrap(), document_id, label_ids)
+    }
+
+    fn create_custom_field(&self, input: CustomFieldInput) -> AppResult<CustomField> {
+        custom_fields::create(&self.conn.lock().unwrap(), input)
+    }
+
+    fn list_custom_fields(&self, project_id: &str) -> AppResult<Vec<CustomField>> {
+        custom_fields::list(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn update_custom_field(
+        &self,
+        id: &str,
+        name: &str,
+        options: &[String],
+    ) -> AppResult<CustomField> {
+        custom_fields::update(&self.conn.lock().unwrap(), id, name, options)
+    }
+
+    fn delete_custom_field(&self, id: &str) -> AppResult<()> {
+        custom_fields::delete(&self.conn.lock().unwrap(), id)
+    }
+
+    fn set_document_metadata(
+        &self,
+        document_id: &str,
+        field_id: &str,
+        value: Option<&str>,
+    ) -> AppResult<DocNode> {
+        custom_fields::set_value(&self.conn.lock().unwrap(), document_id, field_id, value)
     }
 
     fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {

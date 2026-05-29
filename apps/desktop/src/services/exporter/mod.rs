@@ -148,6 +148,7 @@ pub(crate) mod test_support {
             status: DocumentStatus::Draft,
             tags: Vec::new(),
             label_ids: Vec::new(),
+            metadata: std::collections::HashMap::new(),
             goal_words: None,
             created_at: now,
             updated_at: now,

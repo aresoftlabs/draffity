@@ -68,6 +68,14 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         .flatten()
         .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
         .unwrap_or_default();
+    // `metadata_json` is a JSON object (custom field id → value) from a
+    // correlated subquery, `{}` when the document has no custom values.
+    let metadata = r
+        .get::<_, Option<String>>("metadata_json")
+        .ok()
+        .flatten()
+        .and_then(|s| serde_json::from_str::<std::collections::HashMap<String, String>>(&s).ok())
+        .unwrap_or_default();
     let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
     let synopsis: Option<String> = r.get("synopsis").ok().flatten();
     let content_json: Option<String> = r.get("content_json").ok().flatten();
@@ -84,6 +92,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         status,
         tags,
         label_ids,
+        metadata,
         goal_words,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,

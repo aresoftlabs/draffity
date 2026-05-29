@@ -17,7 +17,8 @@ use super::row_mappers::row_to_document;
 const COLS: &str = "id, project_id, parent_id, title, doc_type, content, content_json, synopsis, \
      position, status, goal_words, created_at, updated_at, \
      (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json, \
-     (SELECT COALESCE(json_group_array(label_id), '[]') FROM document_labels WHERE document_id = documents.id) AS labels_json";
+     (SELECT COALESCE(json_group_array(label_id), '[]') FROM document_labels WHERE document_id = documents.id) AS labels_json, \
+     COALESCE((SELECT json_group_object(field_id, value) FROM document_custom_values WHERE document_id = documents.id), '{}') AS metadata_json";
 
 /// Single-row fetcher shared with `document_tags` and `document_positions`
 /// so those modules can return the updated `DocNode` without duplicating
@@ -69,6 +70,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         status: DocumentStatus::Draft,
         tags: Vec::new(),
         label_ids: Vec::new(),
+        metadata: std::collections::HashMap::new(),
         goal_words: None,
         created_at: now,
         updated_at: now,

@@ -101,6 +101,10 @@ pub struct DocNode {
     /// definitions (name + color) are resolved separately for display.
     #[serde(default)]
     pub label_ids: Vec<String>,
+    /// Custom metadata values (I-08): `custom_field id → string value`. The
+    /// field definitions (name, kind, options) are resolved separately.
+    #[serde(default)]
+    pub metadata: std::collections::HashMap<String, String>,
     /// Target word count for this document. `None` means no goal set.
     #[serde(default)]
     pub goal_words: Option<i64>,

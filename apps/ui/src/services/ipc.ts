@@ -13,6 +13,8 @@ import type {
   DocumentStatus,
   ExportConfig,
   ExportFormat,
+  CustomField,
+  CustomFieldInput,
   ImportFormat,
   Label,
   LabelInput,
@@ -323,6 +325,17 @@ export const ipc = {
   deleteLabel: (id: string) => invoke<void>('delete_label', { id }),
   setDocumentLabels: (documentId: string, labelIds: string[]) =>
     invoke<DocNode>('set_document_labels', { documentId, labelIds }),
+
+  // Custom metadata fields (Épica I — I-08/I-09)
+  createCustomField: (input: CustomFieldInput) =>
+    invoke<CustomField>('create_custom_field', { input }),
+  listCustomFields: (projectId: string) =>
+    invoke<CustomField[]>('list_custom_fields', { projectId }),
+  updateCustomField: (id: string, name: string, options: string[]) =>
+    invoke<CustomField>('update_custom_field', { id, name, options }),
+  deleteCustomField: (id: string) => invoke<void>('delete_custom_field', { id }),
+  setDocumentMetadata: (documentId: string, fieldId: string, value: string | null) =>
+    invoke<DocNode>('set_document_metadata', { documentId, fieldId, value }),
 
   // Search
   searchDocuments: (params: { projectId: string; query: string }) =>

@@ -48,6 +48,9 @@ export interface DocNode {
   /** Ids of the project labels attached to this document. Resolve against
    *  the project's `Label[]` for name + color (chips). */
   labelIds: string[];
+  /** Custom metadata values (I-08): `customField id → string value`. Empty
+   *  object when the document has no custom values. */
+  metadata: Record<string, string>;
   /** Target word count for this document. `null` means no goal set. */
   goalWords?: number | null;
   createdAt: number;
@@ -212,6 +215,30 @@ export interface LabelInput {
   projectId: string;
   name: string;
   color: string;
+}
+
+// Custom metadata fields (I-08/I-09): user-defined, per-project document
+// fields. Distinct from template `MetadataField` (project-level). Values live
+// on `DocNode.metadata` keyed by field id.
+
+export type CustomFieldKind = 'text' | 'number' | 'date' | 'select';
+
+export interface CustomField {
+  id: string;
+  projectId: string;
+  name: string;
+  kind: CustomFieldKind;
+  /** Allowed values for `select`; empty for other kinds. */
+  options: string[];
+  position: number;
+  createdAt: number;
+}
+
+export interface CustomFieldInput {
+  projectId: string;
+  name: string;
+  kind: CustomFieldKind;
+  options?: string[];
 }
 
 // Export

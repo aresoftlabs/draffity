@@ -103,6 +103,12 @@ pub fn run() {
             commands::update_label,
             commands::delete_label,
             commands::set_document_labels,
+            // custom metadata fields (épica i)
+            commands::create_custom_field,
+            commands::list_custom_fields,
+            commands::update_custom_field,
+            commands::delete_custom_field,
+            commands::set_document_metadata,
             // voice (épica h)
             commands::get_voice_status,
             commands::list_voice_models,
