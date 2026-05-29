@@ -259,6 +259,8 @@ export const ipc = {
   deleteProject: (id: string) => invoke<void>('delete_project', { id }),
   setProjectGoal: (params: { id: string; goal: number | null }) =>
     invoke<Project>('set_project_goal', params),
+  setProjectDeadline: (params: { id: string; deadline: number | null }) =>
+    invoke<Project>('set_project_deadline', params),
 
   // Documents
   createDocument: (input: DocumentInput) => invoke<DocNode>('create_document', { input }),

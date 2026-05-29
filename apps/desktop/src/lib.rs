@@ -132,6 +132,7 @@ pub fn run() {
             commands::archive_project,
             commands::delete_project,
             commands::set_project_goal,
+            commands::set_project_deadline,
             // documents
             commands::create_document,
             commands::list_documents,

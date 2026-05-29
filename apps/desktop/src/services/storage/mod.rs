@@ -63,6 +63,10 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (16, include_str!("../../migrations/016_labels.sql")),
     (17, include_str!("../../migrations/017_custom_metadata.sql")),
     (18, include_str!("../../migrations/018_research.sql")),
+    (
+        19,
+        include_str!("../../migrations/019_project_deadline.sql"),
+    ),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -127,6 +131,8 @@ pub trait StorageService: Send + Sync {
     fn set_document_research(&self, id: &str, is_research: bool) -> AppResult<DocNode>;
     /// Set or clear a project's target word count.
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project>;
+    /// Set or clear a project's deadline (epoch ms).
+    fn set_project_deadline(&self, id: &str, deadline: Option<i64>) -> AppResult<Project>;
     /// Set or clear a document's synopsis (short description surfaced in
     /// Corkboard / Outliner views, independent of content).
     fn set_document_synopsis(&self, id: &str, synopsis: Option<&str>) -> AppResult<DocNode>;
@@ -481,6 +487,10 @@ impl StorageService for LocalStorageService {
 
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project> {
         projects::set_goal(&self.conn.lock().unwrap(), id, goal)
+    }
+
+    fn set_project_deadline(&self, id: &str, deadline: Option<i64>) -> AppResult<Project> {
+        projects::set_deadline(&self.conn.lock().unwrap(), id, deadline)
     }
 
     fn set_document_synopsis(&self, id: &str, synopsis: Option<&str>) -> AppResult<DocNode> {

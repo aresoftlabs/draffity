@@ -40,6 +40,10 @@ pub struct Project {
     /// Target word count for the whole project. `None` means no goal set.
     #[serde(default)]
     pub goal_words: Option<i64>,
+    /// Target completion date as epoch milliseconds (J-02). `None` means no
+    /// deadline; powers the pacemaker (J-03).
+    #[serde(default)]
+    pub deadline: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }

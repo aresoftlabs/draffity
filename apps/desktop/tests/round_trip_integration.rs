@@ -32,6 +32,7 @@ fn project(title: &str) -> Project {
         status: ProjectStatus::Active,
         metadata: None,
         goal_words: None,
+        deadline: None,
         created_at: now,
         updated_at: now,
     }

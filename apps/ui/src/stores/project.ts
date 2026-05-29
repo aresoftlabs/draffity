@@ -58,6 +58,12 @@ export const useProjectStore = defineStore('project', () => {
     if (idx !== -1) projects.value[idx] = updated;
   }
 
+  async function setDeadline(id: string, deadline: number | null) {
+    const updated = await ipc.setProjectDeadline({ id, deadline });
+    const idx = projects.value.findIndex((p) => p.id === id);
+    if (idx !== -1) projects.value[idx] = updated;
+  }
+
   function selectLocally(id: string | null) {
     activeId.value = id;
   }
@@ -76,6 +82,7 @@ export const useProjectStore = defineStore('project', () => {
     archive,
     remove,
     setGoal,
+    setDeadline,
     selectLocally,
   };
 });

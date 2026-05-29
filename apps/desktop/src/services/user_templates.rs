@@ -182,6 +182,7 @@ mod tests {
             status: ProjectStatus::Active,
             metadata: None,
             goal_words: None,
+            deadline: None,
             created_at: 0,
             updated_at: 0,
         }

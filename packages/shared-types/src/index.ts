@@ -19,6 +19,8 @@ export interface Project {
   metadata?: Record<string, unknown> | null;
   /** Target word count for the whole project. `null` means no goal set. */
   goalWords?: number | null;
+  /** Target completion date (epoch ms). `null` means no deadline (J-02). */
+  deadline?: number | null;
   createdAt: number;
   updatedAt: number;
 }

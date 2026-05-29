@@ -16,6 +16,7 @@ pub(super) fn row_to_project(r: &Row<'_>) -> rusqlite::Result<Project> {
         _ => ProjectStatus::Archived,
     };
     let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
+    let deadline: Option<i64> = r.get("deadline").ok().flatten();
     Ok(Project {
         id: r.get("id")?,
         title: r.get("title")?,
@@ -23,6 +24,7 @@ pub(super) fn row_to_project(r: &Row<'_>) -> rusqlite::Result<Project> {
         status,
         metadata,
         goal_words,
+        deadline,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
     })

@@ -459,4 +459,23 @@ mod tests {
         let cleared = s.set_project_goal(&p.id, None).unwrap();
         assert!(cleared.goal_words.is_none());
     }
+
+    #[test]
+    fn set_project_deadline_persists_and_clears() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        assert!(p.deadline.is_none());
+        let after = s
+            .set_project_deadline(&p.id, Some(1_900_000_000_000))
+            .unwrap();
+        assert_eq!(after.deadline, Some(1_900_000_000_000));
+        let cleared = s.set_project_deadline(&p.id, None).unwrap();
+        assert!(cleared.deadline.is_none());
+    }
 }

@@ -63,3 +63,12 @@ pub fn set_project_goal(
 ) -> CmdResult<Project> {
     state.storage.set_project_goal(&id, goal)
 }
+
+#[tauri::command]
+pub fn set_project_deadline(
+    state: State<'_, AppState>,
+    id: String,
+    deadline: Option<i64>,
+) -> CmdResult<Project> {
+    state.storage.set_project_deadline(&id, deadline)
+}

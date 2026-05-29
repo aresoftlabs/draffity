@@ -12,7 +12,8 @@ use crate::services::importer::ImportTree;
 
 /// Column list for `SELECT` against `projects`. Mirrors the documents.rs
 /// pattern so adding columns (e.g. `goal_words`) is a one-line change.
-const COLS: &str = "id, title, template_id, status, metadata, goal_words, created_at, updated_at";
+const COLS: &str =
+    "id, title, template_id, status, metadata, goal_words, deadline, created_at, updated_at";
 
 pub(super) fn create(conn: &Connection, input: ProjectInput) -> AppResult<Project> {
     input.validate()?;
@@ -24,6 +25,7 @@ pub(super) fn create(conn: &Connection, input: ProjectInput) -> AppResult<Projec
         status: ProjectStatus::Active,
         metadata: input.metadata,
         goal_words: None,
+        deadline: None,
         created_at: now,
         updated_at: now,
     };
@@ -63,6 +65,7 @@ pub(super) fn create_atomic(
         status: ProjectStatus::Active,
         metadata: input.metadata,
         goal_words: None,
+        deadline: None,
         created_at: now,
         updated_at: now,
     };
@@ -114,6 +117,7 @@ pub(super) fn create_from_import(
         status: ProjectStatus::Active,
         metadata: None,
         goal_words: None,
+        deadline: None,
         created_at: now,
         updated_at: now,
     };
@@ -174,6 +178,23 @@ pub(super) fn set_goal(conn: &Connection, id: &str, goal: Option<i64>) -> AppRes
     let updated = conn.execute(
         "UPDATE projects SET goal_words=?2, updated_at=?3 WHERE id=?1",
         params![id, goal, now_ms()],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("project {id}")));
+    }
+    let sql = format!("SELECT {COLS} FROM projects WHERE id=?1");
+    Ok(conn.query_row(&sql, params![id], row_to_project)?)
+}
+
+/// Set or clear the project's deadline (epoch ms). `None` removes it.
+pub(super) fn set_deadline(
+    conn: &Connection,
+    id: &str,
+    deadline: Option<i64>,
+) -> AppResult<Project> {
+    let updated = conn.execute(
+        "UPDATE projects SET deadline=?2, updated_at=?3 WHERE id=?1",
+        params![id, deadline, now_ms()],
     )?;
     if updated == 0 {
         return Err(AppError::NotFound(format!("project {id}")));
