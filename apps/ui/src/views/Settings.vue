@@ -9,6 +9,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
+import Chips from 'primevue/chips';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -649,6 +650,37 @@ function kindLabel(kind: BackupRecord['kind']): string {
           <p class="text-xs opacity-60 mt-1">{{ t('settings.typewriterHint') }}</p>
         </div>
         <ToggleSwitch v-model="ui.typewriterMode" />
+      </section>
+
+      <section>
+        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+          {{ t('settings.linguisticFocusTitle') }}
+        </h2>
+        <p class="text-xs opacity-60 mb-2">{{ t('settings.linguisticFocusHint') }}</p>
+        <Chips
+          v-model="ui.linguisticExtraWords"
+          :placeholder="t('settings.linguisticExtraPlaceholder')"
+          separator=","
+          class="w-full"
+        />
+      </section>
+
+      <section class="flex items-center justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+            {{ t('settings.readingSpeed') }}
+          </h2>
+          <p class="text-xs opacity-60 mt-1">{{ t('settings.readingSpeedHint') }}</p>
+        </div>
+        <InputNumber
+          v-model="ui.readingWpm"
+          :min="50"
+          :max="1000"
+          :step="10"
+          suffix=" wpm"
+          show-buttons
+          class="!w-40"
+        />
       </section>
 
       <section>

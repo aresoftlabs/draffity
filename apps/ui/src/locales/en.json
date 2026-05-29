@@ -234,6 +234,11 @@
     "dailyGoalNone": "No goal",
     "dailyGoalHint": "Write at least this many words in a day and it counts toward your goal-met streak.",
     "dailyGoalError": "Could not save the daily goal.",
+    "linguisticFocusTitle": "Linguistic focus",
+    "linguisticFocusHint": "Extra words to highlight as adverbs (in addition to -mente/-ly).",
+    "linguisticExtraPlaceholder": "Add a word and press Enter…",
+    "readingSpeed": "Reading speed",
+    "readingSpeedHint": "Words per minute used to estimate reading time.",
     "lastWritingDate": "Last activity",
     "crashReporting": "Send crash reports",
     "crashReportingHint": "Off by default. When enabled, Draffity can send the stack trace and app version to the URL configured by the build. The content of your documents is never included.",
@@ -613,6 +618,11 @@
     "label": "Research",
     "toggle": "Mark as research material",
     "hint": "Research material is excluded from stats and from export by default."
+  },
+  "reading": {
+    "label": "Reading time",
+    "minutes": "~{n} min",
+    "lessThanMinute": "< 1 min"
   },
   "pacemaker": {
     "setDeadline": "Deadline",

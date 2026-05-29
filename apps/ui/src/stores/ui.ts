@@ -59,6 +59,10 @@ export const useUiStore = defineStore('ui', () => {
   // Linguistic Focus (J-06): highlight adverbs / passive voice / dialogue in
   // the editor. Persisted so the mode survives restarts.
   const linguisticFocus = ref(loadBool('linguisticFocus', false));
+  // Extra words to flag as adverbs in Linguistic Focus (J-07, configurable).
+  const linguisticExtraWords = ref<string[]>(loadJson('linguisticExtraWords', []));
+  // Reading-speed for reading-time estimates (J-09), words per minute.
+  const readingWpm = ref<number>(loadNumber('readingWpm') ?? 200);
   // One-shot flag set by onboarding to ask the dashboard to open the
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
@@ -83,6 +87,8 @@ export const useUiStore = defineStore('ui', () => {
   watch(inspectorCollapsed, (v) => saveBool('inspectorCollapsed', v));
   watch(typewriterMode, (v) => saveBool('typewriterMode', v));
   watch(linguisticFocus, (v) => saveBool('linguisticFocus', v));
+  watch(linguisticExtraWords, (v) => saveJson('linguisticExtraWords', v), { deep: true });
+  watch(readingWpm, (v) => saveNumber('readingWpm', v));
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
   watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
   watch(splitSecondaryIds, (v) => saveJson('splitSecondaryIds', v), { deep: true });
@@ -167,6 +173,8 @@ export const useUiStore = defineStore('ui', () => {
     focusMode,
     typewriterMode,
     linguisticFocus,
+    linguisticExtraWords,
+    readingWpm,
     pendingNewProject,
     sessionGoal,
     sessionStartTotal,

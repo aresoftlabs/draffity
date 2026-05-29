@@ -234,6 +234,11 @@
     "dailyGoalNone": "Sin meta",
     "dailyGoalHint": "Si escribís al menos esta cantidad en un día, cuenta para la racha de meta cumplida.",
     "dailyGoalError": "No se pudo guardar la meta diaria.",
+    "linguisticFocusTitle": "Foco lingüístico",
+    "linguisticFocusHint": "Palabras extra a resaltar como adverbios (además de -mente/-ly).",
+    "linguisticExtraPlaceholder": "Añadir palabra y pulsar Enter…",
+    "readingSpeed": "Velocidad de lectura",
+    "readingSpeedHint": "Palabras por minuto para estimar el tiempo de lectura.",
     "lastWritingDate": "Última actividad",
     "crashReporting": "Enviar reportes de crash",
     "crashReportingHint": "Desactivado por defecto. Si lo activás, Draffity puede enviar el stack trace y la versión de la app a la URL configurada por el build. El contenido de tus documentos nunca se incluye.",
@@ -613,6 +618,11 @@
     "label": "Investigación",
     "toggle": "Marcar como material de investigación",
     "hint": "El material de investigación no cuenta en las estadísticas ni se exporta por defecto."
+  },
+  "reading": {
+    "label": "Tiempo de lectura",
+    "minutes": "~{n} min",
+    "lessThanMinute": "< 1 min"
   },
   "pacemaker": {
     "setDeadline": "Fecha límite",

@@ -133,11 +133,11 @@ const editor = computed(() => editorRef.value?.editor ?? null);
 // available or the persisted toggle changes. The decoration plugin recomputes
 // on every doc change on its own, so this only flips the on/off flag.
 watch(
-  [editor, () => uiStore.linguisticFocus],
-  ([ed, enabled]) => {
-    ed?.commands.setLinguisticFocus(!!enabled);
+  [editor, () => uiStore.linguisticFocus, () => uiStore.linguisticExtraWords],
+  ([ed, enabled, extraWords]) => {
+    ed?.commands.setLinguisticFocus(!!enabled, { extraWords: (extraWords as string[]) ?? [] });
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 const showExport = ref(false);
@@ -819,6 +819,7 @@ onBeforeUnmount(() => {
           :session-word-count="sessionWordCount"
           :labels="labelStore.labels"
           :custom-fields="customFieldStore.fields"
+          :reading-wpm="uiStore.readingWpm"
           :read-only="readOnly"
           @snapshot-restored="onSnapshotRestored"
           @status-change="onStatusChange"

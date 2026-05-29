@@ -21,6 +21,8 @@ const props = defineProps<{
   labels?: Label[];
   /** Project custom metadata fields (I-08/I-09). */
   customFields?: CustomField[];
+  /** Reading speed (words/minute) for reading-time estimates (J-09). */
+  readingWpm?: number;
   readOnly?: boolean;
 }>();
 
@@ -49,6 +51,14 @@ function formatDate(ts: number) {
 }
 
 const docTypeLabel = computed(() => (props.doc ? t(`documentType.${props.doc.docType}`) : ''));
+
+/** Reading-time estimate (J-09): words / wpm, floored to a friendly label. */
+function readingTime(words: number): string {
+  const wpm = props.readingWpm && props.readingWpm > 0 ? props.readingWpm : 200;
+  const minutes = words / wpm;
+  if (minutes < 1) return t('reading.lessThanMinute');
+  return t('reading.minutes', { n: Math.round(minutes) });
+}
 
 const statusOptions = computed<{ value: DocumentStatus; label: string }[]>(() =>
   (['draft', 'revised', 'final', 'trashed'] as const).map((value) => ({
@@ -194,6 +204,10 @@ function onSynopsisInput(v: string) {
           <div v-if="sessionWordCount !== undefined" class="flex justify-between gap-2">
             <dt class="opacity-60">{{ t('project.wordsSession') }}</dt>
             <dd class="font-mono">{{ sessionWordCount }}</dd>
+          </div>
+          <div class="flex justify-between gap-2">
+            <dt class="opacity-60">{{ t('reading.label') }}</dt>
+            <dd>{{ readingTime(wordCountTotal) }}</dd>
           </div>
         </dl>
       </section>
