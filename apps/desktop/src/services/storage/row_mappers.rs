@@ -60,6 +60,14 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         .flatten()
         .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
         .unwrap_or_default();
+    // `labels_json` mirrors `tags_json`: a JSON array of label ids from a
+    // correlated subquery, empty (not NULL) when the document has no labels.
+    let label_ids = r
+        .get::<_, Option<String>>("labels_json")
+        .ok()
+        .flatten()
+        .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
+        .unwrap_or_default();
     let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
     let synopsis: Option<String> = r.get("synopsis").ok().flatten();
     let content_json: Option<String> = r.get("content_json").ok().flatten();
@@ -75,6 +83,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         position: r.get("position")?,
         status,
         tags,
+        label_ids,
         goal_words,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,

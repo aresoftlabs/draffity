@@ -15,8 +15,8 @@ use rusqlite::{params, Connection, OptionalExtension};
 use crate::domain::{
     AiHistoryEntry, AiValidation, Citation, CodexEntry, CodexInput, CodexKind, CodexUpdate,
     Collection, CollectionInput, CollectionQuery, DailyWriting, DocNode, DocumentInput,
-    DocumentStatus, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit, Snapshot,
-    TemplateNode, WritingStats,
+    DocumentStatus, Label, LabelInput, MediaAsset, Project, ProjectInput, ProjectStatus, SearchHit,
+    Snapshot, TemplateNode, WritingStats,
 };
 use crate::error::AppResult;
 use crate::services::importer::ImportTree;
@@ -32,6 +32,7 @@ mod document_positions;
 mod document_tags;
 mod documents;
 mod import_seed;
+mod labels;
 mod media;
 mod projects;
 mod row_mappers;
@@ -58,6 +59,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (13, include_str!("../../migrations/013_ai_validations.sql")),
     (14, include_str!("../../migrations/014_voice_notes.sql")),
     (15, include_str!("../../migrations/015_collections.sql")),
+    (16, include_str!("../../migrations/016_labels.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -256,6 +258,14 @@ pub trait StorageService: Send + Sync {
     fn set_collection_members(&self, collection_id: &str, ordered_ids: &[String]) -> AppResult<()>;
     /// Resolve a collection to its documents (manual order or smart filter).
     fn resolve_collection(&self, id: &str) -> AppResult<Vec<DocNode>>;
+
+    // Labels (I-05/I-06): per-project colored labels assigned to documents.
+    fn create_label(&self, input: LabelInput) -> AppResult<Label>;
+    fn list_labels(&self, project_id: &str) -> AppResult<Vec<Label>>;
+    fn update_label(&self, id: &str, name: &str, color: &str) -> AppResult<Label>;
+    fn delete_label(&self, id: &str) -> AppResult<()>;
+    /// Replace the entire label set of a document atomically.
+    fn set_document_labels(&self, document_id: &str, label_ids: &[String]) -> AppResult<DocNode>;
 }
 
 /// Local SQLite-backed implementation. Single connection guarded by Mutex —
@@ -560,6 +570,26 @@ impl StorageService for LocalStorageService {
 
     fn resolve_collection(&self, id: &str) -> AppResult<Vec<DocNode>> {
         collections::resolve(&self.conn.lock().unwrap(), id)
+    }
+
+    fn create_label(&self, input: LabelInput) -> AppResult<Label> {
+        labels::create(&self.conn.lock().unwrap(), input)
+    }
+
+    fn list_labels(&self, project_id: &str) -> AppResult<Vec<Label>> {
+        labels::list(&self.conn.lock().unwrap(), project_id)
+    }
+
+    fn update_label(&self, id: &str, name: &str, color: &str) -> AppResult<Label> {
+        labels::update(&self.conn.lock().unwrap(), id, name, color)
+    }
+
+    fn delete_label(&self, id: &str) -> AppResult<()> {
+        labels::delete(&self.conn.lock().unwrap(), id)
+    }
+
+    fn set_document_labels(&self, document_id: &str, label_ids: &[String]) -> AppResult<DocNode> {
+        labels::set_document(&mut self.conn.lock().unwrap(), document_id, label_ids)
     }
 
     fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {

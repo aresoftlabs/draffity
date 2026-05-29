@@ -11,12 +11,13 @@ use crate::error::{AppError, AppResult};
 use super::row_mappers::row_to_document;
 
 /// Column list for `SELECT` against `documents`. Kept in one place so adding
-/// columns is a single-line change. The trailing correlated subquery returns
-/// the document's tag set as a JSON array; an empty array (not NULL) when
-/// the document has no tags.
+/// columns is a single-line change. The trailing correlated subqueries return
+/// the document's tag set and label-id set as JSON arrays; an empty array
+/// (not NULL) when the document has none.
 const COLS: &str = "id, project_id, parent_id, title, doc_type, content, content_json, synopsis, \
      position, status, goal_words, created_at, updated_at, \
-     (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json";
+     (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json, \
+     (SELECT COALESCE(json_group_array(label_id), '[]') FROM document_labels WHERE document_id = documents.id) AS labels_json";
 
 /// Single-row fetcher shared with `document_tags` and `document_positions`
 /// so those modules can return the updated `DocNode` without duplicating
@@ -67,6 +68,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         position: next_pos,
         status: DocumentStatus::Draft,
         tags: Vec::new(),
+        label_ids: Vec::new(),
         goal_words: None,
         created_at: now,
         updated_at: now,

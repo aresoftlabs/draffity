@@ -97,6 +97,10 @@ pub struct DocNode {
     pub status: DocumentStatus,
     #[serde(default)]
     pub tags: Vec<String>,
+    /// Ids of the project labels attached to this document. The label
+    /// definitions (name + color) are resolved separately for display.
+    #[serde(default)]
+    pub label_ids: Vec<String>,
     /// Target word count for this document. `None` means no goal set.
     #[serde(default)]
     pub goal_words: Option<i64>,

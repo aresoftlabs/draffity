@@ -45,6 +45,9 @@ export interface DocNode {
   position: number;
   status: DocumentStatus;
   tags: string[];
+  /** Ids of the project labels attached to this document. Resolve against
+   *  the project's `Label[]` for name + color (chips). */
+  labelIds: string[];
   /** Target word count for this document. `null` means no goal set. */
   goalWords?: number | null;
   createdAt: number;
@@ -190,6 +193,25 @@ export interface CodexUpdate {
   kind?: CodexKind;
   body?: string | null;
   tags?: string[];
+}
+
+// Labels (I-05/I-06): per-project colored labels, assigned to documents
+// many-to-many and surfaced as chips across binder / outliner / corkboard /
+// inspector.
+
+export interface Label {
+  id: string;
+  projectId: string;
+  name: string;
+  /** Hex color string, e.g. `#ef4444`. */
+  color: string;
+  createdAt: number;
+}
+
+export interface LabelInput {
+  projectId: string;
+  name: string;
+  color: string;
 }
 
 // Export

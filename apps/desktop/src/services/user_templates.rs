@@ -206,6 +206,7 @@ mod tests {
             position,
             status: DocumentStatus::Draft,
             tags: vec![],
+            label_ids: vec![],
             goal_words: None,
             created_at: 0,
             updated_at: 0,

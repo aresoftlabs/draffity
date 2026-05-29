@@ -97,6 +97,12 @@ pub fn run() {
             commands::delete_collection,
             commands::set_collection_members,
             commands::resolve_collection,
+            // labels (épica i)
+            commands::create_label,
+            commands::list_labels,
+            commands::update_label,
+            commands::delete_label,
+            commands::set_document_labels,
             // voice (épica h)
             commands::get_voice_status,
             commands::list_voice_models,

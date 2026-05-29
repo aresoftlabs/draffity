@@ -59,6 +59,7 @@ fn doc(
         position,
         status: DocumentStatus::Draft,
         tags: Vec::new(),
+        label_ids: Vec::new(),
         goal_words: None,
         created_at: now,
         updated_at: now,
