@@ -150,6 +150,27 @@ premium (IA BYOK + voz). Aún sin release versionada.
 - **Tiempo de lectura** (J-09): estimación palabras/wpm en el inspector, WPM
   configurable en Settings (default 200).
 
+### Added — Épica K: compile, generador de nombres, composición v2 (K-01..K-10)
+
+- **Generador de nombres** (K-06/K-07): dataset embebido de 12 orígenes
+  (masc/fem/unisex), generador puro (`pickNames` con RNG inyectable),
+  `NameGeneratorDialog` accesible desde el campo nombre del codex; import de
+  listas custom `.txt`/`.json` persistidas en uiStore.
+- **Modo composición v2** (K-08/K-09): superficie fullscreen distraction-free
+  con ancho de papel, color de fondo y fade por párrafo (extensión
+  `ParagraphFade`) configurables; barra de control hover-reveal, atajo
+  Ctrl+Shift+F11 y Esc. Diferido: sonido typewriter, imagen de fondo, fade por
+  oración/línea, persistencia por proyecto.
+- **Split avanzado** (K-10): lock de panel (fija el doc) + bookmarks por panel
+  (últimos docs abiertos) persistidos por proyecto.
+- **Compile presets** (K-01..K-05): enfoque pragmático format-agnóstico —
+  find&replace de export (`ExportConfig.findReplace`, aplicado al contenido en
+  el comando export), front/back matter (migración 021 + reorden de docs raíz a
+  los extremos), y 3 presets built-in (manuscrito/ebook/borrador) con selector
+  en el ExportDialog. Diferido: layout por-DocumentType y wiring de
+  `scene_separator` (K-04, requiere reescribir los renderers) y tabla de presets
+  de usuario (K-01).
+
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03 →
