@@ -227,6 +227,10 @@
     "currentStreak": "Current streak (days)",
     "longestStreak": "Longest streak (days)",
     "lastWritingDate": "Last activity",
+    "legal": "Legal",
+    "legalHint": "Privacy and terms of use. Open in the in-app reader.",
+    "privacyLink": "Privacy policy",
+    "tosLink": "Terms of use",
     "last30Days": "Last 30 days",
     "last30DaysAria": "Bar chart of words written per day for the last 30 days",
     "totalWords": "{count} words",
@@ -261,6 +265,11 @@
     "confirmRestore": "This version will overwrite the document's current content. The current state will be saved automatically as auto-restore. Continue?",
     "empty": "No versions yet.",
     "more": "Show more"
+  },
+  "legal": {
+    "privacyTitle": "Privacy policy",
+    "tosTitle": "Terms of use",
+    "close": "Close"
   },
   "diff": {
     "title": "Compare versions",

@@ -227,6 +227,10 @@
     "currentStreak": "Racha actual (días)",
     "longestStreak": "Racha más larga (días)",
     "lastWritingDate": "Última actividad",
+    "legal": "Legal",
+    "legalHint": "Privacidad y términos de uso. Se abren en el lector interno de la app.",
+    "privacyLink": "Política de privacidad",
+    "tosLink": "Términos de uso",
     "last30Days": "Últimos 30 días",
     "last30DaysAria": "Gráfico de barras de palabras escritas por día en los últimos 30 días",
     "totalWords": "{count} palabras",
@@ -261,6 +265,11 @@
     "confirmRestore": "Esta versión sobreescribirá el contenido actual del documento. La versión actual se guardará automáticamente como auto-restore. ¿Continuar?",
     "empty": "Sin versiones aún.",
     "more": "Mostrar más"
+  },
+  "legal": {
+    "privacyTitle": "Política de privacidad",
+    "tosTitle": "Términos de uso",
+    "close": "Cerrar"
   },
   "diff": {
     "title": "Comparar versiones",

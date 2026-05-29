@@ -11,6 +11,7 @@ import { useToast } from 'primevue/usetoast';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import KeybindingsEditor from '@/components/KeybindingsEditor.vue';
+import LegalDialog, { type LegalKind } from '@/components/LegalDialog.vue';
 import SparklineChart from '@/components/SparklineChart.vue';
 import { useUiStore } from '@/stores/ui';
 import { useProjectStore } from '@/stores/project';
@@ -160,6 +161,18 @@ const localeModel = computed({
   get: () => locale.value,
   set: (v: string) => ui.setLocale(v as 'es' | 'en'),
 });
+
+const legalKind = ref<LegalKind | null>(null);
+const legalVisible = computed({
+  get: () => legalKind.value !== null,
+  set: (v: boolean) => {
+    if (!v) legalKind.value = null;
+  },
+});
+
+function onOpenPolicy(kind: LegalKind) {
+  legalKind.value = kind;
+}
 
 const stats = ref<WritingStats | null>(null);
 const dailySeries = ref<DailyWriting[]>([]);
@@ -431,6 +444,33 @@ function kindLabel(kind: BackupRecord['kind']): string {
           </li>
         </ul>
       </section>
+
+      <section>
+        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+          {{ t('settings.legal') }}
+        </h2>
+        <p class="text-xs opacity-60 mb-2">{{ t('settings.legalHint') }}</p>
+        <div class="flex flex-col gap-1 text-sm">
+          <a
+            class="underline opacity-80 hover:opacity-100 cursor-pointer"
+            tabindex="0"
+            @click="onOpenPolicy('privacy')"
+            @keydown.enter="onOpenPolicy('privacy')"
+          >
+            {{ t('settings.privacyLink') }}
+          </a>
+          <a
+            class="underline opacity-80 hover:opacity-100 cursor-pointer"
+            tabindex="0"
+            @click="onOpenPolicy('tos')"
+            @keydown.enter="onOpenPolicy('tos')"
+          >
+            {{ t('settings.tosLink') }}
+          </a>
+        </div>
+      </section>
     </div>
+
+    <LegalDialog v-model:visible="legalVisible" :kind="legalKind" />
   </section>
 </template>
