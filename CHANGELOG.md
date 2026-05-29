@@ -83,6 +83,29 @@ premium (IA BYOK + voz). Aún sin release versionada.
 - **Diferido**: `CodexKind::Event` + campo `when` (G-00) como enriquecimiento
   opcional del validador de trama, que ya funciona con el codex existente.
 
+### Added — Épica H: voz local (H-01..H-11)
+
+- **Runtime de voz opt-in** (H-01/H-02): binarios + modelos viven en
+  `<app_data>/voice/`, se descargan (streaming + checksum + escritura atómica)
+  o se importan; nada en el instalador, ejecución por `std::process`.
+- **Dictado** (H-03/H-04): `WhisperLocalASR` (spawn whisper.cpp, parseo JSON con
+  timing) detrás del trait `ASRService`. Frontend: `useAudioRecorder` graba y
+  resamplea a WAV 16 kHz mono, `useDictation` transcribe e inserta en el cursor,
+  overlay con medidor de nivel, atajo Ctrl+Shift+M.
+- **Lectura en voz alta** (H-05/H-06/H-07): `PiperTTSService` (spawn Piper → WAV
+  → PCM) tras el trait `TTSService`; `useReadAloud` sintetiza oración por oración
+  con highlight del pasaje actual, controles play/pausa/saltar/velocidad.
+- **Notas de voz** (H-08/H-09/H-11): migración 014 (media gana
+  `duration_ms`/`transcribed_text`/`is_voice_note`); grabar (reusa el grabador),
+  reproducir y transcribir en background. `VoiceNotesDialog`.
+- **Modelos/voces** se gestionan desde Settings → Voz (descarga con progreso +
+  import de binario). `available()` honesto: la UI solo ofrece voz si el binario
+  y un modelo/voz están realmente instalados.
+- Motores **intercambiables**: cambiar de ASR/TTS = nueva impl del trait + una
+  línea en `factory`; UI, comandos y composables intactos. Parsers puros
+  (JSON whisper, WAV, encoder WAV, autopuntuación) unit-testeados.
+- **Diferido**: vínculo codex↔nota de voz (H-10, P1).
+
 ### Deferred to backlog futuro
 
 - **Research browser embebido + bookmarks + captura web** (S6-01..03 →
