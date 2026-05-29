@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { open, save } from '@tauri-apps/plugin-dialog';
+import { open as openExternal } from '@tauri-apps/plugin-shell';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
@@ -53,6 +54,7 @@ const formatOptions = computed(() => [
   { value: 'markdown', label: t('export.formatMarkdown'), icon: 'pi pi-file' },
   { value: 'docx', label: t('export.formatDocx'), icon: 'pi pi-file-word' },
   { value: 'epub', label: t('export.formatEpub'), icon: 'pi pi-book' },
+  { value: 'pdf', label: t('export.formatPdf'), icon: 'pi pi-print' },
 ]);
 
 const fontOptions = computed(() => [
@@ -84,7 +86,10 @@ const extension = computed(() => {
     case 'epub':
       return 'epub';
     case 'pdf':
-      return 'pdf';
+      // PDF "export" is really a print-ready HTML that the browser turns
+      // into a real PDF via the system print dialog. The file extension
+      // matches the actual content so the OS opens it with a browser.
+      return 'html';
   }
 });
 
@@ -97,7 +102,7 @@ const filterByFormat = computed(() => {
     case 'epub':
       return [{ name: 'EPUB', extensions: ['epub'] }];
     case 'pdf':
-      return [{ name: 'PDF', extensions: ['pdf'] }];
+      return [{ name: 'PDF print preview', extensions: ['html'] }];
   }
 });
 
@@ -183,12 +188,31 @@ async function onExport() {
 
   exporting.value = false;
   if (result) {
-    toast.add({
-      severity: 'success',
-      summary: t('export.successTitle'),
-      detail: t('export.successDetail', { path: result }),
-      life: 6000,
-    });
+    if (format.value === 'pdf') {
+      // The "PDF" file is print-ready HTML — opening it with the OS
+      // default app launches the browser, which auto-triggers
+      // `window.print()` so the user lands directly in the system
+      // print dialog and can pick "Save as PDF".
+      try {
+        await openExternal(result);
+      } catch {
+        // Falling back: the user already has the file, they can open
+        // it manually. The success toast still surfaces the path.
+      }
+      toast.add({
+        severity: 'success',
+        summary: t('export.successTitle'),
+        detail: t('export.pdfHint'),
+        life: 8000,
+      });
+    } else {
+      toast.add({
+        severity: 'success',
+        summary: t('export.successTitle'),
+        detail: t('export.successDetail', { path: result }),
+        life: 6000,
+      });
+    }
     close();
   }
 }

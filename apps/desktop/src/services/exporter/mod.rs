@@ -8,6 +8,7 @@ mod epub;
 mod footnotes;
 mod markdown;
 mod media_bundle;
+mod pdf;
 mod util;
 
 pub use media_bundle::{extract_media_ids, MediaBundle};
@@ -17,7 +18,7 @@ pub use config::{
 };
 
 use crate::domain::{CodexEntry, DocNode, Project};
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -34,7 +35,10 @@ impl ExportFormat {
             ExportFormat::Markdown => "md",
             ExportFormat::Docx => "docx",
             ExportFormat::Epub => "epub",
-            ExportFormat::Pdf => "pdf",
+            // PDF emits a print-ready HTML page. The UI opens it in the
+            // browser/webview where the user converts to PDF via the
+            // system print dialog ("Save as PDF").
+            ExportFormat::Pdf => "html",
         }
     }
 
@@ -45,7 +49,7 @@ impl ExportFormat {
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             }
             ExportFormat::Epub => "application/epub+zip",
-            ExportFormat::Pdf => "application/pdf",
+            ExportFormat::Pdf => "text/html",
         }
     }
 }
@@ -79,6 +83,7 @@ impl ExportService for LocalExporter {
             ExportFormat::Markdown,
             ExportFormat::Docx,
             ExportFormat::Epub,
+            ExportFormat::Pdf,
         ]
     }
 
@@ -95,9 +100,7 @@ impl ExportService for LocalExporter {
             ExportFormat::Markdown => markdown::render(project, documents, codex, media, config),
             ExportFormat::Docx => docx::render(project, documents, codex, media, config),
             ExportFormat::Epub => epub::render(project, documents, codex, media, config),
-            ExportFormat::Pdf => Err(AppError::Unsupported(
-                "PDF export not implemented yet".into(),
-            )),
+            ExportFormat::Pdf => pdf::render(project, documents, codex, media, config),
         }
     }
 }
