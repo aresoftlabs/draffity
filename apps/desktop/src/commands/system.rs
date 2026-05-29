@@ -46,3 +46,30 @@ pub fn get_recent_daily_writing(
 ) -> CmdResult<Vec<DailyWriting>> {
     state.storage.list_recent_daily_writing(days)
 }
+
+/// Snapshot of the crash-reporting service state. `active` tells the UI
+/// whether to show the opt-in toggle at all (no destination → no toggle).
+/// `enabled` is the user's current consent value.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CrashReportingStatus {
+    pub active: bool,
+    pub enabled: bool,
+}
+
+#[tauri::command]
+pub fn get_crash_reporting_status(state: State<'_, AppState>) -> CrashReportingStatus {
+    CrashReportingStatus {
+        active: state.crash_reporter.is_active(),
+        enabled: state.crash_reporter.is_enabled(),
+    }
+}
+
+#[tauri::command]
+pub fn set_crash_reporting_enabled(state: State<'_, AppState>, enabled: bool) -> CmdResult<()> {
+    state.crash_reporter.set_enabled(enabled);
+    state
+        .storage
+        .set_setting("crash_reporting.enabled", if enabled { "1" } else { "0" })?;
+    Ok(())
+}

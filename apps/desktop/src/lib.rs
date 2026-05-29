@@ -39,6 +39,13 @@ pub fn run() {
             if let Err(e) = bundle.backup.run_daily_maintenance() {
                 tracing::warn!(error = %e, "backup maintenance failed at startup");
             }
+            // Restore the user's saved crash-reporting opt-in. Storage
+            // failures are logged but don't block startup — the user can
+            // always re-toggle from Settings.
+            if let Ok(Some(value)) = bundle.storage.get_setting("crash_reporting.enabled") {
+                let enabled = matches!(value.as_str(), "1" | "true" | "on");
+                bundle.crash_reporter.set_enabled(enabled);
+            }
             app.manage(AppState::from_bundle(bundle, log_guard));
 
             Ok(())
@@ -52,6 +59,8 @@ pub fn run() {
             commands::set_setting,
             commands::get_writing_stats,
             commands::get_recent_daily_writing,
+            commands::get_crash_reporting_status,
+            commands::set_crash_reporting_enabled,
             // projects
             commands::create_project,
             commands::list_projects,

@@ -15,10 +15,11 @@ use crate::capabilities::Tier;
 use crate::error::{AppError, AppResult};
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
-    ExportService, FreeTier, ImportService, LayeredTemplatesService, LocalBackupService,
-    LocalBibliographyService, LocalExporter, LocalImporter, LocalMediaService, LocalProjectManager,
-    LocalStorageService, MediaService, NoOpAI, NoOpASR, NoOpSync, ProjectManagerService,
-    StorageService, TemplatesService, TierService, UserTemplatesLoader,
+    CrashReporterService, ExportService, FreeTier, ImportService, LayeredTemplatesService,
+    LocalBackupService, LocalBibliographyService, LocalExporter, LocalFileCrashReporter,
+    LocalImporter, LocalMediaService, LocalProjectManager, LocalStorageService, MediaService,
+    NoOpAI, NoOpASR, NoOpCrashReporter, NoOpSync, ProjectManagerService, StorageService,
+    TemplatesService, TierService, UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -37,6 +38,7 @@ pub struct ServiceBundle {
     pub bibliography: Arc<dyn BibliographyService>,
     pub backup: Arc<dyn BackupService>,
     pub media: Arc<dyn MediaService>,
+    pub crash_reporter: Arc<dyn CrashReporterService>,
 }
 
 /// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
@@ -59,6 +61,8 @@ impl ServiceFactory {
 
         let media: Arc<dyn MediaService> =
             Arc::new(LocalMediaService::new(storage.clone(), app_data_dir));
+        let crash_reporter: Arc<dyn CrashReporterService> =
+            Self::build_crash_reporter(app_data_dir);
 
         Ok(ServiceBundle {
             storage,
@@ -74,7 +78,25 @@ impl ServiceFactory {
             bibliography: Arc::new(LocalBibliographyService),
             backup: Self::build_backup(app_data_dir),
             media,
+            crash_reporter,
         })
+    }
+
+    /// Pick a crash reporter impl. When `DRAFFITY_SENTRY_DSN` is empty
+    /// or absent (the default for OSS builds) we wire a local-file
+    /// stub: it queues reports under `<app_data>/crash-reports/` so the
+    /// pipeline is exercised end-to-end without a remote dependency.
+    /// A real Sentry-backed impl plugs in here.
+    fn build_crash_reporter(app_data_dir: &Path) -> Arc<dyn CrashReporterService> {
+        match std::env::var("DRAFFITY_SENTRY_DSN") {
+            Ok(dsn) if !dsn.trim().is_empty() => {
+                // TODO: swap in a real Sentry uploader when infra lands.
+                Arc::new(LocalFileCrashReporter::new(
+                    app_data_dir.join("crash-reports"),
+                ))
+            }
+            _ => Arc::new(NoOpCrashReporter),
+        }
     }
 
     fn build_backup(app_data_dir: &Path) -> Arc<dyn BackupService> {

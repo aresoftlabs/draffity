@@ -36,6 +36,10 @@ export const ipc = {
   getWritingStats: () => invoke<WritingStats>('get_writing_stats'),
   getRecentDailyWriting: (days: number) =>
     invoke<DailyWriting[]>('get_recent_daily_writing', { days }),
+  getCrashReportingStatus: () =>
+    invoke<{ active: boolean; enabled: boolean }>('get_crash_reporting_status'),
+  setCrashReportingEnabled: (enabled: boolean) =>
+    invoke<void>('set_crash_reporting_enabled', { enabled }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

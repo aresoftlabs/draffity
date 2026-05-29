@@ -228,6 +228,8 @@
     "currentStreak": "Current streak (days)",
     "longestStreak": "Longest streak (days)",
     "lastWritingDate": "Last activity",
+    "crashReporting": "Send crash reports",
+    "crashReportingHint": "Off by default. When enabled, Draffity can send the stack trace and app version to the URL configured by the build. The content of your documents is never included.",
     "legal": "Legal",
     "legalHint": "Privacy and terms of use. Open in the in-app reader.",
     "privacyLink": "Privacy policy",

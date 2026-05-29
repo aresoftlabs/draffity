@@ -7,9 +7,9 @@ use std::sync::Arc;
 use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::services::{
-    AIService, ASRService, BackupService, BibliographyService, CloudSyncService, ExportService,
-    ImportService, MediaService, ProjectManagerService, ServiceBundle, StorageService,
-    TemplatesService, TierService, UserTemplatesLoader,
+    AIService, ASRService, BackupService, BibliographyService, CloudSyncService,
+    CrashReporterService, ExportService, ImportService, MediaService, ProjectManagerService,
+    ServiceBundle, StorageService, TemplatesService, TierService, UserTemplatesLoader,
 };
 
 pub struct AppState {
@@ -29,6 +29,7 @@ pub struct AppState {
     pub bibliography: Arc<dyn BibliographyService>,
     pub backup: Arc<dyn BackupService>,
     pub media: Arc<dyn MediaService>,
+    pub crash_reporter: Arc<dyn CrashReporterService>,
     /// Keeps the non-blocking log writer alive for the whole app lifecycle.
     /// Dropping this guard flushes any pending log lines.
     #[allow(dead_code)]
@@ -51,6 +52,7 @@ impl AppState {
             bibliography: bundle.bibliography,
             backup: bundle.backup,
             media: bundle.media,
+            crash_reporter: bundle.crash_reporter,
             _log_guard: log_guard,
         }
     }

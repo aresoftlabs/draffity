@@ -163,6 +163,28 @@ const localeModel = computed({
   set: (v: string) => ui.setLocale(v as 'es' | 'en'),
 });
 
+const crashReportingActive = ref(false);
+const crashReportingEnabled = ref(false);
+async function loadCrashReporting() {
+  try {
+    const status = await ipc.getCrashReportingStatus();
+    crashReportingActive.value = status.active;
+    crashReportingEnabled.value = status.enabled;
+  } catch {
+    crashReportingActive.value = false;
+    crashReportingEnabled.value = false;
+  }
+}
+async function onToggleCrashReporting(value: boolean) {
+  crashReportingEnabled.value = value;
+  try {
+    await ipc.setCrashReportingEnabled(value);
+  } catch {
+    // Revert visual state if the IPC call fails.
+    crashReportingEnabled.value = !value;
+  }
+}
+
 const legalKind = ref<LegalKind | null>(null);
 const legalVisible = computed({
   get: () => legalKind.value !== null,
@@ -198,6 +220,7 @@ onMounted(async () => {
   }
   await loadBackups();
   await loadCustomFonts();
+  await loadCrashReporting();
 });
 
 async function loadBackups() {
@@ -444,6 +467,20 @@ function kindLabel(kind: BackupRecord['kind']): string {
             />
           </li>
         </ul>
+      </section>
+
+      <section v-if="crashReportingActive" class="flex items-center justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+            {{ t('settings.crashReporting') }}
+          </h2>
+          <p class="text-xs opacity-60 mt-1">{{ t('settings.crashReportingHint') }}</p>
+        </div>
+        <ToggleSwitch
+          :model-value="crashReportingEnabled"
+          :aria-label="t('settings.crashReporting')"
+          @update:model-value="onToggleCrashReporting"
+        />
       </section>
 
       <section>
