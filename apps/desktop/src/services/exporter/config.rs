@@ -82,6 +82,10 @@ pub struct ExportConfig {
     /// document listing every entry grouped by kind. Defaults to false to
     /// avoid leaking worldbuilding into reader-facing exports unsought.
     pub include_codex: bool,
+    /// When true, research documents (I-10) and their subtree are included in
+    /// the export. Defaults to false — research is reference material, not
+    /// reader-facing manuscript.
+    pub include_research: bool,
 }
 
 impl Default for ExportConfig {
@@ -97,6 +101,7 @@ impl Default for ExportConfig {
             scene_separator: SceneSeparator::default(),
             cover_image_path: None,
             include_codex: false,
+            include_research: false,
         }
     }
 }

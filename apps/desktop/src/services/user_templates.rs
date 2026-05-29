@@ -208,6 +208,7 @@ mod tests {
             tags: vec![],
             label_ids: vec![],
             metadata: std::collections::HashMap::new(),
+            is_research: false,
             goal_words: None,
             created_at: 0,
             updated_at: 0,

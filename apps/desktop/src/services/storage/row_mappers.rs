@@ -77,6 +77,11 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         .and_then(|s| serde_json::from_str::<std::collections::HashMap<String, String>>(&s).ok())
         .unwrap_or_default();
     let goal_words: Option<i64> = r.get("goal_words").ok().flatten();
+    // `is_research` is an INTEGER 0/1; tolerate its absence on legacy SELECTs.
+    let is_research: bool = r
+        .get::<_, i64>("is_research")
+        .map(|n| n != 0)
+        .unwrap_or(false);
     let synopsis: Option<String> = r.get("synopsis").ok().flatten();
     let content_json: Option<String> = r.get("content_json").ok().flatten();
     Ok(DocNode {
@@ -93,6 +98,7 @@ pub(super) fn row_to_document(r: &Row<'_>) -> rusqlite::Result<DocNode> {
         tags,
         label_ids,
         metadata,
+        is_research,
         goal_words,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,

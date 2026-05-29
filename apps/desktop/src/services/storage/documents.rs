@@ -15,7 +15,7 @@ use super::row_mappers::row_to_document;
 /// the document's tag set and label-id set as JSON arrays; an empty array
 /// (not NULL) when the document has none.
 const COLS: &str = "id, project_id, parent_id, title, doc_type, content, content_json, synopsis, \
-     position, status, goal_words, created_at, updated_at, \
+     position, status, goal_words, is_research, created_at, updated_at, \
      (SELECT COALESCE(json_group_array(tag), '[]') FROM document_tags WHERE document_id = documents.id) AS tags_json, \
      (SELECT COALESCE(json_group_array(label_id), '[]') FROM document_labels WHERE document_id = documents.id) AS labels_json, \
      COALESCE((SELECT json_group_object(field_id, value) FROM document_custom_values WHERE document_id = documents.id), '{}') AS metadata_json";
@@ -71,6 +71,7 @@ pub(super) fn create(conn: &Connection, input: DocumentInput) -> AppResult<DocNo
         tags: Vec::new(),
         label_ids: Vec::new(),
         metadata: std::collections::HashMap::new(),
+        is_research: false,
         goal_words: None,
         created_at: now,
         updated_at: now,
@@ -180,6 +181,18 @@ pub(super) fn set_goal(conn: &Connection, id: &str, goal: Option<i64>) -> AppRes
     let updated = conn.execute(
         "UPDATE documents SET goal_words=?2, updated_at=?3 WHERE id=?1",
         params![id, goal, now_ms()],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+    select_one(conn, id)
+}
+
+/// Flag (or unflag) a document as research material (I-10).
+pub(super) fn set_research(conn: &Connection, id: &str, is_research: bool) -> AppResult<DocNode> {
+    let updated = conn.execute(
+        "UPDATE documents SET is_research=?2, updated_at=?3 WHERE id=?1",
+        params![id, is_research as i64, now_ms()],
     )?;
     if updated == 0 {
         return Err(AppError::NotFound(format!("document {id}")));
@@ -406,6 +419,28 @@ mod tests {
         // Clear it.
         let cleared = s.set_document_goal(&d, None).unwrap();
         assert!(cleared.goal_words.is_none());
+    }
+
+    #[test]
+    fn set_document_research_persists_and_defaults_false() {
+        let s = fresh();
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let d = make_chapter(&s, &p.id, "A");
+        // New documents are not research by default.
+        assert!(!s.get_document(&d).unwrap().unwrap().is_research);
+
+        let flagged = s.set_document_research(&d, true).unwrap();
+        assert!(flagged.is_research);
+        assert!(s.get_document(&d).unwrap().unwrap().is_research);
+
+        let cleared = s.set_document_research(&d, false).unwrap();
+        assert!(!cleared.is_research);
     }
 
     #[test]

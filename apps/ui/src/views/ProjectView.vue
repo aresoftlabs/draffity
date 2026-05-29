@@ -403,6 +403,11 @@ async function onMetadataChange(fieldId: string, value: string | null) {
   );
 }
 
+async function onResearchChange(isResearch: boolean) {
+  if (!selected.value || readOnly.value) return;
+  await run(t('errors.saveDocument'), () => docStore.setResearch(selected.value!.id, isResearch));
+}
+
 async function onDocGoalChange(goal: number | null) {
   if (!selected.value || readOnly.value) return;
   await run(t('errors.saveDocument'), () => docStore.setGoal(selected.value!.id, goal));
@@ -795,6 +800,7 @@ onBeforeUnmount(() => {
           @manage-labels="labelManagerVisible = true"
           @metadata-change="onMetadataChange"
           @manage-fields="fieldsManagerVisible = true"
+          @research-change="onResearchChange"
           @goal-change="onDocGoalChange"
           @synopsis-change="onSynopsisChange"
         />

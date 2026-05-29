@@ -51,6 +51,9 @@ export interface DocNode {
   /** Custom metadata values (I-08): `customField id → string value`. Empty
    *  object when the document has no custom values. */
   metadata: Record<string, string>;
+  /** Research material (I-10): excluded from word-count stats and from export
+   *  by default (the whole subtree under a research doc is treated as such). */
+  isResearch: boolean;
   /** Target word count for this document. `null` means no goal set. */
   goalWords?: number | null;
   createdAt: number;
@@ -283,6 +286,9 @@ export interface ExportConfig {
   /** When true, exporters append a "Codex" appendix at the end of the
    *  document listing every entry grouped by kind. */
   includeCodex: boolean;
+  /** When true, research documents (I-10) and their subtree are included in
+   *  the export. Defaults to false. */
+  includeResearch: boolean;
 }
 
 /** Defaults mirrored from `services::exporter::config::ExportConfig::default()`. */
@@ -297,6 +303,7 @@ export const DEFAULT_EXPORT_CONFIG: ExportConfig = {
   sceneSeparator: { kind: 'stars' },
   coverImagePath: null,
   includeCodex: false,
+  includeResearch: false,
 };
 
 // Writing stats

@@ -105,6 +105,10 @@ pub struct DocNode {
     /// field definitions (name, kind, options) are resolved separately.
     #[serde(default)]
     pub metadata: std::collections::HashMap<String, String>,
+    /// Research material (I-10): when true, this document (and its subtree) is
+    /// excluded from word-count stats and from export by default.
+    #[serde(default)]
+    pub is_research: bool,
     /// Target word count for this document. `None` means no goal set.
     #[serde(default)]
     pub goal_words: Option<i64>,

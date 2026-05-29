@@ -62,6 +62,7 @@ const MIGRATIONS: &[(u32, &str)] = &[
     (15, include_str!("../../migrations/015_collections.sql")),
     (16, include_str!("../../migrations/016_labels.sql")),
     (17, include_str!("../../migrations/017_custom_metadata.sql")),
+    (18, include_str!("../../migrations/018_research.sql")),
 ];
 
 pub trait StorageService: Send + Sync {
@@ -122,6 +123,8 @@ pub trait StorageService: Send + Sync {
     fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>>;
     /// Set or clear a document's target word count.
     fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode>;
+    /// Flag or unflag a document as research material (I-10).
+    fn set_document_research(&self, id: &str, is_research: bool) -> AppResult<DocNode>;
     /// Set or clear a project's target word count.
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project>;
     /// Set or clear a document's synopsis (short description surfaced in
@@ -470,6 +473,10 @@ impl StorageService for LocalStorageService {
 
     fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode> {
         documents::set_goal(&self.conn.lock().unwrap(), id, goal)
+    }
+
+    fn set_document_research(&self, id: &str, is_research: bool) -> AppResult<DocNode> {
+        documents::set_research(&self.conn.lock().unwrap(), id, is_research)
     }
 
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project> {

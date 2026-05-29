@@ -22,6 +22,7 @@ function makeDoc(over: Partial<DocNode> = {}): DocNode {
     tags: over.tags ?? [],
     labelIds: over.labelIds ?? [],
     metadata: over.metadata ?? {},
+    isResearch: over.isResearch ?? false,
     createdAt: over.createdAt ?? now,
     updatedAt: over.updatedAt ?? now,
   };
@@ -94,6 +95,21 @@ describe('useDocumentStore', () => {
     const store = useDocumentStore();
     await store.loadFor('p1');
     expect(store.totalWordCount).toBe(3);
+  });
+
+  it('totalWordCount excludes research docs and their descendants', async () => {
+    const docs = [
+      makeDoc({ id: 'ch', content: '<p>uno dos</p>' }),
+      makeDoc({ id: 'res', isResearch: true, content: '<p>tres</p>' }),
+      makeDoc({ id: 'note', parentId: 'res', content: '<p>cuatro cinco seis</p>' }),
+    ];
+    invokeMock.mockResolvedValueOnce(docs);
+    const store = useDocumentStore();
+    await store.loadFor('p1');
+    // Only "uno dos" counts; the research folder + its nested note are excluded.
+    expect(store.totalWordCount).toBe(2);
+    expect(store.researchIds.has('note')).toBe(true);
+    expect(store.researchIds.has('ch')).toBe(false);
   });
 
   it('reset clears state', async () => {

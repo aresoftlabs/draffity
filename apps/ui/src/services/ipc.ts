@@ -337,6 +337,10 @@ export const ipc = {
   setDocumentMetadata: (documentId: string, fieldId: string, value: string | null) =>
     invoke<DocNode>('set_document_metadata', { documentId, fieldId, value }),
 
+  // Research folder (Épica I — I-10)
+  setDocumentResearch: (id: string, isResearch: boolean) =>
+    invoke<DocNode>('set_document_research', { id, isResearch }),
+
   // Search
   searchDocuments: (params: { projectId: string; query: string }) =>
     invoke<SearchHit[]>('search_documents', params),

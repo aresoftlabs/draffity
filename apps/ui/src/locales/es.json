@@ -356,6 +356,7 @@
     "includeToc": "Incluir tabla de contenidos",
     "includeTitlePage": "Incluir portada / página de título",
     "includeCodex": "Incluir codex como apéndice",
+    "includeResearch": "Incluir material de investigación",
     "sceneSeparator": "Separador de escena",
     "sepStars": "Estrellas (* * *)",
     "sepDashes": "Guiones (---)",
@@ -601,6 +602,11 @@
       "date": "Fecha",
       "select": "Lista"
     }
+  },
+  "research": {
+    "label": "Investigación",
+    "toggle": "Marcar como material de investigación",
+    "hint": "El material de investigación no cuenta en las estadísticas ni se exporta por defecto."
   },
   "voice": {
     "dictation": {

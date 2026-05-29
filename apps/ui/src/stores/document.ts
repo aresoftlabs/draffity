@@ -33,9 +33,41 @@ export const useDocumentStore = defineStore('document', () => {
     return countWords(selected.value.content ?? '');
   });
 
+  /** Ids of every document inside a research subtree (I-10): a doc flagged
+   *  `isResearch` plus all of its descendants. Used to exclude research from
+   *  word-count stats (export does the same server-side). */
+  const researchIds = computed(() => {
+    const byId = new Map(documents.value.map((d) => [d.id, d] as const));
+    const ids = new Set<string>();
+    for (const d of documents.value) {
+      let cursor: string | null = d.id;
+      const chain: string[] = [];
+      let hit = false;
+      while (cursor) {
+        if (ids.has(cursor)) {
+          hit = true;
+          break;
+        }
+        const node = byId.get(cursor);
+        if (!node) break;
+        chain.push(cursor);
+        if (node.isResearch) {
+          hit = true;
+          break;
+        }
+        cursor = node.parentId ?? null;
+      }
+      if (hit) for (const id of chain) ids.add(id);
+    }
+    return ids;
+  });
+
   const totalWordCount = computed(() => {
     let n = 0;
-    for (const d of documents.value) n += countWords(d.content ?? '');
+    for (const d of documents.value) {
+      if (researchIds.value.has(d.id)) continue;
+      n += countWords(d.content ?? '');
+    }
     return n;
   });
 
@@ -116,6 +148,12 @@ export const useDocumentStore = defineStore('document', () => {
     if (idx !== -1) documents.value[idx] = updated;
   }
 
+  async function setResearch(id: string, isResearch: boolean) {
+    const updated = await ipc.setDocumentResearch(id, isResearch);
+    const idx = documents.value.findIndex((d) => d.id === id);
+    if (idx !== -1) documents.value[idx] = updated;
+  }
+
   async function setGoal(id: string, goal: number | null) {
     const updated = await ipc.setDocumentGoal({ id, goal });
     const idx = documents.value.findIndex((d) => d.id === id);
@@ -158,6 +196,7 @@ export const useDocumentStore = defineStore('document', () => {
     tree,
     wordCount,
     totalWordCount,
+    researchIds,
     loadFor,
     select,
     create,
@@ -169,6 +208,7 @@ export const useDocumentStore = defineStore('document', () => {
     setTags,
     setLabels,
     setMetadata,
+    setResearch,
     setGoal,
     setSynopsis,
     reset,

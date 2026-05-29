@@ -295,6 +295,11 @@ const newMenuItems = computed(() => [
             :aria-label="t(`status.${(node.data as DocNode).status}`)"
           />
           <span class="text-sm truncate">{{ node.label }}</span>
+          <i
+            v-if="node.data && (node.data as DocNode).isResearch"
+            class="pi pi-folder-open text-[10px] opacity-50 shrink-0"
+            :title="t('research.label')"
+          />
           <LabelChips
             v-if="node.data"
             :label-ids="(node.data as DocNode).labelIds"

@@ -5,6 +5,7 @@ import Select from 'primevue/select';
 import Chips from 'primevue/chips';
 import MultiSelect from 'primevue/multiselect';
 import Button from 'primevue/button';
+import ToggleSwitch from 'primevue/toggleswitch';
 import Textarea from 'primevue/textarea';
 import type { CustomField, DocNode, DocumentStatus, Label } from '@draffity/shared-types';
 import SnapshotsList from '@/components/SnapshotsList.vue';
@@ -31,6 +32,7 @@ const emit = defineEmits<{
   manageLabels: [];
   metadataChange: [fieldId: string, value: string | null];
   manageFields: [];
+  researchChange: [isResearch: boolean];
   goalChange: [goal: number | null];
   synopsisChange: [synopsis: string | null];
 }>();
@@ -139,7 +141,17 @@ function onSynopsisInput(v: string) {
             <dt class="opacity-60">{{ t('project.updatedAt') }}</dt>
             <dd>{{ formatDate(doc.updatedAt) }}</dd>
           </div>
+          <div class="flex justify-between items-center gap-2 pt-1">
+            <dt class="opacity-60">{{ t('research.label') }}</dt>
+            <ToggleSwitch
+              :model-value="doc.isResearch"
+              :disabled="readOnly"
+              :aria-label="t('research.toggle')"
+              @update:model-value="(v: boolean) => emit('researchChange', v)"
+            />
+          </div>
         </dl>
+        <p class="text-[11px] opacity-50 mt-1">{{ t('research.hint') }}</p>
       </section>
 
       <section>
