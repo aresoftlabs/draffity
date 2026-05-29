@@ -1,6 +1,7 @@
 //! Tauri IPC commands. Thin orchestration around services + event emission.
 //! Business logic lives in `services/`. Domain rules live in `domain/`.
 
+pub mod ai;
 pub mod backup;
 pub mod bibliography;
 pub mod codex;
@@ -14,6 +15,7 @@ pub mod search;
 pub mod system;
 pub mod templates;
 
+pub use ai::*;
 pub use backup::*;
 pub use bibliography::*;
 pub use codex::*;

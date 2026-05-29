@@ -14,13 +14,14 @@ use std::sync::Arc;
 use crate::capabilities::Tier;
 use crate::error::AppResult;
 use crate::services::{
-    AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, CloudSyncService,
-    CrashReporterService, DisabledLicenseValidator, Ed25519Validator, ExportService, ImportService,
-    KeyringSecretStorage, LayeredTemplatesService, LicenseValidator, LocalBackupService,
-    LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
-    LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, MutableTier, NoOpAI,
-    NoOpASR, NoOpCrashReporter, NoOpSync, NoOpTTS, ProjectManagerService, SecretStorage,
-    StorageService, TTSService, TemplatesService, TierService, UserTemplatesLoader,
+    AIService, ASRService, BackupService, BibliographyService, BuiltInTemplates, ByokAIService,
+    CloudSyncService, CrashReporterService, DisabledLicenseValidator, Ed25519Validator,
+    ExportService, ImportService, KeyringSecretStorage, LayeredTemplatesService,
+    LexicalProjectMemory, LicenseValidator, LocalBackupService, LocalBibliographyService,
+    LocalExporter, LocalFileCrashReporter, LocalImporter, LocalMediaService, LocalProjectManager,
+    LocalStorageService, MediaService, MutableTier, NoOpASR, NoOpCrashReporter, NoOpSync, NoOpTTS,
+    ProjectManagerService, ProjectMemoryService, SecretStorage, StorageService, TTSService,
+    TemplatesService, TierService, UserTemplatesLoader,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -32,6 +33,7 @@ pub struct ServiceBundle {
     pub templates: Arc<dyn TemplatesService>,
     pub user_templates: Arc<UserTemplatesLoader>,
     pub ai: Arc<dyn AIService>,
+    pub memory: Arc<dyn ProjectMemoryService>,
     pub sync: Arc<dyn CloudSyncService>,
     pub asr: Arc<dyn ASRService>,
     pub tts: Arc<dyn TTSService>,
@@ -68,13 +70,23 @@ impl ServiceFactory {
         let crash_reporter: Arc<dyn CrashReporterService> =
             Self::build_crash_reporter(app_data_dir);
 
+        // Secrets feed the BYOK AI service; both share the keyring. AI is gated
+        // at call time by tier + key (see ByokAIService), so it's wired the
+        // same way for free and premium — activation flips it live.
+        let secrets: Arc<dyn SecretStorage> = Arc::new(KeyringSecretStorage::new());
+        let ai: Arc<dyn AIService> =
+            Arc::new(ByokAIService::new(tier_service.clone(), secrets.clone()));
+        let memory: Arc<dyn ProjectMemoryService> =
+            Arc::new(LexicalProjectMemory::new(storage.clone()));
+
         Ok(ServiceBundle {
             storage,
             tier: tier_service,
             project_manager,
             templates,
             user_templates,
-            ai: Self::build_ai(tier),
+            ai,
+            memory,
             sync: Self::build_sync(tier),
             asr: Self::build_asr(tier),
             tts: Self::build_tts(tier),
@@ -84,7 +96,7 @@ impl ServiceFactory {
             backup: Self::build_backup(app_data_dir),
             media,
             crash_reporter,
-            secrets: Arc::new(KeyringSecretStorage::new()),
+            secrets,
             license_validator: Self::build_license_validator(),
         })
     }
@@ -156,16 +168,11 @@ impl ServiceFactory {
         Ok(Arc::new(MutableTier::new(tier)))
     }
 
-    // Each builder below returns the free/NoOp impl today and will gain a
-    // premium match arm without touching callers. The real premium impls
-    // (`OpenRouterAIService`, `WhisperLocalASR`, `PiperTTSService`) land in
-    // Épicas F/G/H; until then premium tier also gets NoOp here, so activating
-    // premium flips capability *gates* but the services stay stubs until their
-    // épica ships. See docs/PREMIUM-INTEGRATION.md.
-
-    fn build_ai(_tier: Tier) -> Arc<dyn AIService> {
-        Arc::new(NoOpAI)
-    }
+    // `ai` is the BYOK `ByokAIService` (F-01), gated at call time. The voice
+    // builders below still return NoOp stubs until `WhisperLocalASR` /
+    // `PiperTTSService` land in Épica H; activating premium flips their
+    // capability *gates* but the services stay stubs until then. See
+    // docs/PREMIUM-INTEGRATION.md.
 
     fn build_sync(_tier: Tier) -> Arc<dyn CloudSyncService> {
         Arc::new(NoOpSync)
@@ -202,9 +209,10 @@ mod tests {
         // Premium flips capability gates on…
         assert!(bundle.tier.is_enabled("ai_inline"));
         assert!(bundle.tier.is_enabled("voice_dictation"));
-        // …but the premium service impls don't exist yet (land in F/G/H), so
-        // the wired services are still NoOp stubs.
-        assert!(!bundle.ai.available());
+        // …voice impls don't exist yet (land in Épica H), so they stay NoOp.
+        // (We don't probe `ai.available()` here — it reads the OS keyring, so
+        // it isn't hermetic in tests; ByokAIService gating is unit-tested in
+        // its own module.)
         assert!(!bundle.asr.available());
         assert!(!bundle.tts.available());
     }

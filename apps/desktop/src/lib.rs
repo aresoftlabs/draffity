@@ -77,6 +77,10 @@ pub fn run() {
             commands::get_premium_status,
             commands::activate_premium,
             commands::deactivate_premium,
+            // ai (byok)
+            commands::get_ai_status,
+            commands::set_openrouter_key,
+            commands::clear_openrouter_key,
             // projects
             commands::create_project,
             commands::list_projects,

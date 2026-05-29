@@ -22,6 +22,9 @@ pub enum AppError {
     #[error("unsupported operation: {0}")]
     Unsupported(String),
 
+    #[error("ai provider: {0}")]
+    AiProvider(String),
+
     #[error("unexpected: {0}")]
     Unexpected(String),
 }
@@ -45,6 +48,7 @@ impl From<AppError> for WireError {
             AppError::Invariant(_) => "invariant",
             AppError::NotFound(_) => "not_found",
             AppError::Unsupported(_) => "unsupported",
+            AppError::AiProvider(_) => "ai_provider",
             AppError::Unexpected(_) => "unexpected",
         };
         WireError {

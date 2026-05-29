@@ -8,8 +8,8 @@ use crate::logging::LogGuards;
 use crate::services::{
     AIService, ASRService, BackupService, BibliographyService, CloudSyncService,
     CrashReporterService, ExportService, ImportService, LicenseValidator, MediaService,
-    ProjectManagerService, SecretStorage, ServiceBundle, StorageService, TTSService,
-    TemplatesService, TierService, UserTemplatesLoader,
+    ProjectManagerService, ProjectMemoryService, SecretStorage, ServiceBundle, StorageService,
+    TTSService, TemplatesService, TierService, UserTemplatesLoader,
 };
 
 pub struct AppState {
@@ -18,8 +18,12 @@ pub struct AppState {
     pub project_manager: Arc<dyn ProjectManagerService>,
     pub templates: Arc<dyn TemplatesService>,
     pub user_templates: Arc<UserTemplatesLoader>,
-    #[allow(dead_code)] // wired up in Phase 1+; consumed by premium impls
+    /// BYOK AI service (gated at call time by tier + key). Consumed by the
+    /// AI commands (Épica F).
     pub ai: Arc<dyn AIService>,
+    /// Engram-aligned project memory feeding AI context (Épica F/G).
+    #[allow(dead_code)] // consumed by AI action commands in F slice 2
+    pub memory: Arc<dyn ProjectMemoryService>,
     #[allow(dead_code)]
     pub sync: Arc<dyn CloudSyncService>,
     #[allow(dead_code)]
@@ -52,6 +56,7 @@ impl AppState {
             templates: bundle.templates,
             user_templates: bundle.user_templates,
             ai: bundle.ai,
+            memory: bundle.memory,
             sync: bundle.sync,
             asr: bundle.asr,
             tts: bundle.tts,
