@@ -63,6 +63,8 @@ export const useUiStore = defineStore('ui', () => {
   const linguisticExtraWords = ref<string[]>(loadJson('linguisticExtraWords', []));
   // Reading-speed for reading-time estimates (J-09), words per minute.
   const readingWpm = ref<number>(loadNumber('readingWpm') ?? 200);
+  // Repetition heatmap (J-08): highlight over-used words/phrases in the editor.
+  const repetitionHeatmap = ref(loadBool('repetitionHeatmap', false));
   // One-shot flag set by onboarding to ask the dashboard to open the
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
@@ -89,6 +91,7 @@ export const useUiStore = defineStore('ui', () => {
   watch(linguisticFocus, (v) => saveBool('linguisticFocus', v));
   watch(linguisticExtraWords, (v) => saveJson('linguisticExtraWords', v), { deep: true });
   watch(readingWpm, (v) => saveNumber('readingWpm', v));
+  watch(repetitionHeatmap, (v) => saveBool('repetitionHeatmap', v));
   watch(sessionGoal, (v) => saveNumber('sessionGoal', v));
   watch(projectViewModes, (v) => saveJson('projectViewModes', v), { deep: true });
   watch(splitSecondaryIds, (v) => saveJson('splitSecondaryIds', v), { deep: true });
@@ -120,6 +123,10 @@ export const useUiStore = defineStore('ui', () => {
 
   function toggleLinguisticFocus() {
     linguisticFocus.value = !linguisticFocus.value;
+  }
+
+  function toggleRepetitionHeatmap() {
+    repetitionHeatmap.value = !repetitionHeatmap.value;
   }
 
   function requestNewProject() {
@@ -175,6 +182,7 @@ export const useUiStore = defineStore('ui', () => {
     linguisticFocus,
     linguisticExtraWords,
     readingWpm,
+    repetitionHeatmap,
     pendingNewProject,
     sessionGoal,
     sessionStartTotal,
@@ -186,6 +194,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleFocusMode,
     toggleTypewriterMode,
     toggleLinguisticFocus,
+    toggleRepetitionHeatmap,
     requestNewProject,
     consumeNewProjectRequest,
     captureSessionStart,

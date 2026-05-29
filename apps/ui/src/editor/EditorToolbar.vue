@@ -9,6 +9,8 @@ const props = defineProps<{
   disabled?: boolean;
   /** Linguistic Focus highlight overlay active state (J-06). */
   linguisticFocusActive?: boolean;
+  /** Repetition heatmap overlay active state (J-08). */
+  repetitionActive?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -17,6 +19,7 @@ const emit = defineEmits<{
   'insert-image': [];
   'insert-footnote': [];
   'toggle-linguistic-focus': [];
+  'toggle-repetition': [];
 }>();
 
 const { t } = useI18n();
@@ -267,6 +270,17 @@ const isInTable = computed(() => isActive('table'));
       :disabled="!isReady"
       :class="{ 'p-button-outlined': linguisticFocusActive }"
       @click="emit('toggle-linguistic-focus')"
+    />
+    <Button
+      v-tooltip.bottom="t('toolbar.repetitionHeatmap')"
+      :aria-label="t('toolbar.repetitionHeatmap')"
+      :aria-pressed="repetitionActive"
+      icon="pi pi-flag"
+      text
+      severity="secondary"
+      :disabled="!isReady"
+      :class="{ 'p-button-outlined': repetitionActive }"
+      @click="emit('toggle-repetition')"
     />
 
     <span class="flex-1" aria-hidden="true" />

@@ -140,6 +140,15 @@ watch(
   { immediate: true, deep: true },
 );
 
+// Repetition heatmap (J-08): apply on editor ready / toggle change.
+watch(
+  [editor, () => uiStore.repetitionHeatmap],
+  ([ed, enabled]) => {
+    ed?.commands.setRepetitionHeatmap(!!enabled);
+  },
+  { immediate: true },
+);
+
 const showExport = ref(false);
 const showBibliography = ref(false);
 const showCitationPicker = ref(false);
@@ -725,11 +734,13 @@ onBeforeUnmount(() => {
             :editor="editor"
             :disabled="readOnly"
             :linguistic-focus-active="uiStore.linguisticFocus"
+            :repetition-active="uiStore.repetitionHeatmap"
             @open-citation-picker="showCitationPicker = true"
             @open-codex-picker="showCodexPicker = true"
             @insert-image="onInsertImage"
             @insert-footnote="onInsertFootnote"
             @toggle-linguistic-focus="uiStore.toggleLinguisticFocus()"
+            @toggle-repetition="uiStore.toggleRepetitionHeatmap()"
           />
           <FindReplaceBar
             v-if="selected?.docType !== 'folder'"

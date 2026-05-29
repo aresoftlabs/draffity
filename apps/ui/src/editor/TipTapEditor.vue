@@ -15,6 +15,7 @@ import { CodexRef } from './extensions/codex-ref';
 import { Footnote } from './extensions/footnote';
 import { Image } from './extensions/image';
 import { LinguisticFocus } from './extensions/linguistic-focus';
+import { RepetitionHeatmap } from './extensions/repetition-heatmap';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 import { useMediaStore } from '@/stores/media';
 
@@ -82,6 +83,8 @@ const editor = useEditor({
     // Linguistic Focus (J-06): toggleable highlight overlay (adverbs, passive
     // voice, dialogue) via decorations — never mutates the document.
     LinguisticFocus,
+    // Repetition heatmap (J-08): local highlight of over-used words/phrases.
+    RepetitionHeatmap,
   ],
   editorProps: {
     attributes: {

@@ -183,6 +183,7 @@
     "insertImage": "Insert image…",
     "insertFootnote": "Insert footnote",
     "linguisticFocus": "Linguistic focus (adverbs, passive, dialogue)",
+    "repetitionHeatmap": "Repetition heatmap (repeated words and phrases)",
     "undo": "Undo",
     "redo": "Redo"
   },
