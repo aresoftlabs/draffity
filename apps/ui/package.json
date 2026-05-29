@@ -15,6 +15,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
     "@draffity/shared-types": "workspace:*",
     "@primevue/themes": "^4.2.4",
     "@tauri-apps/api": "^2.1.1",

@@ -480,6 +480,31 @@
     "restoreSnapshot": "Failed to restore version",
     "uploadImage": "Failed to upload image"
   },
+  "ai": {
+    "menu": {
+      "continue": "Continue",
+      "expand": "Expand",
+      "rewrite": "Rewrite",
+      "describe": "Describe"
+    },
+    "rewrite": {
+      "rephrase": "Rephrase",
+      "shorter": "Shorter",
+      "vivid": "More vivid",
+      "showNotTell": "Show, don't tell",
+      "innerConflict": "More inner conflict",
+      "custom": "Custom instruction",
+      "customPlaceholder": "Free instruction…"
+    },
+    "preview": {
+      "streaming": "Generating…",
+      "ready": "Suggestion ready",
+      "accept": "Accept",
+      "reject": "Discard",
+      "cancel": "Cancel",
+      "tokens": "{sent} sent · {received} received"
+    }
+  },
   "editor": {
     "image": {
       "missing": "Image unavailable"

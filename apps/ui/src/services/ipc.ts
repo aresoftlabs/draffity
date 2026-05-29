@@ -31,6 +31,34 @@ export interface AiStatus {
   hasKey: boolean;
 }
 
+/** Inline AI action request (F-08..F-11). Mirrors the Rust `AiActionRequest`. */
+export interface AiActionRequestInput {
+  requestId: string;
+  action: 'continue' | 'expand' | 'rewrite' | 'describe';
+  subMode?: string;
+  projectId: string;
+  docId?: string | null;
+  selectedText: string;
+  precedingText: string;
+  customPrompt?: string;
+  model?: string;
+  maxTokens?: number;
+}
+
+export interface AiActionResult {
+  requestId: string;
+  text: string;
+  cancelled: boolean;
+  promptTokens: number | null;
+  completionTokens: number | null;
+}
+
+/** Live delta event payload (`ai.suggestion.received`). */
+export interface AiDeltaEvent {
+  requestId: string;
+  delta: string;
+}
+
 /** Premium activation status reported by the backend (E-07). */
 export interface PremiumStatus {
   /** `'free'` or `'premium'`. */
@@ -71,6 +99,15 @@ export const ipc = {
   getAiStatus: () => invoke<AiStatus>('get_ai_status'),
   setOpenrouterKey: (key: string) => invoke<AiStatus>('set_openrouter_key', { key }),
   clearOpenrouterKey: () => invoke<AiStatus>('clear_openrouter_key'),
+  aiRunAction: (req: AiActionRequestInput) => invoke<AiActionResult>('ai_run_action', { req }),
+  aiCancel: (requestId: string) => invoke<void>('ai_cancel', { requestId }),
+  aiRecordAccepted: (input: {
+    projectId: string;
+    docId?: string | null;
+    action: string;
+    model?: string | null;
+    response: string;
+  }) => invoke<unknown>('ai_record_accepted', { input }),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

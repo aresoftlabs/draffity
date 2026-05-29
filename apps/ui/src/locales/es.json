@@ -480,6 +480,31 @@
     "restoreSnapshot": "No se pudo restaurar la versión",
     "uploadImage": "No se pudo subir la imagen"
   },
+  "ai": {
+    "menu": {
+      "continue": "Continuar",
+      "expand": "Expandir",
+      "rewrite": "Reescribir",
+      "describe": "Describir"
+    },
+    "rewrite": {
+      "rephrase": "Parafrasear",
+      "shorter": "Más conciso",
+      "vivid": "Más vívido",
+      "showNotTell": "Mostrar, no contar",
+      "innerConflict": "Más conflicto interno",
+      "custom": "Instrucción personalizada",
+      "customPlaceholder": "Instrucción libre…"
+    },
+    "preview": {
+      "streaming": "Generando…",
+      "ready": "Sugerencia lista",
+      "accept": "Aceptar",
+      "reject": "Descartar",
+      "cancel": "Cancelar",
+      "tokens": "{sent} enviados · {received} recibidos"
+    }
+  },
   "editor": {
     "image": {
       "missing": "Imagen no disponible"

@@ -43,6 +43,7 @@ import CodexView from '@/views/CodexView.vue';
 import ScriveningsView from '@/components/ScriveningsView.vue';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import EditorToolbar from '@/editor/EditorToolbar.vue';
+import AiInlinePanel from '@/components/AiInlinePanel.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -607,6 +608,12 @@ onBeforeUnmount(() => {
               @update:model-value-json="onEditorJsonInput"
             />
           </div>
+          <AiInlinePanel
+            :editor="editor"
+            :project-id="project.id"
+            :doc-id="docStore.selectedId"
+            :disabled="readOnly"
+          />
         </template>
         <CorkboardView
           v-else-if="viewMode === 'corkboard'"
