@@ -40,7 +40,17 @@ pub fn render(
 
     // Document tree
     let ordered = flatten_in_order(documents);
+    let separator = config.scene_separator.as_text();
+    let mut top_level_seen = false;
     for (depth, doc) in ordered {
+        // Scene separator (K-02) between consecutive top-level documents.
+        if depth == 0 {
+            if top_level_seen && !separator.is_empty() {
+                out.push_str(separator);
+                out.push_str("\n\n");
+            }
+            top_level_seen = true;
+        }
         // Document title heading: project is h1, top-level docs h2, sub h3, etc.
         // Cap at h6 — beyond that we keep text but stop adding hashes.
         let level = (depth + 2).min(6);
@@ -235,6 +245,47 @@ mod tests {
         assert!(
             text.contains("[^1]: Una aclaración"),
             "missing definition: {text}"
+        );
+    }
+
+    #[test]
+    fn emits_scene_separator_between_top_level_documents() {
+        use super::super::config::SceneSeparator;
+        let p = project("Novela");
+        let pid = p.id.clone();
+        let docs = vec![
+            doc(
+                "a",
+                &pid,
+                None,
+                "Capítulo 1",
+                DocumentType::Chapter,
+                Some("<p>Uno.</p>"),
+                0,
+            ),
+            doc(
+                "b",
+                &pid,
+                None,
+                "Capítulo 2",
+                DocumentType::Chapter,
+                Some("<p>Dos.</p>"),
+                1,
+            ),
+        ];
+        let cfg = ExportConfig {
+            scene_separator: SceneSeparator::Custom("~ ~ ~".into()),
+            ..ExportConfig::default()
+        };
+        let text =
+            String::from_utf8(render(&p, &docs, &[], &MediaBundle::new(), &cfg).unwrap()).unwrap();
+
+        let first = text.find("Capítulo 1").unwrap();
+        let sep = text.find("~ ~ ~").expect("separator should be emitted");
+        let second = text.find("Capítulo 2").unwrap();
+        assert!(
+            first < sep && sep < second,
+            "separator must sit between the two top-level documents"
         );
     }
 

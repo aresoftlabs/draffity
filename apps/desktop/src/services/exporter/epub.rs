@@ -78,17 +78,30 @@ pub fn render(
     let media_paths = embed_media_resources(&mut builder, documents, media)?;
 
     let ordered = flatten_in_order(documents);
-    for (idx, (_depth, doc)) in ordered.iter().enumerate() {
+    let separator = config.scene_separator.as_text();
+    let mut top_level_seen = false;
+    for (idx, (depth, doc)) in ordered.iter().enumerate() {
         let filename = format!("ch{:03}.xhtml", idx + 1);
-        let body = doc.content.as_deref().unwrap_or("");
+        let content = doc.content.as_deref().unwrap_or("");
         // Footnotes are scoped per chapter — fn-1, fn-2… start over each
         // file so cross-chapter ids don't collide.
-        let (with_fns, notes) = collect_footnotes(body, |n| {
+        let (with_fns, notes) = collect_footnotes(content, |n| {
             format!(
                 r##"<a id="fnref-{n}" href="#fn-{n}" epub:type="noteref" class="footnote-ref"><sup>{n}</sup></a>"##
             )
         });
-        let body = rewrite_media_src(&with_fns, &media_paths);
+        let mut body = rewrite_media_src(&with_fns, &media_paths);
+        // Scene separator at the head of each top-level chapter after the first
+        // (per-file EPUB has no single flow, so it leads the boundary chapter).
+        if *depth == 0 {
+            if top_level_seen && !separator.is_empty() {
+                body = format!(
+                    "<p class=\"scene-separator\">{}</p>\n{body}",
+                    xml_escape(separator)
+                );
+            }
+            top_level_seen = true;
+        }
         let xhtml = chapter_xhtml(&doc.title, &body, &notes);
         builder
             .add_content(

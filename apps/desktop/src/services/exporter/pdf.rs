@@ -58,7 +58,19 @@ pub fn render(
         body.push_str(&render_toc(documents));
     }
 
+    let separator = config.scene_separator.as_text();
+    let mut top_level_seen = false;
     for (depth, doc) in flatten_in_order(documents) {
+        // Scene separator between consecutive top-level documents (K-02).
+        if depth == 0 {
+            if top_level_seen && !separator.is_empty() {
+                body.push_str(&format!(
+                    "<p class=\"scene-separator\">{}</p>\n",
+                    xml_escape(separator)
+                ));
+            }
+            top_level_seen = true;
+        }
         let level = (depth + 2).min(6);
         body.push_str(&format!(
             "<section class=\"chapter\"><h{level}>{}</h{level}>\n",

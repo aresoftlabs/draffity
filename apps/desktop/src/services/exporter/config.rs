@@ -50,8 +50,8 @@ pub enum SceneSeparator {
 }
 
 impl SceneSeparator {
-    /// Plain-text form used by the Markdown/EPUB/DOCX exporters as a paragraph
-    /// between top-level documents.
+    /// Plain-text form emitted by every exporter (Markdown/EPUB/DOCX/PDF) as a
+    /// paragraph between top-level documents. `Blank` emits nothing.
     pub fn as_text(&self) -> &str {
         match self {
             SceneSeparator::Stars => "* * *",

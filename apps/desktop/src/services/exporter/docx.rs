@@ -45,7 +45,20 @@ pub fn render(
     }
 
     let ordered = flatten_in_order(documents);
+    let separator = config.scene_separator.as_text();
+    let mut top_level_seen = false;
     for (depth, doc) in ordered {
+        // Scene separator between consecutive top-level documents (K-02).
+        if depth == 0 {
+            if top_level_seen && !separator.is_empty() {
+                docx = docx.add_paragraph(
+                    Paragraph::new()
+                        .align(AlignmentType::Center)
+                        .add_run(Run::new().add_text(separator)),
+                );
+            }
+            top_level_seen = true;
+        }
         docx = add_document(docx, doc, depth);
     }
 
