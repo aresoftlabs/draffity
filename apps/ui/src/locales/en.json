@@ -4,10 +4,10 @@
     "tagline": "Your multi-format writing assistant"
   },
   "dashboard": {
-    "title": "My projects",
-    "subtitle": "One active project · the rest archived (read-only)",
-    "empty": "You don't have any projects yet. Create your first one to start.",
-    "newProject": "Create new project",
+    "title": "Your Drafts",
+    "subtitle": "Pick up where you left off",
+    "empty": "Every great book started as a draft. Begin yours.",
+    "newProject": "New Draft",
     "importProject": "Import…",
     "active": "Active",
     "archived": "Archived",
