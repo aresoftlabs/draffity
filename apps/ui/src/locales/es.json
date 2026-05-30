@@ -690,6 +690,7 @@
     "tooltip": "Faltan {words} palabras en {days} días"
   },
   "voice": {
+    "error": "Error de voz",
     "dictation": {
       "button": "Dictar (Ctrl+Shift+M)",
       "recording": "Grabando…",

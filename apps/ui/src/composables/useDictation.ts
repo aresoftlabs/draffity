@@ -11,10 +11,22 @@ import { ipc } from '@/services/ipc';
  */
 export type DictationPhase = 'idle' | 'recording' | 'transcribing';
 
-export function useDictation(editor: Ref<Editor | null>) {
+export interface DictationOptions {
+  /** Called whenever an error is surfaced (mic denied, ASR failure) so the
+   *  host can show it — the `error` ref alone was never rendered (AUD-15). */
+  onError?: (message: string) => void;
+}
+
+export function useDictation(editor: Ref<Editor | null>, options: DictationOptions = {}) {
   const recorder = useAudioRecorder();
   const phase = ref<DictationPhase>('idle');
   const error = ref<string | null>(null);
+
+  function fail(e: unknown) {
+    const message = String((e as { message?: string })?.message ?? e);
+    error.value = message;
+    options.onError?.(message);
+  }
 
   async function start() {
     error.value = null;
@@ -22,7 +34,7 @@ export function useDictation(editor: Ref<Editor | null>) {
       await recorder.start();
       phase.value = 'recording';
     } catch (e) {
-      error.value = String((e as { message?: string })?.message ?? e);
+      fail(e);
       phase.value = 'idle';
     }
   }
@@ -35,7 +47,7 @@ export function useDictation(editor: Ref<Editor | null>) {
       const transcript = await ipc.transcribeAudio(rec.wav);
       insertAtCursor(transcript.text);
     } catch (e) {
-      error.value = String((e as { message?: string })?.message ?? e);
+      fail(e);
     } finally {
       phase.value = 'idle';
     }

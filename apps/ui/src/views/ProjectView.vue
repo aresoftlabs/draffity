@@ -17,6 +17,7 @@ import type { MenuItem } from 'primevue/menuitem';
 import { useProjectStore } from '@/stores/project';
 import { useDocumentStore, type ReorderOp } from '@/stores/document';
 import { useUiStore, type ProjectViewMode } from '@/stores/ui';
+import { useToast } from 'primevue/usetoast';
 import { useIpcError } from '@/composables/useIpcError';
 import { useEditorAutoSave } from '@/composables/useEditorAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -71,6 +72,7 @@ const uiStore = useUiStore();
 const labelStore = useLabelStore();
 const customFieldStore = useCustomFieldStore();
 const { run } = useIpcError();
+const toast = useToast();
 
 const labelManagerVisible = ref(false);
 const fieldsManagerVisible = ref(false);
@@ -188,8 +190,11 @@ const voiceDictation = useCapability('voice_dictation');
 const voiceTts = useCapability('voice_tts');
 const voiceNotes = useCapability('voice_notes');
 const showVoiceNotes = ref(false);
-const dictation = useDictation(editor);
-const readAloud = useReadAloud(editor);
+function notifyVoiceError(message: string) {
+  toast.add({ severity: 'error', summary: t('voice.error'), detail: message, life: 6000 });
+}
+const dictation = useDictation(editor, { onError: notifyVoiceError });
+const readAloud = useReadAloud(editor, { onError: notifyVoiceError });
 
 const actionMenu = ref<{ toggle: (e: Event) => void } | null>(null);
 const actionItems = computed<MenuItem[]>(() => [

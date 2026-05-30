@@ -690,6 +690,7 @@
     "tooltip": "{words} words left in {days} days"
   },
   "voice": {
+    "error": "Voice error",
     "dictation": {
       "button": "Dictate (Ctrl+Shift+M)",
       "recording": "Recording…",

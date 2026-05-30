@@ -14,7 +14,13 @@ export type ReadAloudPhase = 'idle' | 'playing' | 'paused';
 
 const SPEEDS = [0.75, 1, 1.25, 1.5] as const;
 
-export function useReadAloud(editor: Ref<Editor | null>) {
+export interface ReadAloudOptions {
+  /** Called when synthesis fails so the host can surface it — the `error` ref
+   *  alone was never rendered (AUD-15). */
+  onError?: (message: string) => void;
+}
+
+export function useReadAloud(editor: Ref<Editor | null>, options: ReadAloudOptions = {}) {
   const phase = ref<ReadAloudPhase>('idle');
   const speed = ref(1);
   const error = ref<string | null>(null);
@@ -65,7 +71,9 @@ export function useReadAloud(editor: Ref<Editor | null>) {
     try {
       audio = await ipc.synthesizeSpeech(sentence, '');
     } catch (e) {
-      error.value = String((e as { message?: string })?.message ?? e);
+      const message = String((e as { message?: string })?.message ?? e);
+      error.value = message;
+      options.onError?.(message);
       stop();
       return;
     }
