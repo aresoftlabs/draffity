@@ -4,13 +4,14 @@
 //! stays as a thin orchestrator.
 
 use docx_rs::{
-    AlignmentType, BreakType, Docx, Paragraph, Run, RunFonts, StyleWithLevel, TableOfContents,
+    AlignmentType, BreakType, Docx, PageMargin, Paragraph, Run, RunFonts, StyleWithLevel,
+    TableOfContents,
 };
 
 use crate::domain::{CodexEntry, DocNode, Project};
 use crate::error::AppResult;
 
-use super::config::ExportConfig;
+use super::config::{ExportConfig, PageSize};
 use super::docx_helpers::{append_codex, render_html_blocks};
 use super::media_bundle::MediaBundle;
 use super::util::flatten_in_order;
@@ -27,7 +28,7 @@ pub fn render(
     _media: &MediaBundle,
     config: &ExportConfig,
 ) -> AppResult<Vec<u8>> {
-    let mut docx = Docx::new();
+    let mut docx = apply_page_setup(Docx::new(), config);
 
     let display_title = config
         .title_override
@@ -60,6 +61,62 @@ pub fn render(
             .map_err(|e| crate::error::AppError::Unexpected(format!("docx build failed: {e}")))?;
     }
     Ok(buf)
+}
+
+/// Apply `page_size`, `margins` and `font_family` from the export config so a
+/// preset like "Manuscript submission" (K-05) actually produces Courier 12pt
+/// on the chosen page size, instead of docx-rs defaults (AUD-13).
+fn apply_page_setup(mut docx: Docx, config: &ExportConfig) -> Docx {
+    let (w, h) = page_dimensions_twips(&config.page_size);
+    docx = docx.page_size(w, h).page_margin(
+        PageMargin::new()
+            .top(mm_to_twips(config.margins.top_mm))
+            .bottom(mm_to_twips(config.margins.bottom_mm))
+            .left(mm_to_twips(config.margins.left_mm))
+            .right(mm_to_twips(config.margins.right_mm)),
+    );
+    if let Some(font) = resolve_docx_font(config.font_family.as_deref()) {
+        docx = docx
+            .default_fonts(RunFonts::new().ascii(&font).hi_ansi(&font).east_asia(&font))
+            .default_size(24); // 24 half-points = 12pt
+    }
+    docx
+}
+
+/// Millimetres to twips (1 inch = 25.4 mm = 1440 twips).
+fn mm_to_twips(mm: u32) -> i32 {
+    ((mm as f64) * 1440.0 / 25.4).round() as i32
+}
+
+fn page_dimensions_twips(size: &PageSize) -> (u32, u32) {
+    match size {
+        PageSize::A4 => (11906, 16838),
+        PageSize::Letter => (12240, 15840),
+        PageSize::Legal => (12240, 20160),
+        PageSize::Custom {
+            width_mm,
+            height_mm,
+        } => (
+            mm_to_twips(*width_mm) as u32,
+            mm_to_twips(*height_mm) as u32,
+        ),
+    }
+}
+
+/// Map a generic font-family hint (`monospace`/`serif`/`sans`) — or an explicit
+/// font name — to a concrete Word font. `None` keeps the docx default.
+fn resolve_docx_font(family: Option<&str>) -> Option<String> {
+    let raw = family?.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let name = match raw.to_ascii_lowercase().as_str() {
+        "monospace" => "Courier New",
+        "serif" => "Times New Roman",
+        "sans" | "sans-serif" => "Arial",
+        _ => raw,
+    };
+    Some(name.to_string())
 }
 
 fn add_title_page(mut docx: Docx, display_title: &str, config: &ExportConfig) -> Docx {
@@ -163,6 +220,30 @@ mod tests {
         // Should contain at least the standard word/document.xml entry name.
         let s = String::from_utf8_lossy(&bytes);
         assert!(s.contains("word/document.xml"));
+    }
+
+    #[test]
+    fn manuscript_preset_applies_courier_12pt_and_page_size() {
+        use super::super::config::PageSize;
+        let p = project("Novela");
+        let cfg = ExportConfig {
+            font_family: Some("monospace".into()),
+            page_size: PageSize::Letter,
+            ..ExportConfig::default()
+        };
+        let bytes = render(&p, &[], &[], &MediaBundle::new(), &cfg).unwrap();
+        let s = String::from_utf8_lossy(&bytes);
+        // Manuscript standard: Courier 12pt (K-05).
+        assert!(
+            s.contains("Courier New"),
+            "expected Courier New default font"
+        );
+        assert!(
+            s.contains("w:val=\"24\""),
+            "expected 12pt (24 half-points) default size"
+        );
+        // Letter page size in twips (8.5in x 11in).
+        assert!(s.contains("w:w=\"12240\""), "expected Letter page width");
     }
 
     #[test]
