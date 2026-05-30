@@ -16,7 +16,6 @@ const i18n = createI18n({
 });
 
 const baseProps = {
-  wordCount: 320,
   totalWordCount: 1240,
   saveState: 'saved' as const,
   lastSavedAt: null,

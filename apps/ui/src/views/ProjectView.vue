@@ -947,7 +947,6 @@ onBeforeUnmount(() => {
 
       <AppStatusBar
         v-if="!focusMode && !compositionMode"
-        :word-count="wordCount"
         :total-word-count="totalWordCount"
         :save-state="saveState"
         :last-saved-at="lastSavedAt"

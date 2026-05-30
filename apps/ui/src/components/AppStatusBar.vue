@@ -9,7 +9,6 @@ import type { SaveState } from '@/stores/document';
 /** Barra de estado inferior presentacional. Todas las entradas por props; emite
  *  las ediciones de objetivo/deadline para que ProjectView aplique la lógica. */
 defineProps<{
-  wordCount: number;
   totalWordCount: number;
   saveState: SaveState;
   lastSavedAt: number | null;
