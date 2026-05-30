@@ -28,9 +28,7 @@ function isDark() {
 }
 
 function cycleTheme() {
-  if (ui.theme === 'system') ui.setTheme('light');
-  else if (ui.theme === 'light') ui.setTheme('dark');
-  else ui.setTheme('system');
+  ui.cycleTheme();
 }
 </script>
 

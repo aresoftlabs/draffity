@@ -20,13 +20,6 @@ const ui = useUiStore();
 // Atajo global ⌘K (la acción `commandPalette` ya existe en keybindings).
 useShortcuts({ commandPalette: () => palette.toggle() });
 
-// Mismo mecanismo que AppShell.cycleTheme: ui.setTheme() actualiza el store
-// y aplica las clases DOM vía applyTheme(). Aquí hacemos toggle dark↔light.
-function toggleThemeCommand() {
-  const next = ui.theme === 'dark' ? 'light' : 'dark';
-  ui.setTheme(next);
-}
-
 // Comandos globales: disponibles en cualquier pantalla.
 let offGlobalCmds: (() => void) | null = null;
 onMounted(() => {
@@ -51,7 +44,7 @@ onMounted(() => {
       group: t('command.groupGlobal'),
       icon: 'pi pi-moon',
       keywords: ['tema', 'theme', 'oscuro', 'dark'],
-      run: () => toggleThemeCommand(),
+      run: () => ui.cycleTheme(),
     },
   ]);
 });

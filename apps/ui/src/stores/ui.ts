@@ -114,6 +114,14 @@ export const useUiStore = defineStore('ui', () => {
     applyTheme(mode);
   }
 
+  function cycleTheme(): void {
+    const order: ThemeMode[] = ['system', 'light', 'dark'];
+    const idx = order.indexOf(theme.value);
+    // If current theme isn't in the cycle (e.g. 'high-contrast'), default to
+    // the start of the cycle so the user can reach it from any state.
+    setTheme(order[(idx === -1 ? 0 : idx + 1) % order.length]);
+  }
+
   function setLocale(locale: 'es' | 'en') {
     applyLocale(locale);
   }
@@ -228,6 +236,7 @@ export const useUiStore = defineStore('ui', () => {
     sessionStartTotal,
     projectViewModes,
     setTheme,
+    cycleTheme,
     setLocale,
     toggleBinder,
     toggleInspector,
