@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { Label, LabelInput } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
+import { replaceById } from './helpers';
 
 /** Client-side cache of a project's label definitions (I-05/I-06). The
  *  backend (SQLite) is the source of truth; this store mirrors it so the
@@ -29,8 +30,7 @@ export const useLabelStore = defineStore('labels', () => {
 
   async function update(id: string, name: string, color: string): Promise<Label> {
     const updated = await ipc.updateLabel(id, name, color);
-    const idx = labels.value.findIndex((l) => l.id === id);
-    if (idx !== -1) labels.value[idx] = updated;
+    replaceById(labels.value, id, updated);
     labels.value = [...labels.value].sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
     );

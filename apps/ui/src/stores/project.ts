@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { Project, ProjectInput } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
+import { replaceById } from './helpers';
 
 export const useProjectStore = defineStore('project', () => {
   const projects = ref<Project[]>([]);
@@ -54,14 +55,12 @@ export const useProjectStore = defineStore('project', () => {
 
   async function setGoal(id: string, goal: number | null) {
     const updated = await ipc.setProjectGoal({ id, goal });
-    const idx = projects.value.findIndex((p) => p.id === id);
-    if (idx !== -1) projects.value[idx] = updated;
+    replaceById(projects.value, id, updated);
   }
 
   async function setDeadline(id: string, deadline: number | null) {
     const updated = await ipc.setProjectDeadline({ id, deadline });
-    const idx = projects.value.findIndex((p) => p.id === id);
-    if (idx !== -1) projects.value[idx] = updated;
+    replaceById(projects.value, id, updated);
   }
 
   function selectLocally(id: string | null) {

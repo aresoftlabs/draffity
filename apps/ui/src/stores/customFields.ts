@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { CustomField, CustomFieldInput } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
+import { replaceById } from './helpers';
 
 /** Client-side cache of a project's custom metadata field definitions
  *  (I-08/I-09). The backend (SQLite) is the source of truth; this store
@@ -24,8 +25,7 @@ export const useCustomFieldStore = defineStore('customFields', () => {
 
   async function update(id: string, name: string, options: string[]): Promise<CustomField> {
     const updated = await ipc.updateCustomField(id, name, options);
-    const idx = fields.value.findIndex((f) => f.id === id);
-    if (idx !== -1) fields.value[idx] = updated;
+    replaceById(fields.value, id, updated);
     return updated;
   }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { DocNode, DocumentInput, DocumentStatus } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
+import { replaceById } from './helpers';
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -96,8 +97,7 @@ export const useDocumentStore = defineStore('document', () => {
     saveState.value = 'saving';
     try {
       const updated = await ipc.updateDocument({ id, ...patch });
-      const idx = documents.value.findIndex((d) => d.id === id);
-      if (idx !== -1) documents.value[idx] = updated;
+      replaceById(documents.value, id, updated);
       saveState.value = 'saved';
       lastSavedAt.value = Date.now();
     } catch (e) {
@@ -126,50 +126,42 @@ export const useDocumentStore = defineStore('document', () => {
 
   async function setStatus(id: string, status: DocumentStatus) {
     const updated = await ipc.setDocumentStatus({ id, status });
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setTags(id: string, tags: string[]) {
     const updated = await ipc.setDocumentTags({ id, tags });
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setLabels(id: string, labelIds: string[]) {
     const updated = await ipc.setDocumentLabels(id, labelIds);
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setMetadata(id: string, fieldId: string, value: string | null) {
     const updated = await ipc.setDocumentMetadata(id, fieldId, value);
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setResearch(id: string, isResearch: boolean) {
     const updated = await ipc.setDocumentResearch(id, isResearch);
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setMatter(id: string, isFront: boolean, isBack: boolean) {
     const updated = await ipc.setDocumentMatter(id, isFront, isBack);
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setGoal(id: string, goal: number | null) {
     const updated = await ipc.setDocumentGoal({ id, goal });
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   async function setSynopsis(id: string, synopsis: string | null) {
     const updated = await ipc.setDocumentSynopsis({ id, synopsis });
-    const idx = documents.value.findIndex((d) => d.id === id);
-    if (idx !== -1) documents.value[idx] = updated;
+    replaceById(documents.value, id, updated);
   }
 
   /** Persist a binder reorder. Apply ops sequentially (1-2 in practice:
