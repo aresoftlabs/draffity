@@ -14,6 +14,7 @@
     "readOnly": "Solo lectura",
     "openProject": "Abrir",
     "activate": "Activar",
+    "editedAt": "Editado",
     "delete": "Eliminar",
     "noActive": "No hay proyecto activo",
     "archivedSection": "Proyectos archivados",
