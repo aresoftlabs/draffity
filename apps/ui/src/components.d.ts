@@ -10,6 +10,7 @@ declare module 'vue' {
     AiInlinePanel: typeof import('./components/AiInlinePanel.vue')['default']
     AppBreadcrumb: typeof import('./components/AppBreadcrumb.vue')['default']
     AppRail: typeof import('./components/AppRail.vue')['default']
+    AppStatusBar: typeof import('./components/AppStatusBar.vue')['default']
     AppTopBar: typeof import('./components/AppTopBar.vue')['default']
     BibliographyDialog: typeof import('./components/BibliographyDialog.vue')['default']
     Binder: typeof import('./components/Binder.vue')['default']

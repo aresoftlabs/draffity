@@ -732,5 +732,10 @@
   "rail": {
     "label": "Actividad",
     "search": "Buscar"
+  },
+  "statusBar": {
+    "words": "palabras",
+    "session": "Sesión",
+    "goal": "Objetivo"
   }
 }
