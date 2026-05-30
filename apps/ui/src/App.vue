@@ -4,7 +4,7 @@ import { RouterView, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import Toast from 'primevue/toast';
 import ConfirmDialog from 'primevue/confirmdialog';
-import AppShell from '@/components/AppShell.vue';
+import AppTopBar from '@/components/AppTopBar.vue';
 import OnboardingDialog from '@/components/OnboardingDialog.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { registerCommands } from '@/composables/useCommandRegistry';
@@ -68,7 +68,7 @@ onBeforeUnmount(() => offGlobalCmds?.());
   <div
     class="draffity-app flex flex-col min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50"
   >
-    <AppShell />
+    <AppTopBar />
     <main class="flex-1 flex flex-col min-h-0">
       <RouterView />
     </main>

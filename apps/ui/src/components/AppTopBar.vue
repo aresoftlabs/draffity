@@ -5,14 +5,17 @@ import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { useUiStore } from '@/stores/ui';
 import { useDocumentStore } from '@/stores/document';
+import { useProjectStore } from '@/stores/project';
 import GoalProgress from '@/components/GoalProgress.vue';
 import PomodoroWidget from '@/components/PomodoroWidget.vue';
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 
 const { t } = useI18n();
 const router = useRouter();
 const ui = useUiStore();
 const docs = useDocumentStore();
+const projects = useProjectStore();
 const palette = useCommandPalette();
 
 const sessionActive = computed(() => ui.sessionStartTotal !== null && docs.documents.length > 0);
@@ -34,15 +37,20 @@ function cycleTheme() {
 
 <template>
   <header
-    class="h-12 flex items-center px-4 gap-3 border-b border-surface-200 dark:border-surface-700 bg-surface-0/80 dark:bg-surface-950/80 backdrop-blur sticky top-0 z-10"
+    class="h-12 flex items-center px-4 gap-3 border-b border-surface-200/70 dark:border-surface-700/70 bg-surface-0/85 dark:bg-surface-950/85 backdrop-blur sticky top-0 z-10 shadow-[0_1px_3px_rgba(90,70,40,0.04)]"
   >
     <button
-      class="font-serif font-semibold tracking-tight"
+      class="font-display font-semibold tracking-tight text-surface-900 dark:text-surface-50"
       :title="t('app.tagline')"
       @click="router.push('/')"
     >
       {{ t('app.name') }}
     </button>
+
+    <AppBreadcrumb
+      :project-name="projects.current?.title ?? null"
+      :doc-title="docs.selected?.title ?? null"
+    />
 
     <span class="flex-1" />
 
