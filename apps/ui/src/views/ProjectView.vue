@@ -27,7 +27,7 @@ import CollectionsPanel from '@/components/CollectionsPanel.vue';
 import Inspector from '@/components/Inspector.vue';
 import LabelManagerDialog from '@/components/LabelManagerDialog.vue';
 import CustomFieldsManagerDialog from '@/components/CustomFieldsManagerDialog.vue';
-import SaveIndicator from '@/components/SaveIndicator.vue';
+import AppStatusBar from '@/components/AppStatusBar.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import BibliographyDialog from '@/components/BibliographyDialog.vue';
 import CitationPickerDialog from '@/components/CitationPickerDialog.vue';
@@ -43,8 +43,6 @@ import { useLabelStore } from '@/stores/labels';
 import { useCustomFieldStore } from '@/stores/customFields';
 import { ipc } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
-import GoalProgress from '@/components/GoalProgress.vue';
-import PacemakerWidget from '@/components/PacemakerWidget.vue';
 import AppRail from '@/components/AppRail.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
 import OutlinerView from '@/views/OutlinerView.vue';
@@ -619,25 +617,7 @@ onBeforeUnmount(() => {
         />
         <h2 class="text-sm font-semibold truncate">{{ project.title }}</h2>
         <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
-        <div class="flex items-center gap-2 min-w-[12rem] max-w-[20rem]">
-          <GoalProgress
-            :current="totalWordCount"
-            :goal="project.goalWords ?? null"
-            :read-only="readOnly"
-            compact
-            @update:goal="onProjectGoalChange"
-          />
-        </div>
-        <PacemakerWidget
-          :goal-words="project.goalWords ?? null"
-          :current-words="totalWordCount"
-          :deadline="project.deadline ?? null"
-          :words-this-session="sessionWordCount"
-          :read-only="readOnly"
-          @update:deadline="onProjectDeadlineChange"
-        />
         <span class="flex-1" />
-        <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
         <Button
           v-tooltip.bottom="t('search.button')"
           icon="pi pi-search"
@@ -964,6 +944,22 @@ onBeforeUnmount(() => {
           />
         </SplitterPanel>
       </Splitter>
+
+      <AppStatusBar
+        v-if="!focusMode && !compositionMode"
+        :word-count="wordCount"
+        :total-word-count="totalWordCount"
+        :save-state="saveState"
+        :last-saved-at="lastSavedAt"
+        :project-goal="project.goalWords ?? null"
+        :project-deadline="project.deadline ?? null"
+        :session-words="sessionWordCount"
+        :session-goal="uiStore.sessionGoal"
+        :read-only="readOnly"
+        @update:project-goal="onProjectGoalChange"
+        @update:project-deadline="onProjectDeadlineChange"
+        @update:session-goal="uiStore.setSessionGoal"
+      />
 
       <!-- Composition mode control bar (K-09): hidden until hover at the top. -->
       <div v-if="compositionMode" class="composition-bar">
