@@ -73,7 +73,7 @@ function iconForDocType(type: string) {
         @click="emit('select', tpl)"
       >
         <div class="flex items-start justify-between gap-2 mb-2">
-          <h3 class="font-serif font-semibold text-base">{{ tpl.name }}</h3>
+          <h3 class="font-display font-semibold text-base">{{ tpl.name }}</h3>
           <Tag :value="templateBadge(tpl)" severity="info" />
         </div>
         <p v-if="tpl.description" class="text-sm opacity-70 leading-relaxed">

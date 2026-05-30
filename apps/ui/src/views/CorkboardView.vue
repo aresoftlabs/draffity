@@ -83,7 +83,7 @@ function isFolder(d: DocNode): boolean {
               :class="statusDotClass(doc.status)"
               :aria-label="t(`status.${doc.status}`)"
             />
-            <h3 class="flex-1 font-serif font-semibold text-sm leading-snug truncate">
+            <h3 class="flex-1 font-display font-semibold text-sm leading-snug truncate">
               {{ doc.title || t('project.untitled') }}
             </h3>
             <i v-if="isFolder(doc)" class="pi pi-folder text-xs opacity-60" />

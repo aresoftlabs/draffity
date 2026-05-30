@@ -564,7 +564,7 @@ function kindLabel(kind: BackupRecord['kind']): string {
 
 <template>
   <section class="flex-1 p-8 max-w-2xl w-full mx-auto">
-    <h1 class="text-2xl font-serif font-bold mb-8">{{ t('settings.title') }}</h1>
+    <h1 class="text-2xl font-display font-bold mb-8">{{ t('settings.title') }}</h1>
 
     <div class="space-y-8">
       <section>

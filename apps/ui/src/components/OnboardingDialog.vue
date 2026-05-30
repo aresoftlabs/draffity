@@ -69,7 +69,7 @@ function finish(opts: { startProject?: boolean } = {}) {
   >
     <div class="flex flex-col items-center text-center gap-4 p-4">
       <i :class="slides[step].icon + ' text-5xl text-primary-500 mt-4'" />
-      <h2 class="text-2xl font-serif font-bold">
+      <h2 class="text-2xl font-display font-bold">
         {{ t(slides[step].titleKey) }}
       </h2>
       <p class="text-sm leading-relaxed opacity-80 max-w-sm">

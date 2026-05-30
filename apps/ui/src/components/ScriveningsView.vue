@@ -43,7 +43,7 @@ const leaves = computed(() => descendants.value.filter((d) => d.docType !== 'fol
     <article class="scrivenings-host px-10 py-8 max-w-3xl mx-auto">
       <header class="mb-6 pb-4 border-b border-surface-200 dark:border-surface-700">
         <p class="text-xs uppercase tracking-wide opacity-60">{{ t('scrivenings.label') }}</p>
-        <h1 class="text-2xl font-serif font-bold mt-1">
+        <h1 class="text-2xl font-display font-bold mt-1">
           {{ folder.title || t('project.untitled') }}
         </h1>
         <p v-if="folder.synopsis" class="text-sm italic opacity-70 mt-2">
@@ -57,7 +57,7 @@ const leaves = computed(() => descendants.value.filter((d) => d.docType !== 'fol
       <section v-for="(doc, i) in descendants" :key="doc.id" class="scrivenings-item">
         <h2
           v-if="doc.docType === 'folder'"
-          class="text-lg font-serif font-bold mt-8 mb-2 text-primary-600 dark:text-primary-300"
+          class="text-lg font-display font-bold mt-8 mb-2 text-primary-600 dark:text-primary-300"
         >
           {{ doc.title || t('project.untitled') }}
         </h2>

@@ -130,7 +130,7 @@ function onDelete(id: string) {
   <section class="flex-1 flex flex-col p-8 max-w-5xl w-full mx-auto gap-8">
     <header class="flex items-end justify-between gap-4 flex-wrap">
       <div>
-        <h1 class="text-3xl font-serif font-bold">{{ t('dashboard.title') }}</h1>
+        <h1 class="text-3xl font-display font-bold">{{ t('dashboard.title') }}</h1>
         <p class="text-sm opacity-70 mt-1">{{ t('dashboard.subtitle') }}</p>
       </div>
       <div class="flex items-center gap-2">

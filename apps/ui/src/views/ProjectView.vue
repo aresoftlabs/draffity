@@ -615,7 +615,7 @@ onBeforeUnmount(() => {
           :aria-label="t('actions.back')"
           @click="router.push('/')"
         />
-        <h2 class="text-sm font-semibold truncate">{{ project.title }}</h2>
+        <h2 class="text-sm font-display font-semibold truncate">{{ project.title }}</h2>
         <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
         <span class="flex-1" />
         <Button
