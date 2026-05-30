@@ -11,6 +11,7 @@ import { applyInitialTheme } from './styles/theme';
 import { DraffityPreset } from './styles/preset';
 
 import 'primeicons/primeicons.css';
+import './styles/fonts';
 import './styles/main.css';
 
 applyInitialTheme();

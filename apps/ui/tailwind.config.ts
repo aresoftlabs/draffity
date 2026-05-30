@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          'Inter Variable',
           'Inter',
           'ui-sans-serif',
           'system-ui',
@@ -16,7 +17,11 @@ export default {
           'Roboto',
           'sans-serif',
         ],
-        serif: ['Lora', 'Georgia', 'serif'],
+        // Prosa / lectura del manuscrito.
+        serif: ['Source Serif 4 Variable', 'Source Serif 4', 'Lora', 'Georgia', 'serif'],
+        reading: ['Source Serif 4 Variable', 'Source Serif 4', 'Georgia', 'serif'],
+        // Títulos y nombres de proyecto — el sello editorial.
+        display: ['Fraunces Variable', 'Fraunces', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'Menlo', 'Consolas', 'monospace'],
       },
     },
