@@ -17,7 +17,12 @@ interface MonthUsage {
 }
 
 function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
+  // Local YYYY-MM (not UTC): the backend stats use `chrono::Local`, so a UTC
+  // `toISOString()` would mislabel the month near its boundary in far-from-UTC
+  // time zones (AUD-22).
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${d.getFullYear()}-${m}`;
 }
 
 function load(): MonthUsage {

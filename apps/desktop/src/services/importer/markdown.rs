@@ -87,20 +87,49 @@ pub(super) fn import(bytes: &[u8], filename_hint: &str) -> AppResult<ImportTree>
 /// is the only field we care about today.
 fn peel_frontmatter(text: &str) -> (&str, Option<String>) {
     let trimmed = text.trim_start_matches('\u{feff}');
-    let Some(rest) = trimmed.strip_prefix("---\n") else {
-        return (text, None);
+    let bom = text.len() - trimmed.len();
+
+    // Walk lines so both LF and CRLF endings work (Windows exports use CRLF,
+    // which the old `\n`-only matching left intact, leaking the YAML into the
+    // body — AUD-23). The opening line must be exactly `---`.
+    let first_eol = match trimmed.find('\n') {
+        Some(i) => i,
+        None => return (text, None),
     };
-    let Some(close_pos) = rest.find("\n---\n") else {
+    if trimmed[..first_eol].trim_end_matches('\r') != "---" {
         return (text, None);
-    };
-    let block = &rest[..close_pos];
-    let after = &rest[close_pos + "\n---\n".len()..];
-    let title = block.lines().find_map(|line| {
-        let trimmed = line.trim_start();
-        let rest = trimmed.strip_prefix("title:")?;
-        Some(unquote(rest.trim()))
-    });
-    (after, title)
+    }
+
+    let mut title = None;
+    let mut cursor = first_eol + 1;
+    while cursor < trimmed.len() {
+        let line_end = trimmed[cursor..]
+            .find('\n')
+            .map(|i| cursor + i)
+            .unwrap_or(trimmed.len());
+        let line = trimmed[cursor..line_end].trim_end_matches('\r');
+        if line == "---" {
+            // Body starts just past this closing fence's newline.
+            let after = if line_end < trimmed.len() {
+                line_end + 1
+            } else {
+                line_end
+            };
+            return (&text[bom + after..], title);
+        }
+        if title.is_none() {
+            if let Some(rest) = line.trim_start().strip_prefix("title:") {
+                title = Some(unquote(rest.trim()));
+            }
+        }
+        cursor = if line_end < trimmed.len() {
+            line_end + 1
+        } else {
+            trimmed.len()
+        };
+    }
+    // No closing fence — treat the whole text as body.
+    (text, None)
 }
 
 fn unquote(s: &str) -> String {
@@ -328,6 +357,18 @@ mod tests {
         // The frontmatter block must not leak into the first section body.
         let first = &tree.nodes[0];
         assert!(!first.content_html.contains("author"));
+    }
+
+    #[test]
+    fn peels_crlf_frontmatter() {
+        // Windows line endings must not leave the YAML block in the body or
+        // drop the title (AUD-23).
+        let md = "---\r\ntitle: \"Mi Novela\"\r\nauthor: Anon\r\n---\r\n\r\n# Cap 1\r\n\r\nHola.";
+        let (body, title) = peel_frontmatter(md);
+        assert_eq!(title.as_deref(), Some("Mi Novela"));
+        assert!(!body.contains("title:"), "frontmatter leaked: {body:?}");
+        assert!(!body.contains("author"));
+        assert!(body.contains("# Cap 1"));
     }
 
     #[test]

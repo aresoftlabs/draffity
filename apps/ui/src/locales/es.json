@@ -768,6 +768,7 @@
     "newChapter": "Capítulo nuevo"
   },
   "editor": {
+    "placeholder": "Empieza a escribir…",
     "image": {
       "missing": "Imagen no disponible"
     }

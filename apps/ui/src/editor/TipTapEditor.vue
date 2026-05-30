@@ -41,7 +41,7 @@ const emit = defineEmits<{
   'update:modelValueJson': [value: string];
 }>();
 
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 /** Initial content prefers JSON when available; falls back to HTML. */
 function initialContent(): string | object {
@@ -65,7 +65,7 @@ const editor = useEditor({
     Underline,
     CharacterCount,
     Placeholder.configure({
-      placeholder: () => props.placeholder || 'Empieza a escribir…',
+      placeholder: () => props.placeholder || t('editor.placeholder'),
     }),
     // Tables — header row enabled by default, columns are resizable by drag.
     Table.configure({ resizable: true, HTMLAttributes: { class: 'tiptap-table' } }),

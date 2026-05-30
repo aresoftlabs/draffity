@@ -768,6 +768,7 @@
     "newChapter": "New chapter"
   },
   "editor": {
+    "placeholder": "Start writing…",
     "image": {
       "missing": "Image unavailable"
     }
