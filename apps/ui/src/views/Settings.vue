@@ -82,8 +82,9 @@ async function loadCustomFonts() {
   try {
     const all = await ipc.listProjectMedia(pid);
     customFonts.value = all.filter((m) => m.mime.startsWith('font/'));
-  } catch {
+  } catch (e) {
     customFonts.value = [];
+    reportLoadError('customFonts', e);
   }
 }
 
@@ -177,6 +178,19 @@ const localeModel = computed({
   set: (v: string) => ui.setLocale(v as 'es' | 'en'),
 });
 
+/**
+ * Surface a loader IPC failure instead of degrading silently to "free"/empty.
+ * Always logs (telemetry-ready); `notify` also toasts for the tier-relevant
+ * loaders, so a licensed user whose status failed to load isn't shown the app
+ * as free without any signal (AUD-16).
+ */
+function reportLoadError(scope: string, e: unknown, notify = false) {
+  console.error('[settings]', scope, e);
+  if (notify) {
+    toast.add({ severity: 'error', summary: t('settings.loadError'), life: 5000 });
+  }
+}
+
 const crashReportingActive = ref(false);
 const crashReportingEnabled = ref(false);
 async function loadCrashReporting() {
@@ -184,9 +198,10 @@ async function loadCrashReporting() {
     const status = await ipc.getCrashReportingStatus();
     crashReportingActive.value = status.active;
     crashReportingEnabled.value = status.enabled;
-  } catch {
+  } catch (e) {
     crashReportingActive.value = false;
     crashReportingEnabled.value = false;
+    reportLoadError('crashReporting', e);
   }
 }
 async function onToggleCrashReporting(value: boolean) {
@@ -215,8 +230,9 @@ const aiUsage = useAiUsageStore();
 async function loadAiStatus() {
   try {
     aiStatus.value = await ipc.getAiStatus();
-  } catch {
+  } catch (e) {
     aiStatus.value = null;
+    reportLoadError('aiStatus', e, true);
   }
 }
 
@@ -259,8 +275,9 @@ const activatingPremium = ref(false);
 async function loadPremium() {
   try {
     premium.value = await ipc.getPremiumStatus();
-  } catch {
+  } catch (e) {
     premium.value = null;
+    reportLoadError('premium', e, true);
   }
 }
 
@@ -319,10 +336,11 @@ async function loadVoice() {
     voiceStatus.value = await ipc.getVoiceStatus();
     voiceModels.value = await ipc.listVoiceModels();
     voiceVoices.value = await ipc.listVoiceVoices();
-  } catch {
+  } catch (e) {
     voiceStatus.value = null;
     voiceModels.value = [];
     voiceVoices.value = [];
+    reportLoadError('voice', e);
   }
 }
 
@@ -478,18 +496,21 @@ async function onDailyGoalChange(value: number | null) {
 onMounted(async () => {
   try {
     stats.value = await ipc.getWritingStats();
-  } catch {
+  } catch (e) {
     stats.value = null;
+    reportLoadError('writingStats', e);
   }
   try {
     dailySeries.value = await ipc.getRecentDailyWriting(30);
-  } catch {
+  } catch (e) {
     dailySeries.value = [];
+    reportLoadError('dailySeries', e);
   }
   try {
     dailyGoal.value = await ipc.getDailyGoal();
-  } catch {
+  } catch (e) {
     dailyGoal.value = null;
+    reportLoadError('dailyGoal', e);
   }
   await loadBackups();
   await loadCustomFonts();

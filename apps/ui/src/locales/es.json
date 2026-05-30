@@ -251,6 +251,7 @@
     "dailyGoalNone": "Sin meta",
     "dailyGoalHint": "Si escribís al menos esta cantidad en un día, cuenta para la racha de meta cumplida.",
     "dailyGoalError": "No se pudo guardar la meta diaria.",
+    "loadError": "No se pudo cargar el estado de los ajustes.",
     "linguisticFocusTitle": "Foco lingüístico",
     "linguisticFocusHint": "Palabras extra a resaltar como adverbios (además de -mente/-ly).",
     "linguisticExtraPlaceholder": "Añadir palabra y pulsar Enter…",
