@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext';
 import type { SearchHit } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
 import { useIpcError } from '@/composables/useIpcError';
+import { sanitizeSearchExcerpt } from '@/services/sanitizeHtml';
 
 const props = defineProps<{
   visible: boolean;
@@ -129,9 +130,13 @@ function onKey(e: KeyboardEvent) {
             @click="pick(hit)"
           >
             <span class="text-sm font-medium truncate">{{ hit.title }}</span>
-            <!-- excerpt comes from FTS5 snippet() with safe <mark> tags only -->
+            <!-- FTS5 snippet indexes raw document HTML; sanitize so only the
+                 <mark> highlight renders and any imported markup stays inert. -->
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <span class="text-xs opacity-70 line-clamp-2" v-html="hit.excerpt" />
+            <span
+              class="text-xs opacity-70 line-clamp-2"
+              v-html="sanitizeSearchExcerpt(hit.excerpt)"
+            />
           </button>
         </li>
       </ul>

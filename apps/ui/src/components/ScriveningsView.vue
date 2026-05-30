@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { DocNode } from '@draffity/shared-types';
+import { sanitizeDocumentHtml } from '@/services/sanitizeHtml';
 
 const props = defineProps<{
   folder: DocNode;
@@ -36,6 +37,18 @@ const descendants = computed<DocNode[]>(() => {
 });
 
 const leaves = computed(() => descendants.value.filter((d) => d.docType !== 'folder'));
+
+/** Sanitized document HTML keyed by id. Content can come from import, so it is
+ *  untrusted; sanitize once per content change rather than on every render. */
+const sanitizedContent = computed<Map<string, string>>(() => {
+  const map = new Map<string, string>();
+  for (const d of descendants.value) {
+    if (d.content && d.content.trim().length > 0) {
+      map.set(d.id, sanitizeDocumentHtml(d.content));
+    }
+  }
+  return map;
+});
 </script>
 
 <template>
@@ -69,12 +82,13 @@ const leaves = computed(() => descendants.value.filter((d) => d.docType !== 'fol
           <h3 class="text-sm font-semibold uppercase tracking-wide opacity-60 mb-3">
             {{ doc.title || t('project.untitled') }}
           </h3>
-          <!-- TipTap HTML is sourced from our own storage; safe to render. -->
+          <!-- Stored HTML can originate from import, so it is sanitized with an
+               allowlist (formatting kept, scripts/handlers stripped) before render. -->
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div
-            v-if="doc.content && doc.content.trim().length > 0"
+            v-if="sanitizedContent.has(doc.id)"
             class="prose-style scrivenings-content"
-            v-html="doc.content"
+            v-html="sanitizedContent.get(doc.id)"
           />
           <p v-else class="text-sm italic opacity-40">{{ t('scrivenings.empty') }}</p>
         </template>
