@@ -1,6 +1,7 @@
 //! Export pipeline. The MVP ships Markdown, DOCX and EPUB. PDF is wired into
 //! the trait but returns `Unsupported` until Phase 4.5 / a future iteration.
 
+mod compile;
 mod config;
 mod docx;
 mod docx_helpers;
@@ -11,6 +12,7 @@ mod media_bundle;
 mod pdf;
 mod util;
 
+pub use compile::{apply_find_replace, reorder_matter, strip_research};
 pub use media_bundle::{extract_media_ids, MediaBundle};
 
 pub use config::{
