@@ -5,7 +5,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 
-use crate::domain::{new_id, now_ms, DocNode, DocumentInput, DocumentStatus};
+use crate::domain::{count_words_in_html, new_id, now_ms, DocNode, DocumentInput, DocumentStatus};
 use crate::error::{AppError, AppResult};
 
 use super::row_mappers::row_to_document;
@@ -146,6 +146,66 @@ pub(super) fn update(
     select_one(conn, id)
 }
 
+/// Update a document and record writing stats in a single transaction. The
+/// previous word count is read *inside* the transaction so concurrent saves
+/// can't both diff against the same stale baseline and over-count the daily
+/// total (AUD-07). Writing activity is recorded on every save; the daily word
+/// delta only when `content` actually changes.
+pub(super) fn update_with_stats(
+    conn: &mut Connection,
+    id: &str,
+    title: Option<&str>,
+    content: Option<&str>,
+    content_json: Option<&str>,
+) -> AppResult<DocNode> {
+    if let Some(t) = title {
+        if t.trim().is_empty() {
+            return Err(AppError::Invariant("title cannot be empty".into()));
+        }
+    }
+    let tx = conn.transaction()?;
+
+    let prev_words = if content.is_some() {
+        // `content` is nullable, so read it as Option and flatten the
+        // "no row" / "NULL value" cases together.
+        let prev: Option<String> = tx
+            .query_row(
+                "SELECT content FROM documents WHERE id=?1",
+                params![id],
+                |r| r.get::<_, Option<String>>(0),
+            )
+            .optional()?
+            .flatten();
+        prev.as_deref().map(count_words_in_html).unwrap_or(0)
+    } else {
+        0
+    };
+
+    let now = now_ms();
+    let updated = tx.execute(
+        "UPDATE documents
+         SET title = COALESCE(?2, title),
+             content = COALESCE(?3, content),
+             content_json = COALESCE(?4, content_json),
+             updated_at = ?5
+         WHERE id=?1",
+        params![id, title, content, content_json, now],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("document {id}")));
+    }
+
+    super::stats::record_activity(&tx)?;
+    if let Some(new_html) = content {
+        let delta = count_words_in_html(new_html).saturating_sub(prev_words);
+        super::stats::record_daily(&tx, delta)?;
+    }
+
+    let doc = select_one(&tx, id)?;
+    tx.commit()?;
+    Ok(doc)
+}
+
 pub(super) fn set_status(
     conn: &Connection,
     id: &str,
@@ -261,6 +321,47 @@ mod tests {
         })
         .unwrap()
         .id
+    }
+
+    #[test]
+    fn concurrent_saves_count_words_against_committed_state() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let s = Arc::new(fresh());
+        let p = s
+            .create_project(ProjectInput {
+                title: "P".into(),
+                template_id: "x".into(),
+                metadata: None,
+            })
+            .unwrap();
+        let doc_id = make_chapter(&*s, &p.id, "Cap");
+
+        // Eight concurrent saves writing the SAME content. Because each save
+        // diffs the new word count against the committed previous state inside
+        // one transaction, only the first save adds words; the rest are no-op
+        // deltas. A racy read-modify-write (reading the baseline outside the
+        // write) would let several saves diff against the empty doc and
+        // over-count (AUD-07).
+        let content = "<p>alpha beta gamma</p>"; // 3 words
+        let handles: Vec<_> = (0..8)
+            .map(|_| {
+                let s = Arc::clone(&s);
+                let id = doc_id.clone();
+                thread::spawn(move || {
+                    s.update_document_with_stats(&id, None, Some(content), None)
+                        .unwrap();
+                })
+            })
+            .collect();
+        for h in handles {
+            h.join().unwrap();
+        }
+
+        let today = s.list_recent_daily_writing(1).unwrap().remove(0);
+        assert_eq!(today.words, 3, "only the first save adds the 3 words");
+        assert_eq!(today.sessions, 8, "every save still counts as a session");
     }
 
     #[test]

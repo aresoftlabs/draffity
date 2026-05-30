@@ -120,6 +120,17 @@ pub trait StorageService: Send + Sync {
         content: Option<&str>,
         content_json: Option<&str>,
     ) -> AppResult<DocNode>;
+    /// Update a document and record writing stats (activity + daily word
+    /// delta) atomically in one transaction. Use this for user-driven saves so
+    /// the word delta is computed against the committed content, not a stale
+    /// read (AUD-07).
+    fn update_document_with_stats(
+        &self,
+        id: &str,
+        title: Option<&str>,
+        content: Option<&str>,
+        content_json: Option<&str>,
+    ) -> AppResult<DocNode>;
     fn move_document(&self, id: &str, parent_id: Option<&str>, position: i64) -> AppResult<()>;
     fn delete_document(&self, id: &str) -> AppResult<()>;
     /// Atomically set `position` (and optionally `parent_id`) for every id
@@ -474,6 +485,16 @@ impl StorageService for LocalStorageService {
         content_json: Option<&str>,
     ) -> AppResult<DocNode> {
         documents::update(&*self.db()?, id, title, content, content_json)
+    }
+
+    fn update_document_with_stats(
+        &self,
+        id: &str,
+        title: Option<&str>,
+        content: Option<&str>,
+        content_json: Option<&str>,
+    ) -> AppResult<DocNode> {
+        documents::update_with_stats(&mut *self.db()?, id, title, content, content_json)
     }
 
     fn move_document(&self, id: &str, parent_id: Option<&str>, position: i64) -> AppResult<()> {
