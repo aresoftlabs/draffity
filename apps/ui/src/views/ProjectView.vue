@@ -45,7 +45,7 @@ import { ipc } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 import PacemakerWidget from '@/components/PacemakerWidget.vue';
-import ProjectViewToggle from '@/components/ProjectViewToggle.vue';
+import AppRail from '@/components/AppRail.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
 import OutlinerView from '@/views/OutlinerView.vue';
 import CodexView from '@/views/CodexView.vue';
@@ -596,422 +596,430 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="project" class="flex-1 flex flex-col min-h-0">
-    <header
-      v-if="!compositionMode"
-      class="h-10 px-4 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-950"
-    >
-      <Button
-        icon="pi pi-arrow-left"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('actions.back')"
-        @click="router.push('/')"
-      />
-      <h2 class="text-sm font-semibold truncate">{{ project.title }}</h2>
-      <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
-      <ProjectViewToggle :model-value="viewMode" @update:model-value="changeViewMode" />
-      <div class="flex items-center gap-2 min-w-[12rem] max-w-[20rem]">
-        <GoalProgress
-          :current="totalWordCount"
-          :goal="project.goalWords ?? null"
-          :read-only="readOnly"
-          compact
-          @update:goal="onProjectGoalChange"
-        />
-      </div>
-      <PacemakerWidget
-        :goal-words="project.goalWords ?? null"
-        :current-words="totalWordCount"
-        :deadline="project.deadline ?? null"
-        :words-this-session="sessionWordCount"
-        :read-only="readOnly"
-        @update:deadline="onProjectDeadlineChange"
-      />
-      <span class="flex-1" />
-      <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
-      <Button
-        v-tooltip.bottom="t('search.button')"
-        icon="pi pi-search"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('search.button')"
-        @click="showSearch = true"
-      />
-      <Button
-        v-tooltip.bottom="t('project.focusMode')"
-        :icon="focusMode ? 'pi pi-window-minimize' : 'pi pi-arrows-alt'"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('project.focusMode')"
-        :aria-pressed="focusMode"
-        @click="toggleFocus"
-      />
-      <Button
-        v-tooltip.bottom="t('composition.enter')"
-        icon="pi pi-desktop"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('composition.enter')"
-        @click="uiStore.toggleCompositionMode()"
-      />
-      <Button
-        v-tooltip.bottom="t('split.toggle')"
-        icon="pi pi-clone"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('split.toggle')"
-        :aria-pressed="splitMode"
-        @click="toggleSplit"
-      />
-      <Button
-        icon="pi pi-book"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('bibliography.openButton')"
-        @click="showBibliography = true"
-      />
-      <Button
-        icon="pi pi-bookmark"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('saveAsTemplate.openButton')"
-        @click="showSaveAsTemplate = true"
-      />
-      <Button
-        v-if="aiInline"
-        v-tooltip.bottom="t('ai.validators.title')"
-        icon="pi pi-verified"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('ai.validators.title')"
-        @click="showValidation = true"
-      />
-      <Button
-        v-if="voiceDictation"
-        v-tooltip.bottom="t('voice.dictation.button')"
-        icon="pi pi-microphone"
-        text
-        :severity="dictation.phase.value === 'recording' ? 'danger' : 'secondary'"
-        size="small"
-        :disabled="readOnly"
-        :aria-label="t('voice.dictation.button')"
-        :aria-pressed="dictation.phase.value !== 'idle'"
-        @click="dictation.toggle()"
-      />
-      <Button
-        v-if="voiceTts"
-        v-tooltip.bottom="t('voice.readAloud.button')"
-        icon="pi pi-volume-up"
-        text
-        :severity="readAloud.phase.value !== 'idle' ? 'primary' : 'secondary'"
-        size="small"
-        :aria-label="t('voice.readAloud.button')"
-        :aria-pressed="readAloud.phase.value !== 'idle'"
-        @click="readAloud.toggle()"
-      />
-      <Button
-        v-if="voiceNotes"
-        v-tooltip.bottom="t('voice.notes.button')"
-        icon="pi pi-comment"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('voice.notes.button')"
-        @click="showVoiceNotes = true"
-      />
-      <Button
-        icon="pi pi-download"
-        text
-        severity="secondary"
-        size="small"
-        :aria-label="t('actions.export')"
-        @click="showExport = true"
-      />
-    </header>
-
-    <ExportDialog v-model:visible="showExport" :project="project" />
-    <BibliographyDialog v-model:visible="showBibliography" :project-id="project.id" />
-    <CitationPickerDialog
-      v-model:visible="showCitationPicker"
-      :project-id="project.id"
-      @pick="onPickCitation"
+  <div v-if="project" class="flex-1 flex min-h-0">
+    <AppRail
+      v-if="!focusMode && !compositionMode"
+      :model-value="viewMode"
+      @update:model-value="changeViewMode"
+      @search="showSearch = true"
+      @settings="router.push('/settings')"
     />
-    <CodexRefPickerDialog
-      v-model:visible="showCodexPicker"
-      :project-id="project.id"
-      @pick="onPickCodexRef"
-    />
-    <FootnoteDialog
-      v-model:visible="showFootnoteDialog"
-      :initial-content="editingFootnoteContent"
-      @save="onSaveFootnote"
-      @remove="onRemoveFootnote"
-    />
-    <SaveAsTemplateDialog v-model:visible="showSaveAsTemplate" :project-id="project.id" />
-    <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
-    <ValidationDialog
-      v-model:visible="showValidation"
-      :project-id="project.id"
-      :document-id="docStore.selectedId"
-      @locate="onLocate"
-    />
-    <DictationOverlay
-      :phase="dictation.phase.value"
-      :level="dictation.level.value"
-      @stop="dictation.stopAndInsert"
-      @cancel="dictation.cancel"
-    />
-    <ReadAloudBar
-      :phase="readAloud.phase.value"
-      :speed="readAloud.speed.value"
-      :speeds="readAloud.speeds"
-      @pause="readAloud.pause"
-      @resume="readAloud.resume"
-      @stop="readAloud.stop"
-      @skip="readAloud.skip"
-      @update:speed="readAloud.setSpeed"
-    />
-    <VoiceNotesDialog v-model:visible="showVoiceNotes" :project-id="project.id" />
-
-    <Splitter
-      class="flex-1 !rounded-none !border-0 min-h-0"
-      :pt="{
-        gutter: { class: 'bg-surface-200 dark:bg-surface-700' },
-      }"
-      style-class="h-full"
-    >
-      <SplitterPanel
-        v-if="!focusMode && !compositionMode"
-        :size="22"
-        :min-size="14"
-        class="!min-w-0"
-      >
-        <div class="h-full flex flex-col min-h-0">
-          <div class="flex-1 min-h-0 overflow-auto">
-            <Binder
-              :documents="docStore.documents"
-              :selected-id="docStore.selectedId"
-              :labels="labelStore.labels"
-              :read-only="readOnly"
-              @select="onSelect"
-              @create="onCreate"
-              @reorder="onReorder"
-            />
-          </div>
-          <CollectionsPanel
-            :project-id="project.id"
-            :current-doc-id="docStore.selectedId"
-            :read-only="readOnly"
-            @select="onSelect"
-          />
-        </div>
-      </SplitterPanel>
-
-      <SplitterPanel
-        :size="focusMode || compositionMode ? 100 : 56"
-        :min-size="30"
-        class="!min-w-0 flex flex-col"
-      >
-        <div
-          v-if="readOnly"
-          class="px-4 py-2 text-xs italic bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-b border-amber-300 dark:border-amber-800"
-        >
-          {{ t('project.readOnlyBanner') }}
-        </div>
-        <template v-if="viewMode === 'editor'">
-          <EditorToolbar
-            v-if="selected?.docType !== 'folder' && !compositionMode"
-            :editor="editor"
-            :disabled="readOnly"
-            :linguistic-focus-active="uiStore.linguisticFocus"
-            :repetition-active="uiStore.repetitionHeatmap"
-            @open-citation-picker="showCitationPicker = true"
-            @open-codex-picker="showCodexPicker = true"
-            @insert-image="onInsertImage"
-            @insert-footnote="onInsertFootnote"
-            @toggle-linguistic-focus="uiStore.toggleLinguisticFocus()"
-            @toggle-repetition="uiStore.toggleRepetitionHeatmap()"
-          />
-          <FindReplaceBar
-            v-if="selected?.docType !== 'folder' && !compositionMode"
-            v-model:visible="findVisible"
-            :editor="editor"
-            :mode="findMode"
-            :read-only="readOnly"
-          />
-          <div
-            class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950"
-            :style="
-              compositionMode && compositionBg ? { backgroundColor: compositionBg } : undefined
-            "
-          >
-            <div
-              v-if="!selected"
-              class="h-full flex items-center justify-center text-sm opacity-60"
-            >
-              {{ t('project.noSelection') }}
-            </div>
-            <ScriveningsView
-              v-else-if="selected.docType === 'folder'"
-              :folder="selected"
-              :documents="docStore.documents"
-            />
-            <Splitter v-else-if="splitMode" class="h-full !rounded-none !border-0">
-              <SplitterPanel :size="50" :min-size="25" class="!min-w-0">
-                <TipTapEditor
-                  ref="editorRef"
-                  :model-value="editorContent"
-                  :model-value-json="editorContentJson"
-                  :editable="!readOnly"
-                  :placeholder="t('project.untitled')"
-                  @update:model-value="onEditorInput"
-                  @update:model-value-json="onEditorJsonInput"
-                />
-              </SplitterPanel>
-              <SplitterPanel :size="50" :min-size="25" class="!min-w-0">
-                <SplitSecondaryPane
-                  :project-id="project.id"
-                  :primary-doc-id="docStore.selectedId"
-                  :secondary-doc-id="splitSecondaryId"
-                  :read-only="readOnly"
-                  @update:secondary-doc-id="onSecondaryIdChange"
-                  @close="toggleSplit"
-                />
-              </SplitterPanel>
-            </Splitter>
-            <TipTapEditor
-              v-else
-              ref="editorRef"
-              :model-value="editorContent"
-              :model-value-json="editorContentJson"
-              :editable="!readOnly"
-              :placeholder="t('project.untitled')"
-              :paper-width-ch="compositionMode ? paperWidthCh : 0"
-              @update:model-value="onEditorInput"
-              @update:model-value-json="onEditorJsonInput"
-            />
-          </div>
-          <AiInlinePanel
-            v-if="!compositionMode"
-            :editor="editor"
-            :project-id="project.id"
-            :doc-id="docStore.selectedId"
-            :disabled="readOnly"
-          />
-        </template>
-        <CorkboardView
-          v-else-if="viewMode === 'corkboard'"
-          :documents="docStore.documents"
-          :selected-id="docStore.selectedId"
-          @select="onSelect"
-        />
-        <OutlinerView
-          v-else-if="viewMode === 'outliner'"
-          :documents="docStore.documents"
-          :selected-id="docStore.selectedId"
-          :custom-fields="customFieldStore.fields"
-          :read-only="readOnly"
-          @select="onSelect"
-          @update-title="onOutlinerTitle"
-          @update-synopsis="onOutlinerSynopsis"
-          @update-status="onOutlinerStatus"
-        />
-        <CodexView v-else :project-id="project.id" :read-only="readOnly" />
-      </SplitterPanel>
-
-      <SplitterPanel
-        v-if="!focusMode && !compositionMode"
-        :size="22"
-        :min-size="14"
-        class="!min-w-0"
-      >
-        <Inspector
-          :doc="selected"
-          :word-count-here="wordCount"
-          :word-count-total="totalWordCount"
-          :session-word-count="sessionWordCount"
-          :labels="labelStore.labels"
-          :custom-fields="customFieldStore.fields"
-          :reading-wpm="uiStore.readingWpm"
-          :read-only="readOnly"
-          @snapshot-restored="onSnapshotRestored"
-          @status-change="onStatusChange"
-          @tags-change="onTagsChange"
-          @labels-change="onLabelsChange"
-          @manage-labels="labelManagerVisible = true"
-          @metadata-change="onMetadataChange"
-          @manage-fields="fieldsManagerVisible = true"
-          @research-change="onResearchChange"
-          @matter-change="onMatterChange"
-          @goal-change="onDocGoalChange"
-          @synopsis-change="onSynopsisChange"
-        />
-      </SplitterPanel>
-    </Splitter>
-
-    <!-- Composition mode control bar (K-09): hidden until hover at the top. -->
-    <div v-if="compositionMode" class="composition-bar">
-      <div
-        class="composition-bar-inner flex items-center gap-4 px-4 py-2 bg-surface-0/95 dark:bg-surface-950/95 border-b border-surface-200 dark:border-surface-700 backdrop-blur"
+    <div class="flex-1 flex flex-col min-h-0">
+      <header
+        v-if="!compositionMode"
+        class="h-10 px-4 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-950"
       >
         <Button
-          icon="pi pi-times"
+          icon="pi pi-arrow-left"
           text
+          severity="secondary"
           size="small"
-          :label="t('composition.exit')"
+          :aria-label="t('actions.back')"
+          @click="router.push('/')"
+        />
+        <h2 class="text-sm font-semibold truncate">{{ project.title }}</h2>
+        <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
+        <div class="flex items-center gap-2 min-w-[12rem] max-w-[20rem]">
+          <GoalProgress
+            :current="totalWordCount"
+            :goal="project.goalWords ?? null"
+            :read-only="readOnly"
+            compact
+            @update:goal="onProjectGoalChange"
+          />
+        </div>
+        <PacemakerWidget
+          :goal-words="project.goalWords ?? null"
+          :current-words="totalWordCount"
+          :deadline="project.deadline ?? null"
+          :words-this-session="sessionWordCount"
+          :read-only="readOnly"
+          @update:deadline="onProjectDeadlineChange"
+        />
+        <span class="flex-1" />
+        <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
+        <Button
+          v-tooltip.bottom="t('search.button')"
+          icon="pi pi-search"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('search.button')"
+          @click="showSearch = true"
+        />
+        <Button
+          v-tooltip.bottom="t('project.focusMode')"
+          :icon="focusMode ? 'pi pi-window-minimize' : 'pi pi-arrows-alt'"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('project.focusMode')"
+          :aria-pressed="focusMode"
+          @click="toggleFocus"
+        />
+        <Button
+          v-tooltip.bottom="t('composition.enter')"
+          icon="pi pi-desktop"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('composition.enter')"
           @click="uiStore.toggleCompositionMode()"
         />
-        <span class="text-xs opacity-60 font-mono">{{ wordCount }} · {{ totalWordCount }}</span>
-        <span class="flex-1" />
-        <label class="flex items-center gap-2 text-xs opacity-70">
-          {{ t('composition.paperWidth') }}
-          <Slider v-model="paperWidthCh" :min="50" :max="140" :step="5" class="!w-32" />
-          <span class="font-mono w-8">{{ paperWidthCh }}</span>
-        </label>
-        <label class="flex items-center gap-2 text-xs opacity-70">
-          {{ t('composition.background') }}
-          <input
-            type="color"
-            :value="compositionBg || '#ffffff'"
-            class="w-7 h-7 rounded border-0 bg-transparent cursor-pointer"
-            :aria-label="t('composition.background')"
-            @input="(e) => (compositionBg = (e.target as HTMLInputElement).value)"
+        <Button
+          v-tooltip.bottom="t('split.toggle')"
+          icon="pi pi-clone"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('split.toggle')"
+          :aria-pressed="splitMode"
+          @click="toggleSplit"
+        />
+        <Button
+          icon="pi pi-book"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('bibliography.openButton')"
+          @click="showBibliography = true"
+        />
+        <Button
+          icon="pi pi-bookmark"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('saveAsTemplate.openButton')"
+          @click="showSaveAsTemplate = true"
+        />
+        <Button
+          v-if="aiInline"
+          v-tooltip.bottom="t('ai.validators.title')"
+          icon="pi pi-verified"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('ai.validators.title')"
+          @click="showValidation = true"
+        />
+        <Button
+          v-if="voiceDictation"
+          v-tooltip.bottom="t('voice.dictation.button')"
+          icon="pi pi-microphone"
+          text
+          :severity="dictation.phase.value === 'recording' ? 'danger' : 'secondary'"
+          size="small"
+          :disabled="readOnly"
+          :aria-label="t('voice.dictation.button')"
+          :aria-pressed="dictation.phase.value !== 'idle'"
+          @click="dictation.toggle()"
+        />
+        <Button
+          v-if="voiceTts"
+          v-tooltip.bottom="t('voice.readAloud.button')"
+          icon="pi pi-volume-up"
+          text
+          :severity="readAloud.phase.value !== 'idle' ? 'primary' : 'secondary'"
+          size="small"
+          :aria-label="t('voice.readAloud.button')"
+          :aria-pressed="readAloud.phase.value !== 'idle'"
+          @click="readAloud.toggle()"
+        />
+        <Button
+          v-if="voiceNotes"
+          v-tooltip.bottom="t('voice.notes.button')"
+          icon="pi pi-comment"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('voice.notes.button')"
+          @click="showVoiceNotes = true"
+        />
+        <Button
+          icon="pi pi-download"
+          text
+          severity="secondary"
+          size="small"
+          :aria-label="t('actions.export')"
+          @click="showExport = true"
+        />
+      </header>
+
+      <ExportDialog v-model:visible="showExport" :project="project" />
+      <BibliographyDialog v-model:visible="showBibliography" :project-id="project.id" />
+      <CitationPickerDialog
+        v-model:visible="showCitationPicker"
+        :project-id="project.id"
+        @pick="onPickCitation"
+      />
+      <CodexRefPickerDialog
+        v-model:visible="showCodexPicker"
+        :project-id="project.id"
+        @pick="onPickCodexRef"
+      />
+      <FootnoteDialog
+        v-model:visible="showFootnoteDialog"
+        :initial-content="editingFootnoteContent"
+        @save="onSaveFootnote"
+        @remove="onRemoveFootnote"
+      />
+      <SaveAsTemplateDialog v-model:visible="showSaveAsTemplate" :project-id="project.id" />
+      <SearchDialog v-model:visible="showSearch" :project-id="project.id" @jump="onSearchJump" />
+      <ValidationDialog
+        v-model:visible="showValidation"
+        :project-id="project.id"
+        :document-id="docStore.selectedId"
+        @locate="onLocate"
+      />
+      <DictationOverlay
+        :phase="dictation.phase.value"
+        :level="dictation.level.value"
+        @stop="dictation.stopAndInsert"
+        @cancel="dictation.cancel"
+      />
+      <ReadAloudBar
+        :phase="readAloud.phase.value"
+        :speed="readAloud.speed.value"
+        :speeds="readAloud.speeds"
+        @pause="readAloud.pause"
+        @resume="readAloud.resume"
+        @stop="readAloud.stop"
+        @skip="readAloud.skip"
+        @update:speed="readAloud.setSpeed"
+      />
+      <VoiceNotesDialog v-model:visible="showVoiceNotes" :project-id="project.id" />
+
+      <Splitter
+        class="flex-1 !rounded-none !border-0 min-h-0"
+        :pt="{
+          gutter: { class: 'bg-surface-200 dark:bg-surface-700' },
+        }"
+        style-class="h-full"
+      >
+        <SplitterPanel
+          v-if="!focusMode && !compositionMode"
+          :size="22"
+          :min-size="14"
+          class="!min-w-0"
+        >
+          <div class="h-full flex flex-col min-h-0">
+            <div class="flex-1 min-h-0 overflow-auto">
+              <Binder
+                :documents="docStore.documents"
+                :selected-id="docStore.selectedId"
+                :labels="labelStore.labels"
+                :read-only="readOnly"
+                @select="onSelect"
+                @create="onCreate"
+                @reorder="onReorder"
+              />
+            </div>
+            <CollectionsPanel
+              :project-id="project.id"
+              :current-doc-id="docStore.selectedId"
+              :read-only="readOnly"
+              @select="onSelect"
+            />
+          </div>
+        </SplitterPanel>
+
+        <SplitterPanel
+          :size="focusMode || compositionMode ? 100 : 56"
+          :min-size="30"
+          class="!min-w-0 flex flex-col"
+        >
+          <div
+            v-if="readOnly"
+            class="px-4 py-2 text-xs italic bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-b border-amber-300 dark:border-amber-800"
+          >
+            {{ t('project.readOnlyBanner') }}
+          </div>
+          <template v-if="viewMode === 'editor'">
+            <EditorToolbar
+              v-if="selected?.docType !== 'folder' && !compositionMode"
+              :editor="editor"
+              :disabled="readOnly"
+              :linguistic-focus-active="uiStore.linguisticFocus"
+              :repetition-active="uiStore.repetitionHeatmap"
+              @open-citation-picker="showCitationPicker = true"
+              @open-codex-picker="showCodexPicker = true"
+              @insert-image="onInsertImage"
+              @insert-footnote="onInsertFootnote"
+              @toggle-linguistic-focus="uiStore.toggleLinguisticFocus()"
+              @toggle-repetition="uiStore.toggleRepetitionHeatmap()"
+            />
+            <FindReplaceBar
+              v-if="selected?.docType !== 'folder' && !compositionMode"
+              v-model:visible="findVisible"
+              :editor="editor"
+              :mode="findMode"
+              :read-only="readOnly"
+            />
+            <div
+              class="flex-1 min-h-0 bg-surface-0 dark:bg-surface-950"
+              :style="
+                compositionMode && compositionBg ? { backgroundColor: compositionBg } : undefined
+              "
+            >
+              <div
+                v-if="!selected"
+                class="h-full flex items-center justify-center text-sm opacity-60"
+              >
+                {{ t('project.noSelection') }}
+              </div>
+              <ScriveningsView
+                v-else-if="selected.docType === 'folder'"
+                :folder="selected"
+                :documents="docStore.documents"
+              />
+              <Splitter v-else-if="splitMode" class="h-full !rounded-none !border-0">
+                <SplitterPanel :size="50" :min-size="25" class="!min-w-0">
+                  <TipTapEditor
+                    ref="editorRef"
+                    :model-value="editorContent"
+                    :model-value-json="editorContentJson"
+                    :editable="!readOnly"
+                    :placeholder="t('project.untitled')"
+                    @update:model-value="onEditorInput"
+                    @update:model-value-json="onEditorJsonInput"
+                  />
+                </SplitterPanel>
+                <SplitterPanel :size="50" :min-size="25" class="!min-w-0">
+                  <SplitSecondaryPane
+                    :project-id="project.id"
+                    :primary-doc-id="docStore.selectedId"
+                    :secondary-doc-id="splitSecondaryId"
+                    :read-only="readOnly"
+                    @update:secondary-doc-id="onSecondaryIdChange"
+                    @close="toggleSplit"
+                  />
+                </SplitterPanel>
+              </Splitter>
+              <TipTapEditor
+                v-else
+                ref="editorRef"
+                :model-value="editorContent"
+                :model-value-json="editorContentJson"
+                :editable="!readOnly"
+                :placeholder="t('project.untitled')"
+                :paper-width-ch="compositionMode ? paperWidthCh : 0"
+                @update:model-value="onEditorInput"
+                @update:model-value-json="onEditorJsonInput"
+              />
+            </div>
+            <AiInlinePanel
+              v-if="!compositionMode"
+              :editor="editor"
+              :project-id="project.id"
+              :doc-id="docStore.selectedId"
+              :disabled="readOnly"
+            />
+          </template>
+          <CorkboardView
+            v-else-if="viewMode === 'corkboard'"
+            :documents="docStore.documents"
+            :selected-id="docStore.selectedId"
+            @select="onSelect"
           />
+          <OutlinerView
+            v-else-if="viewMode === 'outliner'"
+            :documents="docStore.documents"
+            :selected-id="docStore.selectedId"
+            :custom-fields="customFieldStore.fields"
+            :read-only="readOnly"
+            @select="onSelect"
+            @update-title="onOutlinerTitle"
+            @update-synopsis="onOutlinerSynopsis"
+            @update-status="onOutlinerStatus"
+          />
+          <CodexView v-else :project-id="project.id" :read-only="readOnly" />
+        </SplitterPanel>
+
+        <SplitterPanel
+          v-if="!focusMode && !compositionMode"
+          :size="22"
+          :min-size="14"
+          class="!min-w-0"
+        >
+          <Inspector
+            :doc="selected"
+            :word-count-here="wordCount"
+            :word-count-total="totalWordCount"
+            :session-word-count="sessionWordCount"
+            :labels="labelStore.labels"
+            :custom-fields="customFieldStore.fields"
+            :reading-wpm="uiStore.readingWpm"
+            :read-only="readOnly"
+            @snapshot-restored="onSnapshotRestored"
+            @status-change="onStatusChange"
+            @tags-change="onTagsChange"
+            @labels-change="onLabelsChange"
+            @manage-labels="labelManagerVisible = true"
+            @metadata-change="onMetadataChange"
+            @manage-fields="fieldsManagerVisible = true"
+            @research-change="onResearchChange"
+            @matter-change="onMatterChange"
+            @goal-change="onDocGoalChange"
+            @synopsis-change="onSynopsisChange"
+          />
+        </SplitterPanel>
+      </Splitter>
+
+      <!-- Composition mode control bar (K-09): hidden until hover at the top. -->
+      <div v-if="compositionMode" class="composition-bar">
+        <div
+          class="composition-bar-inner flex items-center gap-4 px-4 py-2 bg-surface-0/95 dark:bg-surface-950/95 border-b border-surface-200 dark:border-surface-700 backdrop-blur"
+        >
           <Button
-            v-if="compositionBg"
             icon="pi pi-times"
             text
             size="small"
-            :pt="{ root: { class: '!w-5 !h-5 !p-0' } }"
-            :aria-label="t('composition.resetBackground')"
-            @click="compositionBg = ''"
+            :label="t('composition.exit')"
+            @click="uiStore.toggleCompositionMode()"
           />
-        </label>
-        <label class="flex items-center gap-2 text-xs opacity-70">
-          {{ t('composition.fade') }}
-          <Select
-            v-model="fadeLevel"
-            :options="fadeOptions"
-            option-label="label"
-            option-value="value"
-            size="small"
-            class="!text-xs"
-          />
-        </label>
+          <span class="text-xs opacity-60 font-mono">{{ wordCount }} · {{ totalWordCount }}</span>
+          <span class="flex-1" />
+          <label class="flex items-center gap-2 text-xs opacity-70">
+            {{ t('composition.paperWidth') }}
+            <Slider v-model="paperWidthCh" :min="50" :max="140" :step="5" class="!w-32" />
+            <span class="font-mono w-8">{{ paperWidthCh }}</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs opacity-70">
+            {{ t('composition.background') }}
+            <input
+              type="color"
+              :value="compositionBg || '#ffffff'"
+              class="w-7 h-7 rounded border-0 bg-transparent cursor-pointer"
+              :aria-label="t('composition.background')"
+              @input="(e) => (compositionBg = (e.target as HTMLInputElement).value)"
+            />
+            <Button
+              v-if="compositionBg"
+              icon="pi pi-times"
+              text
+              size="small"
+              :pt="{ root: { class: '!w-5 !h-5 !p-0' } }"
+              :aria-label="t('composition.resetBackground')"
+              @click="compositionBg = ''"
+            />
+          </label>
+          <label class="flex items-center gap-2 text-xs opacity-70">
+            {{ t('composition.fade') }}
+            <Select
+              v-model="fadeLevel"
+              :options="fadeOptions"
+              option-label="label"
+              option-value="value"
+              size="small"
+              class="!text-xs"
+            />
+          </label>
+        </div>
       </div>
-    </div>
 
-    <LabelManagerDialog v-model:visible="labelManagerVisible" :project-id="projectId" />
-    <CustomFieldsManagerDialog v-model:visible="fieldsManagerVisible" :project-id="projectId" />
+      <LabelManagerDialog v-model:visible="labelManagerVisible" :project-id="projectId" />
+      <CustomFieldsManagerDialog v-model:visible="fieldsManagerVisible" :project-id="projectId" />
+    </div>
   </div>
 </template>
 
