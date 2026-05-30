@@ -110,6 +110,8 @@ export default [
             'Alt',
             'Cmd',
             'Meta',
+            // Acceso directo de teclado ⌘K (símbolo no traducible, affordance universal)
+            '⌘K',
           ],
           attributes: {
             '/.+/': [

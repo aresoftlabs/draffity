@@ -7,11 +7,13 @@ import { useUiStore } from '@/stores/ui';
 import { useDocumentStore } from '@/stores/document';
 import GoalProgress from '@/components/GoalProgress.vue';
 import PomodoroWidget from '@/components/PomodoroWidget.vue';
+import { useCommandPalette } from '@/composables/useCommandPalette';
 
 const { t } = useI18n();
 const router = useRouter();
 const ui = useUiStore();
 const docs = useDocumentStore();
+const palette = useCommandPalette();
 
 const sessionActive = computed(() => ui.sessionStartTotal !== null && docs.documents.length > 0);
 const sessionWords = computed(() =>
@@ -61,6 +63,18 @@ function cycleTheme() {
     </div>
 
     <PomodoroWidget />
+
+    <Button
+      type="button"
+      severity="secondary"
+      text
+      class="!gap-2"
+      :aria-label="t('commandPalette.open')"
+      @click="palette.open()"
+    >
+      <i class="pi pi-search" />
+      <span class="hidden sm:inline text-xs opacity-70">⌘K</span>
+    </Button>
 
     <Button
       :icon="isDark() ? 'pi pi-sun' : 'pi pi-moon'"

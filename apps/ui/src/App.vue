@@ -1,9 +1,61 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { onMounted, onBeforeUnmount } from 'vue';
+import { RouterView, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import Toast from 'primevue/toast';
 import ConfirmDialog from 'primevue/confirmdialog';
 import AppShell from '@/components/AppShell.vue';
 import OnboardingDialog from '@/components/OnboardingDialog.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
+import { registerCommands } from '@/composables/useCommandRegistry';
+import { useCommandPalette } from '@/composables/useCommandPalette';
+import { useShortcuts } from '@/composables/useShortcuts';
+import { useUiStore } from '@/stores/ui';
+
+const router = useRouter();
+const { t } = useI18n();
+const palette = useCommandPalette();
+const ui = useUiStore();
+
+// Atajo global ⌘K (la acción `commandPalette` ya existe en keybindings).
+useShortcuts({ commandPalette: () => palette.toggle() });
+
+// Mismo mecanismo que AppShell.cycleTheme: ui.setTheme() actualiza el store
+// y aplica las clases DOM vía applyTheme(). Aquí hacemos toggle dark↔light.
+function toggleThemeCommand() {
+  const next = ui.theme === 'dark' ? 'light' : 'dark';
+  ui.setTheme(next);
+}
+
+// Comandos globales: disponibles en cualquier pantalla.
+let offGlobalCmds: (() => void) | null = null;
+onMounted(() => {
+  offGlobalCmds = registerCommands([
+    {
+      id: 'global.dashboard',
+      label: t('command.goDashboard'),
+      group: t('command.groupGlobal'),
+      icon: 'pi pi-home',
+      run: () => void router.push('/'),
+    },
+    {
+      id: 'global.settings',
+      label: t('command.openSettings'),
+      group: t('command.groupGlobal'),
+      icon: 'pi pi-cog',
+      run: () => void router.push('/settings'),
+    },
+    {
+      id: 'global.theme',
+      label: t('command.toggleTheme'),
+      group: t('command.groupGlobal'),
+      icon: 'pi pi-moon',
+      keywords: ['tema', 'theme', 'oscuro', 'dark'],
+      run: () => toggleThemeCommand(),
+    },
+  ]);
+});
+onBeforeUnmount(() => offGlobalCmds?.());
 </script>
 
 <template>
@@ -17,5 +69,6 @@ import OnboardingDialog from '@/components/OnboardingDialog.vue';
     <OnboardingDialog />
     <Toast position="bottom-right" />
     <ConfirmDialog />
+    <CommandPalette />
   </div>
 </template>
