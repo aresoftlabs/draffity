@@ -11,7 +11,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function host(saveFn: () => void | Promise<void>, delay = 100) {
+function host(saveFn: () => void | Promise<void>, delay: number | (() => number) = 100) {
   type Saver = ReturnType<typeof useAutoSave>;
   const captured: { saver: Saver | null } = { saver: null };
   const Comp = defineComponent({
@@ -69,6 +69,27 @@ describe('useAutoSave', () => {
     vi.advanceTimersByTime(500);
     await nextTick();
     expect(save).not.toHaveBeenCalled();
+  });
+
+  it('reads a dynamic delay from a getter on each trigger', async () => {
+    const save = vi.fn();
+    let ms = 200;
+    const { saver } = host(save, () => ms);
+
+    saver.trigger();
+    vi.advanceTimersByTime(200);
+    await nextTick();
+    expect(save).toHaveBeenCalledTimes(1);
+
+    // Raising the configured delay takes effect on the next debounce window.
+    ms = 500;
+    saver.trigger();
+    vi.advanceTimersByTime(200);
+    await nextTick();
+    expect(save).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(300);
+    await nextTick();
+    expect(save).toHaveBeenCalledTimes(2);
   });
 
   it('flushes pending save on unmount', async () => {

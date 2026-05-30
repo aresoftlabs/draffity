@@ -80,7 +80,7 @@ const fieldsManagerVisible = ref(false);
 const focusMode = computed(() => uiStore.focusMode);
 const compositionMode = computed(() => uiStore.compositionMode);
 const typewriterEnabled = computed(() => uiStore.typewriterMode);
-const { paperWidthCh, compositionBg, fadeLevel } = useEditorSettings();
+const { autosaveMs, paperWidthCh, compositionBg, fadeLevel } = useEditorSettings();
 const fadeOptions = computed(() => [
   { value: 'none' as const, label: t('composition.fadeNone') },
   { value: 'paragraph' as const, label: t('composition.fadeParagraph') },
@@ -140,6 +140,7 @@ const { selected, saveState, lastSavedAt, wordCount, totalWordCount } = storeToR
 const editorDoc = useEditorAutoSave({
   persist: (id, payload) => run(t('errors.saveDocument'), () => docStore.save(id, payload)),
   readOnly: () => readOnly.value,
+  delay: () => autosaveMs.value,
 });
 const editorContent = editorDoc.content;
 const editorContentJson = editorDoc.contentJson;

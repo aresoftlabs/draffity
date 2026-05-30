@@ -5,6 +5,7 @@ import Select from 'primevue/select';
 import Button from 'primevue/button';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
 import { useEditorAutoSave } from '@/composables/useEditorAutoSave';
+import { useEditorSettings } from '@/composables/useEditorSettings';
 import { useDocumentStore } from '@/stores/document';
 import { useUiStore } from '@/stores/ui';
 import { ipc } from '@/services/ipc';
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const docStore = useDocumentStore();
 const uiStore = useUiStore();
+const { autosaveMs } = useEditorSettings();
 
 const saving = ref(false);
 const editorDoc = useEditorAutoSave({
@@ -45,6 +47,7 @@ const editorDoc = useEditorAutoSave({
     }
   },
   readOnly: () => props.readOnly,
+  delay: () => autosaveMs.value,
 });
 const editorContent = editorDoc.content;
 const editorContentJson = editorDoc.contentJson;

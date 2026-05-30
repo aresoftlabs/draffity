@@ -13,8 +13,8 @@ export interface EditorAutoSaveOptions {
    *  awaited but otherwise ignored, so wrappers returning `Promise<T | null>`
    *  (e.g. an error-handling `run`) fit without coercion. */
   persist: (id: string, payload: { content: string; contentJson?: string }) => unknown;
-  /** Debounce window in ms. */
-  delay?: number;
+  /** Debounce window in ms, or a getter so a reactive setting is read fresh. */
+  delay?: number | (() => number);
   /** When it returns true, edits are neither triggered nor persisted. */
   readOnly?: () => boolean;
 }
