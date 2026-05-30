@@ -10,31 +10,29 @@ vi.mock('@/locales', () => ({ setLocale: vi.fn() }));
 
 import { useUiStore } from './ui';
 
-describe('useUiStore – cycleTheme', () => {
+describe('useUiStore – toggleLightDark', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });
 
-  it('advances through system → light → dark cycle', () => {
+  it('switches light → dark', () => {
     const store = useUiStore();
-    // Initial theme from mock is 'system'.
-    expect(store.theme).toBe('system');
-
-    store.cycleTheme();
-    expect(store.theme).toBe('light');
-
-    store.cycleTheme();
+    store.setTheme('light');
+    store.toggleLightDark();
     expect(store.theme).toBe('dark');
-
-    store.cycleTheme();
-    expect(store.theme).toBe('system');
   });
 
-  it('wraps around from dark back to system', () => {
+  it('switches dark → light', () => {
     const store = useUiStore();
-    store.cycleTheme(); // system → light
-    store.cycleTheme(); // light  → dark
-    store.cycleTheme(); // dark   → system
-    expect(store.theme).toBe('system');
+    store.setTheme('dark');
+    store.toggleLightDark();
+    expect(store.theme).toBe('light');
+  });
+
+  it('resolves high-contrast as dark and lands on light', () => {
+    const store = useUiStore();
+    store.setTheme('high-contrast');
+    store.toggleLightDark();
+    expect(store.theme).toBe('light');
   });
 });

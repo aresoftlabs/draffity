@@ -127,7 +127,7 @@ function onDelete(id: string) {
 </script>
 
 <template>
-  <section class="flex-1 flex flex-col p-8 max-w-5xl w-full mx-auto gap-8">
+  <section class="flex-1 min-h-0 overflow-y-auto flex flex-col p-8 max-w-5xl w-full mx-auto gap-8">
     <header class="flex items-end justify-between gap-4 flex-wrap">
       <div>
         <h1 class="text-3xl font-display font-bold">{{ t('dashboard.title') }}</h1>

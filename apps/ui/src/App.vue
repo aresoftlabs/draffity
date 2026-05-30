@@ -44,7 +44,7 @@ onMounted(() => {
       group: t('command.groupGlobal'),
       icon: 'pi pi-moon',
       keywords: ['tema', 'theme', 'oscuro', 'dark'],
-      run: () => ui.cycleTheme(),
+      run: () => ui.toggleLightDark(),
     },
     {
       id: 'global.newDraft',
@@ -66,10 +66,10 @@ onBeforeUnmount(() => offGlobalCmds?.());
 
 <template>
   <div
-    class="draffity-app flex flex-col min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50"
+    class="draffity-app flex flex-col h-screen overflow-hidden bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50"
   >
-    <AppTopBar />
-    <main class="flex-1 flex flex-col min-h-0">
+    <AppTopBar v-if="!ui.compositionMode" />
+    <main class="flex-1 flex flex-col min-h-0 overflow-hidden">
       <RouterView />
     </main>
     <OnboardingDialog />

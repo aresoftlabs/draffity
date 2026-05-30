@@ -643,28 +643,18 @@ onBeforeUnmount(() => {
       :model-value="viewMode"
       @update:model-value="changeViewMode"
       @search="showSearch = true"
-      @settings="router.push('/settings')"
     />
     <div class="flex-1 flex flex-col min-h-0">
-      <header
-        v-if="!compositionMode"
-        class="h-10 px-4 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-950"
-      >
-        <Button
-          icon="pi pi-arrow-left"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('actions.back')"
-          @click="router.push('/')"
-        />
-        <h2 class="text-sm font-display font-semibold truncate">{{ project.title }}</h2>
-        <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
-        <span class="flex-1" />
+      <!-- Single top bar: project-contextual actions are teleported into the
+           global AppTopBar. ProjectView keeps the handlers; AppTopBar only
+           hosts them. Hidden in composition mode (the top bar is hidden too). -->
+      <Teleport v-if="!compositionMode" to="#topbar-project-actions">
+        <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="mr-1" />
         <Button
           v-tooltip.bottom="t('project.focusMode')"
           :icon="focusMode ? 'pi pi-window-minimize' : 'pi pi-arrows-alt'"
           text
+          rounded
           severity="secondary"
           size="small"
           :aria-label="t('project.focusMode')"
@@ -675,6 +665,7 @@ onBeforeUnmount(() => {
           v-tooltip.bottom="t('composition.enter')"
           icon="pi pi-desktop"
           text
+          rounded
           severity="secondary"
           size="small"
           :aria-label="t('composition.enter')"
@@ -684,6 +675,7 @@ onBeforeUnmount(() => {
           v-tooltip.bottom="t('split.toggle')"
           icon="pi pi-clone"
           text
+          rounded
           severity="secondary"
           size="small"
           :aria-label="t('split.toggle')"
@@ -694,6 +686,7 @@ onBeforeUnmount(() => {
           v-tooltip.bottom="t('project.moreActions')"
           icon="pi pi-ellipsis-v"
           text
+          rounded
           severity="secondary"
           size="small"
           :aria-label="t('project.moreActions')"
@@ -701,7 +694,7 @@ onBeforeUnmount(() => {
           @click="actionMenu?.toggle($event)"
         />
         <Menu ref="actionMenu" :model="actionItems" popup />
-      </header>
+      </Teleport>
 
       <ExportDialog v-model:visible="showExport" :project="project" />
       <BibliographyDialog v-model:visible="showBibliography" :project-id="project.id" />

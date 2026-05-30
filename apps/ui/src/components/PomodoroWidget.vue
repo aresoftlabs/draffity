@@ -77,7 +77,7 @@ function openSettings(e: MouseEvent) {
       @click="timer.reset"
     />
     <Button
-      icon="pi pi-cog"
+      icon="pi pi-sliders-h"
       text
       severity="secondary"
       size="small"

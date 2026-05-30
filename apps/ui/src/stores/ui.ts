@@ -114,12 +114,26 @@ export const useUiStore = defineStore('ui', () => {
     applyTheme(mode);
   }
 
-  function cycleTheme(): void {
-    const order: ThemeMode[] = ['system', 'light', 'dark'];
-    const idx = order.indexOf(theme.value);
-    // If current theme isn't in the cycle (e.g. 'high-contrast'), default to
-    // the start of the cycle so the user can reach it from any state.
-    setTheme(order[(idx === -1 ? 0 : idx + 1) % order.length]);
+  /** Effective dark state for the *current* theme. 'high-contrast' rides on
+   *  top of dark; 'system' follows the OS preference. */
+  function effectiveDark(): boolean {
+    switch (theme.value) {
+      case 'dark':
+      case 'high-contrast':
+        return true;
+      case 'light':
+        return false;
+      default:
+        return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : false;
+    }
+  }
+
+  /** Quick top-bar toggle: only ever lands on a concrete light/dark theme.
+   *  The full 4-way choice (incl. system / high-contrast) lives in Settings. */
+  function toggleLightDark(): void {
+    setTheme(effectiveDark() ? 'light' : 'dark');
   }
 
   function setLocale(locale: 'es' | 'en') {
@@ -236,7 +250,7 @@ export const useUiStore = defineStore('ui', () => {
     sessionStartTotal,
     projectViewModes,
     setTheme,
-    cycleTheme,
+    toggleLightDark,
     setLocale,
     toggleBinder,
     toggleInspector,

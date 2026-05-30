@@ -590,7 +590,7 @@ const navSections: { id: SettingsSection; key: string }[] = [
 </script>
 
 <template>
-  <section class="flex-1 p-8 max-w-5xl w-full mx-auto">
+  <section class="flex-1 min-h-0 overflow-y-auto p-8 max-w-5xl w-full mx-auto">
     <h1 class="text-2xl font-display font-bold mb-6">{{ t('settings.title') }}</h1>
     <div class="flex gap-8 items-start">
       <nav class="w-52 shrink-0 flex flex-col gap-1 sticky top-4" :aria-label="t('settings.title')">

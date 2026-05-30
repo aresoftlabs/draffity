@@ -8,7 +8,6 @@ defineProps<{ modelValue: ProjectViewMode }>();
 const emit = defineEmits<{
   'update:modelValue': [ProjectViewMode];
   search: [];
-  settings: [];
 }>();
 
 const { t } = useI18n();
@@ -52,16 +51,6 @@ const views: { mode: ProjectViewMode; icon: string; key: string }[] = [
       @click="emit('search')"
     >
       <i class="pi pi-search" />
-    </button>
-
-    <button
-      type="button"
-      class="mt-auto w-9 h-9 rounded-[10px] flex items-center justify-center text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-      :title="t('settings.title')"
-      :aria-label="t('settings.title')"
-      @click="emit('settings')"
-    >
-      <i class="pi pi-cog" />
     </button>
   </nav>
 </template>
