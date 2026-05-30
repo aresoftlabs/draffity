@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import SelectButton from 'primevue/selectbutton';
 import Select from 'primevue/select';
 import Slider from 'primevue/slider';
@@ -19,19 +18,13 @@ import LegalDialog, { type LegalKind } from '@/components/LegalDialog.vue';
 import SparklineChart from '@/components/SparklineChart.vue';
 import SettingsBackups from '@/components/SettingsBackups.vue';
 import SettingsAI from '@/components/SettingsAI.vue';
+import SettingsVoice from '@/components/SettingsVoice.vue';
 import { useUiStore } from '@/stores/ui';
 import { useProjectStore } from '@/stores/project';
 import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
-import { useCapability, refreshCapabilities } from '@/composables/useCapability';
-import {
-  ipc,
-  type PremiumStatus,
-  type VoiceModel,
-  type VoiceStatus,
-  type VoiceVoice,
-  type VoiceDownloadProgress,
-} from '@/services/ipc';
+import { refreshCapabilities } from '@/composables/useCapability';
+import { ipc, type PremiumStatus } from '@/services/ipc';
 import type { DailyWriting, MediaAsset, WritingStats } from '@draffity/shared-types';
 
 const { t, locale } = useI18n();
@@ -217,7 +210,6 @@ async function onToggleCrashReporting(value: boolean) {
 // Premium activation (E-07/E-08). Capability-gated sections only render once
 // premium is active — Free tier sees nothing (no premium leakage). The
 // activation field itself only shows when the build can validate licenses.
-const voiceEnabled = useCapability('voice_to_text');
 
 const premium = ref<PremiumStatus | null>(null);
 const licenseKey = ref('');
@@ -273,145 +265,6 @@ async function onDeactivatePremium() {
   }
 }
 
-// Voice models (Épica H). Shown inside the premium-gated "Voz" section.
-const voiceStatus = ref<VoiceStatus | null>(null);
-const voiceModels = ref<VoiceModel[]>([]);
-const voiceVoices = ref<VoiceVoice[]>([]);
-const downloadPct = ref<Record<string, number>>({});
-const importingBinary = ref(false);
-const importingPiper = ref(false);
-let unlistenVoiceProgress: UnlistenFn | null = null;
-
-async function loadVoice() {
-  try {
-    voiceStatus.value = await ipc.getVoiceStatus();
-    voiceModels.value = await ipc.listVoiceModels();
-    voiceVoices.value = await ipc.listVoiceVoices();
-  } catch (e) {
-    voiceStatus.value = null;
-    voiceModels.value = [];
-    voiceVoices.value = [];
-    reportLoadError('voice', e);
-  }
-}
-
-async function onDownloadVoice(v: VoiceVoice) {
-  downloadPct.value = { ...downloadPct.value, [v.id]: 0 };
-  try {
-    await ipc.downloadVoiceVoice(v.id);
-    toast.add({
-      severity: 'success',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceModelDownloaded'),
-      life: 3000,
-    });
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceModelError'),
-      life: 5000,
-    });
-  } finally {
-    const rest = { ...downloadPct.value };
-    delete rest[v.id];
-    downloadPct.value = rest;
-    await loadVoice();
-  }
-}
-
-async function onImportPiper() {
-  const picked = await open({
-    multiple: false,
-    directory: false,
-    title: t('settings.voiceImportPiper'),
-  });
-  if (typeof picked !== 'string') return;
-  importingPiper.value = true;
-  try {
-    await ipc.importPiperBinary(picked);
-    toast.add({
-      severity: 'success',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceBinaryImported'),
-      life: 3000,
-    });
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceModelError'),
-      life: 5000,
-    });
-  } finally {
-    importingPiper.value = false;
-    await loadVoice();
-  }
-}
-
-async function onDownloadModel(m: VoiceModel) {
-  downloadPct.value = { ...downloadPct.value, [m.id]: 0 };
-  try {
-    await ipc.downloadVoiceModel(m.id);
-    toast.add({
-      severity: 'success',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceModelDownloaded'),
-      life: 3000,
-    });
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceModelError'),
-      life: 5000,
-    });
-  } finally {
-    const rest = { ...downloadPct.value };
-    delete rest[m.id];
-    downloadPct.value = rest;
-    await loadVoice();
-  }
-}
-
-async function onDeleteModel(m: VoiceModel) {
-  try {
-    await ipc.deleteVoiceModel(m.id);
-  } catch {
-    // best-effort
-  }
-  await loadVoice();
-}
-
-async function onImportBinary() {
-  const picked = await open({
-    multiple: false,
-    directory: false,
-    title: t('settings.voiceImportBinary'),
-  });
-  if (typeof picked !== 'string') return;
-  importingBinary.value = true;
-  try {
-    await ipc.importVoiceBinary(picked);
-    toast.add({
-      severity: 'success',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceBinaryImported'),
-      life: 3000,
-    });
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('settings.voiceTitle'),
-      detail: t('settings.voiceModelError'),
-      life: 5000,
-    });
-  } finally {
-    importingBinary.value = false;
-    await loadVoice();
-  }
-}
-
 const legalKind = ref<LegalKind | null>(null);
 const legalVisible = computed({
   get: () => legalKind.value !== null,
@@ -463,20 +316,6 @@ onMounted(async () => {
   await loadCustomFonts();
   await loadCrashReporting();
   await loadPremium();
-  await loadVoice();
-  unlistenVoiceProgress = await listen<VoiceDownloadProgress>('voice.download.progress', (e) => {
-    const p = e.payload;
-    if (p.total && p.total > 0) {
-      downloadPct.value = {
-        ...downloadPct.value,
-        [p.modelId]: Math.round((p.downloaded / p.total) * 100),
-      };
-    }
-  });
-});
-
-onBeforeUnmount(() => {
-  unlistenVoiceProgress?.();
 });
 
 type SettingsSection =
@@ -670,151 +509,7 @@ const navSections: { id: SettingsSection; key: string }[] = [
 
         <!-- AUDIO -->
         <div v-show="activeSection === 'audio'" class="space-y-8">
-          <section v-if="voiceEnabled">
-            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-              {{ t('settings.voiceTitle') }}
-            </h2>
-            <p class="text-xs opacity-60 mb-2">{{ t('settings.voiceHint') }}</p>
-
-            <!-- Whisper binary -->
-            <div
-              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
-            >
-              <span>
-                <i
-                  :class="
-                    voiceStatus?.binaryInstalled
-                      ? 'pi pi-check-circle text-green-500'
-                      : 'pi pi-exclamation-circle text-amber-500'
-                  "
-                  class="mr-1"
-                />
-                {{
-                  voiceStatus?.binaryInstalled
-                    ? t('settings.voiceBinaryInstalled')
-                    : t('settings.voiceBinaryMissing')
-                }}
-              </span>
-              <Button
-                :label="t('settings.voiceImportBinary')"
-                size="small"
-                text
-                :loading="importingBinary"
-                @click="onImportBinary"
-              />
-            </div>
-
-            <!-- Models -->
-            <ul
-              class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
-            >
-              <li
-                v-for="m in voiceModels"
-                :key="m.id"
-                class="flex items-center justify-between gap-3 p-3 text-sm"
-              >
-                <div class="min-w-0">
-                  <span class="font-medium">{{ m.id }}</span>
-                  <span
-                    v-if="m.recommended"
-                    class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
-                  >
-                    {{ t('settings.voiceRecommended') }}
-                  </span>
-                  <span class="block text-xs opacity-60">{{ `${m.sizeMb} MB` }}</span>
-                </div>
-                <div class="shrink-0">
-                  <span v-if="downloadPct[m.id] !== undefined" class="text-xs font-mono opacity-70">
-                    {{ `${downloadPct[m.id]}%` }}
-                  </span>
-                  <Button
-                    v-else-if="m.installed"
-                    :label="t('settings.voiceModelDelete')"
-                    size="small"
-                    text
-                    severity="danger"
-                    @click="onDeleteModel(m)"
-                  />
-                  <Button
-                    v-else
-                    :label="t('settings.voiceModelDownload')"
-                    icon="pi pi-download"
-                    size="small"
-                    text
-                    @click="onDownloadModel(m)"
-                  />
-                </div>
-              </li>
-            </ul>
-
-            <!-- Read-aloud: Piper binary + voices -->
-            <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mt-4 mb-2">
-              {{ t('settings.voiceReadAloud') }}
-            </h3>
-            <div
-              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
-            >
-              <span>
-                <i
-                  :class="
-                    voiceStatus?.piperInstalled
-                      ? 'pi pi-check-circle text-green-500'
-                      : 'pi pi-exclamation-circle text-amber-500'
-                  "
-                  class="mr-1"
-                />
-                {{
-                  voiceStatus?.piperInstalled
-                    ? t('settings.voicePiperInstalled')
-                    : t('settings.voicePiperMissing')
-                }}
-              </span>
-              <Button
-                :label="t('settings.voiceImportPiper')"
-                size="small"
-                text
-                :loading="importingPiper"
-                @click="onImportPiper"
-              />
-            </div>
-            <ul
-              class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
-            >
-              <li
-                v-for="v in voiceVoices"
-                :key="v.id"
-                class="flex items-center justify-between gap-3 p-3 text-sm"
-              >
-                <div class="min-w-0">
-                  <span class="font-medium">{{ v.name }}</span>
-                  <span
-                    v-if="v.recommended"
-                    class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
-                  >
-                    {{ t('settings.voiceRecommended') }}
-                  </span>
-                  <span class="block text-xs opacity-60">{{ `${v.sizeMb} MB` }}</span>
-                </div>
-                <div class="shrink-0">
-                  <span v-if="downloadPct[v.id] !== undefined" class="text-xs font-mono opacity-70">
-                    {{ `${downloadPct[v.id]}%` }}
-                  </span>
-                  <span v-else-if="v.installed" class="text-xs text-green-600 dark:text-green-400">
-                    {{ t('settings.voiceInstalled') }}
-                  </span>
-                  <Button
-                    v-else
-                    :label="t('settings.voiceModelDownload')"
-                    icon="pi pi-download"
-                    size="small"
-                    text
-                    @click="onDownloadVoice(v)"
-                  />
-                </div>
-              </li>
-            </ul>
-          </section>
-          <p v-if="!voiceEnabled" class="text-sm opacity-60">{{ t('capability.unavailable') }}</p>
+          <SettingsVoice />
         </div>
 
         <!-- IA -->
