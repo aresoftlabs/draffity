@@ -12,6 +12,7 @@ import Select from 'primevue/select';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import type { DocumentStatus, DocumentType } from '@draffity/shared-types';
+import type { MenuItem } from 'primevue/menuitem';
 
 import { useProjectStore } from '@/stores/project';
 import { useDocumentStore, type ReorderOp } from '@/stores/document';
@@ -183,6 +184,65 @@ const voiceNotes = useCapability('voice_notes');
 const showVoiceNotes = ref(false);
 const dictation = useDictation(editor);
 const readAloud = useReadAloud(editor);
+
+const actionMenu = ref<{ toggle: (e: Event) => void } | null>(null);
+const actionItems = computed<MenuItem[]>(() => [
+  {
+    label: t('actions.export'),
+    icon: 'pi pi-download',
+    command: () => {
+      showExport.value = true;
+    },
+  },
+  {
+    label: t('bibliography.openButton'),
+    icon: 'pi pi-book',
+    command: () => {
+      showBibliography.value = true;
+    },
+  },
+  {
+    label: t('saveAsTemplate.openButton'),
+    icon: 'pi pi-bookmark',
+    command: () => {
+      showSaveAsTemplate.value = true;
+    },
+  },
+  {
+    label: t('ai.validators.title'),
+    icon: 'pi pi-verified',
+    visible: Boolean(aiInline.value),
+    command: () => {
+      showValidation.value = true;
+    },
+  },
+  { separator: true, visible: Boolean(voiceDictation.value || voiceTts.value || voiceNotes.value) },
+  {
+    label: t('voice.dictation.button'),
+    icon: 'pi pi-microphone',
+    visible: Boolean(voiceDictation.value),
+    disabled: readOnly.value,
+    command: () => {
+      dictation.toggle();
+    },
+  },
+  {
+    label: t('voice.readAloud.button'),
+    icon: 'pi pi-volume-up',
+    visible: Boolean(voiceTts.value),
+    command: () => {
+      readAloud.toggle();
+    },
+  },
+  {
+    label: t('voice.notes.button'),
+    icon: 'pi pi-comment',
+    visible: Boolean(voiceNotes.value),
+    command: () => {
+      showVoiceNotes.value = true;
+    },
+  },
+]);
 
 function onDictateKey(e: KeyboardEvent) {
   if (e.ctrlKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
@@ -619,15 +679,6 @@ onBeforeUnmount(() => {
         <Tag v-if="readOnly" :value="t('dashboard.readOnly')" severity="secondary" class="ml-1" />
         <span class="flex-1" />
         <Button
-          v-tooltip.bottom="t('search.button')"
-          icon="pi pi-search"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('search.button')"
-          @click="showSearch = true"
-        />
-        <Button
           v-tooltip.bottom="t('project.focusMode')"
           :icon="focusMode ? 'pi pi-window-minimize' : 'pi pi-arrows-alt'"
           text
@@ -657,72 +708,16 @@ onBeforeUnmount(() => {
           @click="toggleSplit"
         />
         <Button
-          icon="pi pi-book"
+          v-tooltip.bottom="t('project.moreActions')"
+          icon="pi pi-ellipsis-v"
           text
           severity="secondary"
           size="small"
-          :aria-label="t('bibliography.openButton')"
-          @click="showBibliography = true"
+          :aria-label="t('project.moreActions')"
+          aria-haspopup="true"
+          @click="actionMenu?.toggle($event)"
         />
-        <Button
-          icon="pi pi-bookmark"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('saveAsTemplate.openButton')"
-          @click="showSaveAsTemplate = true"
-        />
-        <Button
-          v-if="aiInline"
-          v-tooltip.bottom="t('ai.validators.title')"
-          icon="pi pi-verified"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('ai.validators.title')"
-          @click="showValidation = true"
-        />
-        <Button
-          v-if="voiceDictation"
-          v-tooltip.bottom="t('voice.dictation.button')"
-          icon="pi pi-microphone"
-          text
-          :severity="dictation.phase.value === 'recording' ? 'danger' : 'secondary'"
-          size="small"
-          :disabled="readOnly"
-          :aria-label="t('voice.dictation.button')"
-          :aria-pressed="dictation.phase.value !== 'idle'"
-          @click="dictation.toggle()"
-        />
-        <Button
-          v-if="voiceTts"
-          v-tooltip.bottom="t('voice.readAloud.button')"
-          icon="pi pi-volume-up"
-          text
-          :severity="readAloud.phase.value !== 'idle' ? 'primary' : 'secondary'"
-          size="small"
-          :aria-label="t('voice.readAloud.button')"
-          :aria-pressed="readAloud.phase.value !== 'idle'"
-          @click="readAloud.toggle()"
-        />
-        <Button
-          v-if="voiceNotes"
-          v-tooltip.bottom="t('voice.notes.button')"
-          icon="pi pi-comment"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('voice.notes.button')"
-          @click="showVoiceNotes = true"
-        />
-        <Button
-          icon="pi pi-download"
-          text
-          severity="secondary"
-          size="small"
-          :aria-label="t('actions.export')"
-          @click="showExport = true"
-        />
+        <Menu ref="actionMenu" :model="actionItems" popup />
       </header>
 
       <ExportDialog v-model:visible="showExport" :project="project" />
