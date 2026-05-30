@@ -8,7 +8,7 @@
 //! not here.
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 use rusqlite::{params, Connection, OptionalExtension};
 
@@ -18,7 +18,7 @@ use crate::domain::{
     DocNode, DocumentInput, DocumentStatus, Label, LabelInput, MediaAsset, Project, ProjectInput,
     ProjectStatus, SearchHit, Snapshot, TemplateNode, WritingStats,
 };
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::services::importer::ImportTree;
 
 pub use citations::UpsertEntry as CitationUpsert;
@@ -348,6 +348,15 @@ impl LocalStorageService {
         Ok(())
     }
 
+    /// Lock the connection, mapping a poisoned mutex to a typed error instead
+    /// of panicking. A panic while holding the lock would otherwise turn every
+    /// subsequent operation into a panic and take down session persistence.
+    fn db(&self) -> AppResult<MutexGuard<'_, Connection>> {
+        self.conn
+            .lock()
+            .map_err(|_| AppError::Unexpected("storage connection poisoned".into()))
+    }
+
     fn current_version(conn: &Connection) -> AppResult<u32> {
         // If the meta table doesn't exist yet, version is 0.
         let exists: bool = conn
@@ -374,7 +383,7 @@ impl LocalStorageService {
 
 impl StorageService for LocalStorageService {
     fn migrate(&self) -> AppResult<()> {
-        let mut conn = self.conn.lock().unwrap();
+        let mut conn = self.db()?;
         let mut current = Self::current_version(&conn)?;
         for (target, sql) in MIGRATIONS {
             if *target > current {
@@ -393,7 +402,7 @@ impl StorageService for LocalStorageService {
     }
 
     fn create_project(&self, input: ProjectInput) -> AppResult<Project> {
-        projects::create(&self.conn.lock().unwrap(), input)
+        projects::create(&*self.db()?, input)
     }
 
     fn create_project_atomic(
@@ -401,7 +410,7 @@ impl StorageService for LocalStorageService {
         input: ProjectInput,
         structure: &[TemplateNode],
     ) -> AppResult<Project> {
-        projects::create_atomic(&mut self.conn.lock().unwrap(), input, structure)
+        projects::create_atomic(&mut *self.db()?, input, structure)
     }
 
     fn create_project_from_import(
@@ -409,39 +418,39 @@ impl StorageService for LocalStorageService {
         tree: &ImportTree,
         template_id: &str,
     ) -> AppResult<Project> {
-        projects::create_from_import(&mut self.conn.lock().unwrap(), tree, template_id)
+        projects::create_from_import(&mut *self.db()?, tree, template_id)
     }
 
     fn list_projects(&self) -> AppResult<Vec<Project>> {
-        projects::list(&self.conn.lock().unwrap())
+        projects::list(&*self.db()?)
     }
 
     fn get_project(&self, id: &str) -> AppResult<Option<Project>> {
-        projects::get(&self.conn.lock().unwrap(), id)
+        projects::get(&*self.db()?, id)
     }
 
     fn get_active_project(&self) -> AppResult<Option<Project>> {
-        projects::get_active(&self.conn.lock().unwrap())
+        projects::get_active(&*self.db()?)
     }
 
     fn set_project_status(&self, id: &str, status: ProjectStatus) -> AppResult<()> {
-        projects::set_status(&self.conn.lock().unwrap(), id, status)
+        projects::set_status(&*self.db()?, id, status)
     }
 
     fn delete_project(&self, id: &str) -> AppResult<()> {
-        projects::delete(&self.conn.lock().unwrap(), id)
+        projects::delete(&*self.db()?, id)
     }
 
     fn create_document(&self, input: DocumentInput) -> AppResult<DocNode> {
-        documents::create(&self.conn.lock().unwrap(), input)
+        documents::create(&*self.db()?, input)
     }
 
     fn list_documents(&self, project_id: &str) -> AppResult<Vec<DocNode>> {
-        documents::list(&self.conn.lock().unwrap(), project_id)
+        documents::list(&*self.db()?, project_id)
     }
 
     fn get_document(&self, id: &str) -> AppResult<Option<DocNode>> {
-        documents::get(&self.conn.lock().unwrap(), id)
+        documents::get(&*self.db()?, id)
     }
 
     fn update_document(
@@ -451,15 +460,15 @@ impl StorageService for LocalStorageService {
         content: Option<&str>,
         content_json: Option<&str>,
     ) -> AppResult<DocNode> {
-        documents::update(&self.conn.lock().unwrap(), id, title, content, content_json)
+        documents::update(&*self.db()?, id, title, content, content_json)
     }
 
     fn move_document(&self, id: &str, parent_id: Option<&str>, position: i64) -> AppResult<()> {
-        documents::move_to(&self.conn.lock().unwrap(), id, parent_id, position)
+        documents::move_to(&*self.db()?, id, parent_id, position)
     }
 
     fn delete_document(&self, id: &str) -> AppResult<()> {
-        documents::delete(&self.conn.lock().unwrap(), id)
+        documents::delete(&*self.db()?, id)
     }
 
     fn reorder_documents(
@@ -468,96 +477,91 @@ impl StorageService for LocalStorageService {
         parent_id: Option<&str>,
         ordered_ids: &[String],
     ) -> AppResult<()> {
-        document_positions::reorder(
-            &mut self.conn.lock().unwrap(),
-            project_id,
-            parent_id,
-            ordered_ids,
-        )
+        document_positions::reorder(&mut *self.db()?, project_id, parent_id, ordered_ids)
     }
 
     fn set_document_status(&self, id: &str, status: DocumentStatus) -> AppResult<DocNode> {
-        documents::set_status(&self.conn.lock().unwrap(), id, status)
+        documents::set_status(&*self.db()?, id, status)
     }
 
     fn set_document_tags(&self, id: &str, tags: &[String]) -> AppResult<DocNode> {
-        document_tags::set(&mut self.conn.lock().unwrap(), id, tags)
+        document_tags::set(&mut *self.db()?, id, tags)
     }
 
     fn list_project_tags(&self, project_id: &str) -> AppResult<Vec<String>> {
-        document_tags::list_project_tags(&self.conn.lock().unwrap(), project_id)
+        document_tags::list_project_tags(&*self.db()?, project_id)
     }
 
     fn set_document_goal(&self, id: &str, goal: Option<i64>) -> AppResult<DocNode> {
-        documents::set_goal(&self.conn.lock().unwrap(), id, goal)
+        documents::set_goal(&*self.db()?, id, goal)
     }
 
     fn set_document_research(&self, id: &str, is_research: bool) -> AppResult<DocNode> {
-        documents::set_research(&self.conn.lock().unwrap(), id, is_research)
+        documents::set_research(&*self.db()?, id, is_research)
     }
 
     fn set_document_matter(&self, id: &str, is_front: bool, is_back: bool) -> AppResult<DocNode> {
-        documents::set_matter(&self.conn.lock().unwrap(), id, is_front, is_back)
+        documents::set_matter(&*self.db()?, id, is_front, is_back)
     }
 
     fn set_project_goal(&self, id: &str, goal: Option<i64>) -> AppResult<Project> {
-        projects::set_goal(&self.conn.lock().unwrap(), id, goal)
+        projects::set_goal(&*self.db()?, id, goal)
     }
 
     fn set_project_deadline(&self, id: &str, deadline: Option<i64>) -> AppResult<Project> {
-        projects::set_deadline(&self.conn.lock().unwrap(), id, deadline)
+        projects::set_deadline(&*self.db()?, id, deadline)
     }
 
     fn set_document_synopsis(&self, id: &str, synopsis: Option<&str>) -> AppResult<DocNode> {
-        documents::set_synopsis(&self.conn.lock().unwrap(), id, synopsis)
+        documents::set_synopsis(&*self.db()?, id, synopsis)
     }
 
     fn create_snapshot(&self, document_id: &str, label: Option<&str>) -> AppResult<Snapshot> {
-        snapshots::create(&self.conn.lock().unwrap(), document_id, label)
+        snapshots::create(&*self.db()?, document_id, label)
     }
 
     fn list_snapshots(&self, document_id: &str) -> AppResult<Vec<Snapshot>> {
-        snapshots::list(&self.conn.lock().unwrap(), document_id)
+        snapshots::list(&*self.db()?, document_id)
     }
 
     fn restore_snapshot(&self, snapshot_id: &str) -> AppResult<DocNode> {
-        snapshots::restore(&mut self.conn.lock().unwrap(), snapshot_id)
+        snapshots::restore(&mut *self.db()?, snapshot_id)
     }
 
     fn get_setting(&self, key: &str) -> AppResult<Option<String>> {
-        settings::get(&self.conn.lock().unwrap(), key)
+        settings::get(&*self.db()?, key)
     }
 
     fn set_setting(&self, key: &str, value: &str) -> AppResult<()> {
-        settings::set(&self.conn.lock().unwrap(), key, value)
+        settings::set(&*self.db()?, key, value)
     }
 
     fn record_writing_activity(&self) -> AppResult<WritingStats> {
-        stats::record_activity(&self.conn.lock().unwrap())
+        stats::record_activity(&*self.db()?)
     }
 
     fn get_writing_stats(&self) -> AppResult<WritingStats> {
-        stats::get(&self.conn.lock().unwrap())
+        stats::get(&*self.db()?)
     }
 
     fn record_daily_writing(&self, words_delta: u32) -> AppResult<()> {
-        stats::record_daily(&self.conn.lock().unwrap(), words_delta)
+        stats::record_daily(&*self.db()?, words_delta)
     }
 
     fn list_recent_daily_writing(&self, days: u32) -> AppResult<Vec<DailyWriting>> {
-        stats::list_recent_daily(&self.conn.lock().unwrap(), days)
+        stats::list_recent_daily(&*self.db()?, days)
     }
 
     fn get_daily_goal(&self) -> AppResult<Option<i64>> {
-        stats::get_daily_goal(&self.conn.lock().unwrap())
+        stats::get_daily_goal(&*self.db()?)
     }
 
     fn set_daily_goal(&self, goal: Option<i64>) -> AppResult<()> {
-        stats::set_daily_goal(&self.conn.lock().unwrap(), goal)
+        stats::set_daily_goal(&*self.db()?, goal)
     }
 
     fn search_documents(&self, project_id: &str, query: &str) -> AppResult<Vec<SearchHit>> {
-        search::search(&self.conn.lock().unwrap(), project_id, query)
+        search::search(&*self.db()?, project_id, query)
     }
 
     fn record_ai_history(
@@ -568,18 +572,11 @@ impl StorageService for LocalStorageService {
         model: Option<&str>,
         response: &str,
     ) -> AppResult<AiHistoryEntry> {
-        ai_history::record(
-            &self.conn.lock().unwrap(),
-            project_id,
-            doc_id,
-            action,
-            model,
-            response,
-        )
+        ai_history::record(&*self.db()?, project_id, doc_id, action, model, response)
     }
 
     fn list_ai_history(&self, project_id: &str, limit: u32) -> AppResult<Vec<AiHistoryEntry>> {
-        ai_history::list(&self.conn.lock().unwrap(), project_id, limit)
+        ai_history::list(&*self.db()?, project_id, limit)
     }
 
     fn record_ai_validation(
@@ -590,7 +587,7 @@ impl StorageService for LocalStorageService {
         severity_summary: &str,
     ) -> AppResult<AiValidation> {
         ai_validations::record(
-            &self.conn.lock().unwrap(),
+            &*self.db()?,
             document_id,
             validator_name,
             results_json,
@@ -599,67 +596,67 @@ impl StorageService for LocalStorageService {
     }
 
     fn list_ai_validations(&self, document_id: &str) -> AppResult<Vec<AiValidation>> {
-        ai_validations::list_for_document(&self.conn.lock().unwrap(), document_id)
+        ai_validations::list_for_document(&*self.db()?, document_id)
     }
 
     fn create_collection(&self, input: CollectionInput) -> AppResult<Collection> {
-        collections::create(&self.conn.lock().unwrap(), input)
+        collections::create(&*self.db()?, input)
     }
 
     fn list_collections(&self, project_id: &str) -> AppResult<Vec<Collection>> {
-        collections::list(&self.conn.lock().unwrap(), project_id)
+        collections::list(&*self.db()?, project_id)
     }
 
     fn get_collection(&self, id: &str) -> AppResult<Option<Collection>> {
-        collections::get(&self.conn.lock().unwrap(), id)
+        collections::get(&*self.db()?, id)
     }
 
     fn rename_collection(&self, id: &str, name: &str) -> AppResult<Collection> {
-        collections::rename(&self.conn.lock().unwrap(), id, name)
+        collections::rename(&*self.db()?, id, name)
     }
 
     fn set_collection_query(&self, id: &str, query: &CollectionQuery) -> AppResult<Collection> {
-        collections::set_query(&self.conn.lock().unwrap(), id, query)
+        collections::set_query(&*self.db()?, id, query)
     }
 
     fn delete_collection(&self, id: &str) -> AppResult<()> {
-        collections::delete(&self.conn.lock().unwrap(), id)
+        collections::delete(&*self.db()?, id)
     }
 
     fn set_collection_members(&self, collection_id: &str, ordered_ids: &[String]) -> AppResult<()> {
-        collections::set_members(&mut self.conn.lock().unwrap(), collection_id, ordered_ids)
+        collections::set_members(&mut *self.db()?, collection_id, ordered_ids)
     }
 
     fn resolve_collection(&self, id: &str) -> AppResult<Vec<DocNode>> {
-        collections::resolve(&self.conn.lock().unwrap(), id)
+        collections::resolve(&*self.db()?, id)
     }
 
     fn create_label(&self, input: LabelInput) -> AppResult<Label> {
-        labels::create(&self.conn.lock().unwrap(), input)
+        labels::create(&*self.db()?, input)
     }
 
     fn list_labels(&self, project_id: &str) -> AppResult<Vec<Label>> {
-        labels::list(&self.conn.lock().unwrap(), project_id)
+        labels::list(&*self.db()?, project_id)
     }
 
     fn update_label(&self, id: &str, name: &str, color: &str) -> AppResult<Label> {
-        labels::update(&self.conn.lock().unwrap(), id, name, color)
+        labels::update(&*self.db()?, id, name, color)
     }
 
     fn delete_label(&self, id: &str) -> AppResult<()> {
-        labels::delete(&self.conn.lock().unwrap(), id)
+        labels::delete(&*self.db()?, id)
     }
 
     fn set_document_labels(&self, document_id: &str, label_ids: &[String]) -> AppResult<DocNode> {
-        labels::set_document(&mut self.conn.lock().unwrap(), document_id, label_ids)
+        labels::set_document(&mut *self.db()?, document_id, label_ids)
     }
 
     fn create_custom_field(&self, input: CustomFieldInput) -> AppResult<CustomField> {
-        custom_fields::create(&self.conn.lock().unwrap(), input)
+        custom_fields::create(&*self.db()?, input)
     }
 
     fn list_custom_fields(&self, project_id: &str) -> AppResult<Vec<CustomField>> {
-        custom_fields::list(&self.conn.lock().unwrap(), project_id)
+        custom_fields::list(&*self.db()?, project_id)
     }
 
     fn update_custom_field(
@@ -668,11 +665,11 @@ impl StorageService for LocalStorageService {
         name: &str,
         options: &[String],
     ) -> AppResult<CustomField> {
-        custom_fields::update(&self.conn.lock().unwrap(), id, name, options)
+        custom_fields::update(&*self.db()?, id, name, options)
     }
 
     fn delete_custom_field(&self, id: &str) -> AppResult<()> {
-        custom_fields::delete(&self.conn.lock().unwrap(), id)
+        custom_fields::delete(&*self.db()?, id)
     }
 
     fn set_document_metadata(
@@ -681,15 +678,15 @@ impl StorageService for LocalStorageService {
         field_id: &str,
         value: Option<&str>,
     ) -> AppResult<DocNode> {
-        custom_fields::set_value(&self.conn.lock().unwrap(), document_id, field_id, value)
+        custom_fields::set_value(&*self.db()?, document_id, field_id, value)
     }
 
     fn list_citations(&self, project_id: &str) -> AppResult<Vec<Citation>> {
-        citations::list(&self.conn.lock().unwrap(), project_id)
+        citations::list(&*self.db()?, project_id)
     }
 
     fn list_citation_keys(&self, project_id: &str) -> AppResult<Vec<String>> {
-        citations::list_keys(&self.conn.lock().unwrap(), project_id)
+        citations::list_keys(&*self.db()?, project_id)
     }
 
     fn upsert_citations(
@@ -697,31 +694,31 @@ impl StorageService for LocalStorageService {
         project_id: &str,
         entries: &[CitationUpsert],
     ) -> AppResult<Vec<Citation>> {
-        citations::upsert_batch(&mut self.conn.lock().unwrap(), project_id, entries)
+        citations::upsert_batch(&mut *self.db()?, project_id, entries)
     }
 
     fn delete_citation(&self, id: &str) -> AppResult<()> {
-        citations::delete_one(&self.conn.lock().unwrap(), id)
+        citations::delete_one(&*self.db()?, id)
     }
 
     fn create_codex_entry(&self, input: CodexInput) -> AppResult<CodexEntry> {
-        codex::create(&self.conn.lock().unwrap(), input)
+        codex::create(&*self.db()?, input)
     }
 
     fn list_codex_entries(&self, project_id: &str) -> AppResult<Vec<CodexEntry>> {
-        codex::list(&self.conn.lock().unwrap(), project_id)
+        codex::list(&*self.db()?, project_id)
     }
 
     fn get_codex_entry(&self, id: &str) -> AppResult<Option<CodexEntry>> {
-        codex::get(&self.conn.lock().unwrap(), id)
+        codex::get(&*self.db()?, id)
     }
 
     fn update_codex_entry(&self, id: &str, patch: CodexUpdate) -> AppResult<CodexEntry> {
-        codex::update(&self.conn.lock().unwrap(), id, patch)
+        codex::update(&*self.db()?, id, patch)
     }
 
     fn delete_codex_entry(&self, id: &str) -> AppResult<()> {
-        codex::delete(&self.conn.lock().unwrap(), id)
+        codex::delete(&*self.db()?, id)
     }
 
     fn search_codex_entries(
@@ -730,11 +727,11 @@ impl StorageService for LocalStorageService {
         query: &str,
         kind: Option<CodexKind>,
     ) -> AppResult<Vec<CodexEntry>> {
-        codex::search(&self.conn.lock().unwrap(), project_id, query, kind)
+        codex::search(&*self.db()?, project_id, query, kind)
     }
 
     fn find_media_by_hash(&self, project_id: &str, sha256: &str) -> AppResult<Option<MediaAsset>> {
-        media::find_by_hash(&self.conn.lock().unwrap(), project_id, sha256)
+        media::find_by_hash(&*self.db()?, project_id, sha256)
     }
 
     fn insert_media_row(
@@ -745,26 +742,19 @@ impl StorageService for LocalStorageService {
         sha256: &str,
         bytes: i64,
     ) -> AppResult<MediaAsset> {
-        media::insert(
-            &self.conn.lock().unwrap(),
-            project_id,
-            path_relative,
-            mime,
-            sha256,
-            bytes,
-        )
+        media::insert(&*self.db()?, project_id, path_relative, mime, sha256, bytes)
     }
 
     fn get_media(&self, id: &str) -> AppResult<Option<MediaAsset>> {
-        media::get(&self.conn.lock().unwrap(), id)
+        media::get(&*self.db()?, id)
     }
 
     fn list_media(&self, project_id: &str) -> AppResult<Vec<MediaAsset>> {
-        media::list(&self.conn.lock().unwrap(), project_id)
+        media::list(&*self.db()?, project_id)
     }
 
     fn delete_media_row(&self, id: &str) -> AppResult<Option<MediaAsset>> {
-        media::delete(&self.conn.lock().unwrap(), id)
+        media::delete(&*self.db()?, id)
     }
 
     fn set_media_voice_note(
@@ -773,16 +763,11 @@ impl StorageService for LocalStorageService {
         duration_ms: Option<i64>,
         transcribed_text: Option<&str>,
     ) -> AppResult<MediaAsset> {
-        media::set_voice_note(
-            &self.conn.lock().unwrap(),
-            id,
-            duration_ms,
-            transcribed_text,
-        )
+        media::set_voice_note(&*self.db()?, id, duration_ms, transcribed_text)
     }
 
     fn list_voice_notes(&self, project_id: &str) -> AppResult<Vec<MediaAsset>> {
-        media::list_voice_notes(&self.conn.lock().unwrap(), project_id)
+        media::list_voice_notes(&*self.db()?, project_id)
     }
 }
 
@@ -815,6 +800,7 @@ pub(super) mod test_helpers {
 mod tests {
     use super::test_helpers::fresh;
     use super::StorageService;
+    use crate::error::AppError;
 
     #[test]
     fn migrate_is_idempotent() {
@@ -822,5 +808,23 @@ mod tests {
         // Re-running migrations must not error nor duplicate data.
         s.migrate().unwrap();
         s.migrate().unwrap();
+    }
+
+    #[test]
+    fn poisoned_lock_returns_typed_error_not_panic() {
+        let s = fresh();
+        // Poison the connection mutex by panicking while holding the guard.
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = s.conn.lock().unwrap();
+            panic!("poison the lock");
+        }));
+        assert!(panicked.is_err(), "the closure should have panicked");
+
+        // A subsequent operation must surface a typed error, not panic the app.
+        let outcome = s.list_projects();
+        assert!(
+            matches!(outcome, Err(AppError::Unexpected(_))),
+            "expected a typed poison error, got {outcome:?}"
+        );
     }
 }
