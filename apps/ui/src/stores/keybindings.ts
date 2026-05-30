@@ -14,6 +14,7 @@ export const SHORTCUT_ACTIONS = [
   'prevDocument',
   'nextDocument',
   'focusMode',
+  'commandPalette',
 ] as const;
 
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
@@ -28,6 +29,7 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, string> = {
   prevDocument: 'ctrl+,',
   nextDocument: 'ctrl+.',
   focusMode: 'f11',
+  commandPalette: 'ctrl+k',
 };
 
 const SETTING_KEY = 'editor.keybindings';
