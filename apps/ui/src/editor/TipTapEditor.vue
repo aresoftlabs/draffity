@@ -248,7 +248,14 @@ defineExpose({ editor, charCount, wordCount });
 
 <style scoped>
 .tiptap-host :deep(.tiptap-content) {
-  font-family: var(--editor-font-family, Lora, Georgia, 'Times New Roman', serif);
+  font-family: var(
+    --editor-font-family,
+    'Source Serif 4 Variable',
+    'Source Serif 4',
+    Georgia,
+    'Times New Roman',
+    serif
+  );
   font-size: 18px;
   line-height: 1.7;
   max-width: var(--editor-max-width, 720px);

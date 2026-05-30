@@ -89,7 +89,14 @@ const leaves = computed(() => descendants.value.filter((d) => d.docType !== 'fol
 
 <style scoped>
 .scrivenings-host :deep(.scrivenings-content) {
-  font-family: Lora, Georgia, 'Times New Roman', serif;
+  font-family: var(
+    --editor-font-family,
+    'Source Serif 4 Variable',
+    'Source Serif 4',
+    Georgia,
+    'Times New Roman',
+    serif
+  );
   font-size: 17px;
   line-height: 1.7;
 }
