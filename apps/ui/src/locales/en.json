@@ -69,7 +69,8 @@
     "wordsHere": "words here",
     "wordsTotal": "total words",
     "wordsSession": "words this session",
-    "focusMode": "Focus mode (F11)"
+    "focusMode": "Focus mode (F11)",
+    "moreActions": "More actions"
   },
   "documentType": {
     "chapter": "Chapter",
