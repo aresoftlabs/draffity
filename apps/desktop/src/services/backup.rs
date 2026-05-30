@@ -7,7 +7,9 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
+use rusqlite::{Connection, DatabaseName};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::now_ms;
@@ -148,11 +150,12 @@ impl BackupService for LocalBackupService {
         let now = now_ms();
         let id = self.build_filename(kind, now);
         let path = self.backup_dir.join(format!("{id}.db"));
-        // `fs::copy` is atomic enough for SQLite WAL-mode files in a single-
-        // user desktop scenario: pages flushed to the main file are
-        // consistent, and even mid-write checkpoints leave the journal +
-        // main file recoverable via the standard journal logic when reopened.
-        fs::copy(&self.db_path, &path)?;
+        // Snapshot through SQLite's online backup API instead of `fs::copy`:
+        // it includes committed-but-not-yet-checkpointed WAL frames and is
+        // page-consistent even under a concurrent write. A raw file copy of
+        // the main file alone can miss WAL data or capture a torn checkpoint.
+        let src = Connection::open(&self.db_path)?;
+        src.backup(DatabaseName::Main, &path, None)?;
         let size_bytes = fs::metadata(&path)?.len();
         Ok(BackupRecord {
             id,
@@ -198,7 +201,18 @@ impl BackupService for LocalBackupService {
             restoring = %id,
             "creating pre-restore safety backup"
         );
-        fs::copy(&path, &self.db_path)?;
+        // Restore *through* SQLite rather than copying a file over the live DB:
+        // the backup content is written into the database via the online backup
+        // API, so the running connection's stale `-wal`/`-shm` can't replay over
+        // a freshly-copied main file (the original corruption). Works while the
+        // app's connection stays open; the caller still restarts to reload state.
+        let mut dst = Connection::open(&self.db_path)?;
+        dst.busy_timeout(Duration::from_secs(5))?;
+        dst.restore(
+            DatabaseName::Main,
+            &path,
+            None::<fn(rusqlite::backup::Progress)>,
+        )?;
         Ok(())
     }
 
@@ -293,6 +307,7 @@ fn parse_stamp_ms(stem: &str) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rusqlite::Connection;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn fresh_dirs(prefix: &str) -> (PathBuf, PathBuf, PathBuf) {
@@ -304,9 +319,23 @@ mod tests {
         let db = root.join("draffity.db");
         let backups = root.join("backups");
         std::fs::create_dir_all(&root).unwrap();
-        // Write a dummy DB file — backup just copies bytes.
-        std::fs::write(&db, b"sqlite-fixture").unwrap();
+        // A real SQLite database in WAL mode, like the live storage layer — so
+        // the backup/restore paths exercise the actual engine, not a byte copy.
+        let conn = Connection::open(&db).unwrap();
+        conn.pragma_update(None, "journal_mode", "WAL").unwrap();
+        conn.execute("CREATE TABLE kv (k TEXT PRIMARY KEY, v TEXT)", [])
+            .unwrap();
+        conn.execute("INSERT INTO kv (k, v) VALUES ('marker', 'fixture')", [])
+            .unwrap();
+        // Dropping the last connection checkpoints the WAL into the main file.
+        drop(conn);
         (root, db, backups)
+    }
+
+    fn read_marker(db: &Path) -> String {
+        let conn = Connection::open(db).unwrap();
+        conn.query_row("SELECT v FROM kv WHERE k = 'marker'", [], |r| r.get(0))
+            .unwrap()
     }
 
     #[test]
@@ -404,16 +433,54 @@ mod tests {
     #[test]
     fn restore_replaces_db_and_writes_safety_pre_backup() {
         let (_root, db, backups) = fresh_dirs("backup-restore");
-        std::fs::write(&db, b"original").unwrap();
         let svc = LocalBackupService::new(db.clone(), backups.clone());
         let snap = svc.create_backup(BackupKind::Daily).unwrap();
-        // Mutate the live DB.
-        std::fs::write(&db, b"corrupted").unwrap();
+        // Mutate the live DB after the snapshot.
+        {
+            let conn = Connection::open(&db).unwrap();
+            conn.execute("UPDATE kv SET v = 'mutated' WHERE k = 'marker'", [])
+                .unwrap();
+        }
+        assert_eq!(read_marker(&db), "mutated");
         svc.restore_backup(&snap.id).unwrap();
-        assert_eq!(std::fs::read(&db).unwrap(), b"original");
-        // The safety pre-restore manual snapshot of "corrupted" exists.
+        assert_eq!(read_marker(&db), "fixture");
+        // The safety pre-restore manual snapshot of the mutated state exists.
         let list = svc.list_backups().unwrap();
         assert!(list.iter().any(|b| b.kind == BackupKind::Manual));
+    }
+
+    #[test]
+    fn restore_is_wal_safe_with_a_live_connection() {
+        let (_root, db, backups) = fresh_dirs("backup-wal-restore");
+        // A long-lived connection in WAL mode, like the running storage layer.
+        let live = Connection::open(&db).unwrap();
+        live.pragma_update(None, "journal_mode", "WAL").unwrap();
+        live.execute("UPDATE kv SET v = 'v1' WHERE k = 'marker'", [])
+            .unwrap();
+
+        let svc = LocalBackupService::new(db.clone(), backups);
+        let snap = svc.create_backup(BackupKind::Daily).unwrap();
+
+        // Commit a change after the backup that stays in the WAL: the live
+        // connection keeps the DB open, so it is not checkpointed into the
+        // main file.
+        live.execute("UPDATE kv SET v = 'v2' WHERE k = 'marker'", [])
+            .unwrap();
+
+        // Restoring must roll back to v1 without corrupting the database, even
+        // though the live connection is still open. The original bug copied a
+        // file over the open DB and let the stale WAL replay over it.
+        svc.restore_backup(&snap.id).unwrap();
+
+        let got: String = live
+            .query_row("SELECT v FROM kv WHERE k = 'marker'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(got, "v1");
+
+        let integrity: String = live
+            .query_row("PRAGMA integrity_check", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(integrity, "ok");
     }
 
     #[test]
