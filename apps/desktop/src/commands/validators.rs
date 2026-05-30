@@ -5,45 +5,19 @@
 
 use tauri::State;
 
-use crate::domain::{AiValidation, CodexKind, DocumentType};
+use crate::domain::{AiValidation, CodexKind};
 use crate::error::{AppError, AppResult};
+use crate::services::validation_context::strip_html;
 use crate::services::{
-    codex_coverage, summarize, CoverageReport, Finding, Severity, ValidationInput, ValidatorKind,
+    codex_coverage, summarize, CoverageReport, Finding, Severity, ValidationContextBuilder,
+    ValidationInput, ValidatorKind,
 };
 use crate::state::AppState;
 
 type CmdResult<T> = Result<T, AppError>;
 
-/// Char caps so prompts stay bounded regardless of chapter size.
-const TEXT_CAP: usize = 12_000;
-const CODEX_CAP: usize = 4_000;
-const ANCHOR_CAP: usize = 4_000;
-const ANCHOR_DOCS: usize = 3;
-
-/// Strip HTML tags and collapse whitespace to plain text for the model.
-fn strip_html(html: &str) -> String {
-    let mut out = String::with_capacity(html.len());
-    let mut in_tag = false;
-    for ch in html.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            c if !in_tag => out.push(c),
-            _ => {}
-        }
-    }
-    out.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-fn cap(mut s: String, max: usize) -> String {
-    if s.chars().count() > max {
-        s = s.chars().take(max).collect();
-        s.push('…');
-    }
-    s
-}
-
-/// Gather everything a validator needs for one document.
+/// Fetch the rows a validation run needs and hand them to the (pure, tested)
+/// `ValidationContextBuilder`. The command stays orchestration-only (AUD-27).
 fn assemble_input(
     state: &AppState,
     project_id: &str,
@@ -53,58 +27,9 @@ fn assemble_input(
         .storage
         .get_document(document_id)?
         .ok_or_else(|| AppError::NotFound(format!("document {document_id}")))?;
-    let text = cap(strip_html(doc.content.as_deref().unwrap_or("")), TEXT_CAP);
-
-    // Codex block (all entries) for character + plot validators.
-    let entries = state.storage.list_codex_entries(project_id)?;
-    let codex_block = cap(
-        entries
-            .iter()
-            .map(|e| {
-                let body = e.body.as_deref().unwrap_or("—");
-                let tags = if e.tags.is_empty() {
-                    String::new()
-                } else {
-                    format!(" [tags: {}]", e.tags.join(", "))
-                };
-                format!("- {} ({}): {}{}", e.name, e.kind.as_str(), body, tags)
-            })
-            .collect::<Vec<_>>()
-            .join("\n"),
-        CODEX_CAP,
-    );
-
-    // Voice anchor: the last few prior chapters/scenes, in order.
-    let docs = state.storage.list_documents(project_id)?;
-    let current_pos = docs
-        .iter()
-        .find(|d| d.id == document_id)
-        .map(|d| d.position)
-        .unwrap_or(i64::MAX);
-    let mut prior: Vec<_> = docs
-        .iter()
-        .filter(|d| {
-            d.position < current_pos
-                && matches!(d.doc_type, DocumentType::Chapter | DocumentType::Scene)
-                && d.content.is_some()
-        })
-        .collect();
-    prior.sort_by_key(|d| d.position);
-    let start = prior.len().saturating_sub(ANCHOR_DOCS);
-    let anchor_text = cap(
-        prior[start..]
-            .iter()
-            .map(|d| strip_html(d.content.as_deref().unwrap_or("")))
-            .collect::<Vec<_>>()
-            .join("\n\n"),
-        ANCHOR_CAP,
-    );
-
-    Ok(ValidationInput {
-        text,
-        codex_block,
-        anchor_text,
-    })
+    let codex = state.storage.list_codex_entries(project_id)?;
+    let documents = state.storage.list_documents(project_id)?;
+    Ok(ValidationContextBuilder::default().build(&doc, &codex, &documents))
 }
 
 /// G-03: how well the codex describes the document's apparent cast. The UI
