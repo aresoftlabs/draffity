@@ -20,6 +20,7 @@ import { useIpcError } from '@/composables/useIpcError';
 import { useAutoSave } from '@/composables/useAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useTypewriterScroll } from '@/composables/useTypewriterScroll';
+import { registerCommands } from '@/composables/useCommandRegistry';
 
 import Binder from '@/components/Binder.vue';
 import CollectionsPanel from '@/components/CollectionsPanel.vue';
@@ -536,12 +537,53 @@ function onFootnoteClickFromEditor(e: Event) {
   showFootnoteDialog.value = true;
 }
 
+let offProjectCmds: (() => void) | null = null;
+
 onMounted(() => {
   loadProject();
   window.addEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
   window.addEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
   window.addEventListener('keydown', onDictateKey);
   window.addEventListener('keydown', onCompositionKey);
+  offProjectCmds = registerCommands([
+    {
+      id: 'project.search',
+      label: t('command.searchProject'),
+      group: t('command.groupProject'),
+      icon: 'pi pi-search',
+      run: () => {
+        showSearch.value = true;
+      },
+    },
+    {
+      id: 'project.focus',
+      label: t('command.toggleFocus'),
+      group: t('command.groupProject'),
+      icon: 'pi pi-expand',
+      run: () => {
+        toggleFocus();
+      },
+    },
+    {
+      id: 'project.export',
+      label: t('command.exportManuscript'),
+      group: t('command.groupProject'),
+      icon: 'pi pi-file-export',
+      run: () => {
+        showExport.value = true;
+      },
+    },
+    {
+      id: 'project.newChapter',
+      label: t('command.newChapter'),
+      group: t('command.groupProject'),
+      icon: 'pi pi-plus',
+      keywords: ['capitulo', 'chapter'],
+      run: () => {
+        if (!readOnly.value) onCreate('chapter');
+      },
+    },
+  ]);
 });
 
 onBeforeUnmount(() => {
@@ -549,6 +591,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
   window.removeEventListener('keydown', onDictateKey);
   window.removeEventListener('keydown', onCompositionKey);
+  offProjectCmds?.();
 });
 </script>
 
