@@ -35,22 +35,23 @@ pub struct AiStatus {
     pub has_key: bool,
 }
 
-fn status(state: &AppState) -> AiStatus {
+fn status(state: &AppState) -> CmdResult<AiStatus> {
+    // Propagate a keyring/OS failure instead of swallowing it as "no key":
+    // a user with a stored key would otherwise see the app as un-configured
+    // (AUD-18). `None` means genuinely no key; `Err` means we couldn't tell.
     let has_key = state
         .secrets
-        .get_secret(OPENROUTER_KEY)
-        .ok()
-        .flatten()
+        .get_secret(OPENROUTER_KEY)?
         .map(|k| !k.trim().is_empty())
         .unwrap_or(false);
-    AiStatus {
+    Ok(AiStatus {
         available: state.ai.available(),
         has_key,
-    }
+    })
 }
 
 #[tauri::command]
-pub fn get_ai_status(state: State<'_, AppState>) -> AiStatus {
+pub fn get_ai_status(state: State<'_, AppState>) -> CmdResult<AiStatus> {
     status(&state)
 }
 
@@ -63,13 +64,13 @@ pub fn set_openrouter_key(state: State<'_, AppState>, key: String) -> CmdResult<
     } else {
         state.secrets.set_secret(OPENROUTER_KEY, trimmed)?;
     }
-    Ok(status(&state))
+    status(&state)
 }
 
 #[tauri::command]
 pub fn clear_openrouter_key(state: State<'_, AppState>) -> CmdResult<AiStatus> {
     state.secrets.delete_secret(OPENROUTER_KEY)?;
-    Ok(status(&state))
+    status(&state)
 }
 
 // --- inline actions ---
