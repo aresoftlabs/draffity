@@ -26,11 +26,16 @@ use crate::services::tier::TierService;
 /// Keyring entry name for the BYOK OpenRouter key.
 pub const OPENROUTER_KEY: &str = "openrouter_api_key";
 
+// --- OpenRouter tunables (compile-time config; not user-facing) ---
 const API_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
 /// Default model when the request doesn't pin one. Cheap + capable; the UI
 /// can override per request later (Épica F follow-ups).
 const DEFAULT_MODEL: &str = "openai/gpt-4o-mini";
 const MAX_RETRIES: u32 = 2;
+/// Per-request HTTP timeout. Generous because completions can stream for a while.
+const REQUEST_TIMEOUT_SECS: u64 = 120;
+/// Base for the exponential retry backoff (`base * 2^attempt`).
+const RETRY_BACKOFF_BASE_MS: u64 = 400;
 
 pub struct ByokAIService {
     tier: Arc<dyn TierService>,
@@ -60,7 +65,7 @@ impl ByokAIService {
         body: &ChatBody,
     ) -> AppResult<reqwest::blocking::Response> {
         let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(120))
+            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()
             .map_err(|e| AppError::AiProvider(format!("cliente HTTP: {e}")))?;
 
@@ -102,7 +107,9 @@ impl ByokAIService {
             }
 
             attempt += 1;
-            std::thread::sleep(Duration::from_millis(400 * 2u64.pow(attempt)));
+            std::thread::sleep(Duration::from_millis(
+                RETRY_BACKOFF_BASE_MS * 2u64.pow(attempt),
+            ));
         }
     }
 }

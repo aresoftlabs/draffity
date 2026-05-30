@@ -16,6 +16,9 @@ use sha2::{Digest, Sha256};
 use crate::error::{AppError, AppResult};
 
 const BUF: usize = 64 * 1024;
+/// HTTP timeout for an asset download — generous: large voice models stream
+/// for a long time over slow links.
+const DOWNLOAD_TIMEOUT_SECS: u64 = 7200;
 
 /// Lowercase hex of a SHA-256 digest. Exposed for tests + reuse.
 pub fn sha256_hex(bytes: &[u8]) -> String {
@@ -46,7 +49,7 @@ pub fn download_to_file(
     }
 
     let client = reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(7200)) // big models take a while
+        .timeout(Duration::from_secs(DOWNLOAD_TIMEOUT_SECS))
         .build()
         .map_err(|e| AppError::Unexpected(format!("cliente de descarga: {e}")))?;
     let mut resp = client
