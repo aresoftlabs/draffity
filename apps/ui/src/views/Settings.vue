@@ -6,7 +6,6 @@ import Select from 'primevue/select';
 import Slider from 'primevue/slider';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Chips from 'primevue/chips';
 import Textarea from 'primevue/textarea';
@@ -19,12 +18,12 @@ import SparklineChart from '@/components/SparklineChart.vue';
 import SettingsBackups from '@/components/SettingsBackups.vue';
 import SettingsAI from '@/components/SettingsAI.vue';
 import SettingsVoice from '@/components/SettingsVoice.vue';
+import SettingsPremium from '@/components/SettingsPremium.vue';
 import { useUiStore } from '@/stores/ui';
 import { useProjectStore } from '@/stores/project';
 import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
 import { useIpcError } from '@/composables/useIpcError';
-import { refreshCapabilities } from '@/composables/useCapability';
-import { ipc, type PremiumStatus } from '@/services/ipc';
+import { ipc } from '@/services/ipc';
 import type { DailyWriting, MediaAsset, WritingStats } from '@draffity/shared-types';
 
 const { t, locale } = useI18n();
@@ -207,64 +206,6 @@ async function onToggleCrashReporting(value: boolean) {
   }
 }
 
-// Premium activation (E-07/E-08). Capability-gated sections only render once
-// premium is active — Free tier sees nothing (no premium leakage). The
-// activation field itself only shows when the build can validate licenses.
-
-const premium = ref<PremiumStatus | null>(null);
-const licenseKey = ref('');
-const activatingPremium = ref(false);
-
-async function loadPremium() {
-  try {
-    premium.value = await ipc.getPremiumStatus();
-  } catch (e) {
-    premium.value = null;
-    reportLoadError('premium', e, true);
-  }
-}
-
-async function onActivatePremium() {
-  const key = licenseKey.value.trim();
-  if (!key) return;
-  activatingPremium.value = true;
-  try {
-    premium.value = await ipc.activatePremium(key);
-    licenseKey.value = '';
-    await refreshCapabilities();
-    toast.add({
-      severity: 'success',
-      summary: t('settings.premiumTitle'),
-      detail: t('settings.premiumActivated'),
-      life: 4000,
-    });
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('settings.premiumTitle'),
-      detail: t('settings.premiumInvalid'),
-      life: 5000,
-    });
-  } finally {
-    activatingPremium.value = false;
-  }
-}
-
-async function onDeactivatePremium() {
-  try {
-    premium.value = await ipc.deactivatePremium();
-    await refreshCapabilities();
-    toast.add({
-      severity: 'info',
-      summary: t('settings.premiumTitle'),
-      detail: t('settings.premiumDeactivated'),
-      life: 4000,
-    });
-  } catch {
-    // Best-effort; leave current state untouched on failure.
-  }
-}
-
 const legalKind = ref<LegalKind | null>(null);
 const legalVisible = computed({
   get: () => legalKind.value !== null,
@@ -315,7 +256,6 @@ onMounted(async () => {
   }
   await loadCustomFonts();
   await loadCrashReporting();
-  await loadPremium();
 });
 
 type SettingsSection =
@@ -595,45 +535,7 @@ const navSections: { id: SettingsSection; key: string }[] = [
 
         <!-- PLAN -->
         <div v-show="activeSection === 'plan'" class="space-y-8">
-          <section v-if="premium?.licensingConfigured">
-            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-              {{ t('settings.premiumTitle') }}
-            </h2>
-            <p class="text-xs opacity-60 mb-2">{{ t('settings.premiumHint') }}</p>
-            <div
-              v-if="premium?.active"
-              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm"
-            >
-              <span>
-                {{ t('settings.premiumActive') }}
-                <span v-if="premium.holder" class="opacity-60">· {{ premium.holder }}</span>
-              </span>
-              <Button
-                :label="t('settings.premiumDeactivate')"
-                size="small"
-                text
-                @click="onDeactivatePremium"
-              />
-            </div>
-            <div v-else class="flex items-center gap-2">
-              <InputText
-                v-model="licenseKey"
-                class="flex-1 font-mono text-xs"
-                :placeholder="t('settings.premiumKeyPlaceholder')"
-                :aria-label="t('settings.premiumTitle')"
-              />
-              <Button
-                :label="t('settings.premiumActivate')"
-                size="small"
-                :loading="activatingPremium"
-                :disabled="!licenseKey.trim()"
-                @click="onActivatePremium"
-              />
-            </div>
-          </section>
-          <p v-if="!premium?.licensingConfigured" class="text-sm opacity-60">
-            {{ t('capability.unavailable') }}
-          </p>
+          <SettingsPremium />
         </div>
 
         <!-- ACERCA DE -->
