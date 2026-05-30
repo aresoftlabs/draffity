@@ -1,6 +1,5 @@
 use tauri::State;
 
-use crate::capabilities::{is_enabled, Tier};
 use crate::domain::{DailyWriting, WritingStats};
 use crate::error::AppError;
 use crate::state::AppState;
@@ -15,13 +14,6 @@ pub fn ping() -> String {
 #[tauri::command]
 pub fn capability_enabled(state: State<'_, AppState>, name: String) -> bool {
     state.tier.is_enabled(&name)
-}
-
-/// Pure form (no state) used by smoke tests and as a fallback. The MVP
-/// always runs Free tier so this matches `capability_enabled` exactly.
-#[tauri::command]
-pub fn capability_enabled_pure(name: String) -> bool {
-    is_enabled(Tier::Free, &name)
 }
 
 #[tauri::command]

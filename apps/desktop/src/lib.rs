@@ -66,7 +66,6 @@ pub fn run() {
             // system
             commands::ping,
             commands::capability_enabled,
-            commands::capability_enabled_pure,
             commands::get_setting,
             commands::set_setting,
             commands::get_writing_stats,

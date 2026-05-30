@@ -48,9 +48,7 @@ pub use exporter::{
     PageSize, SceneSeparator,
 };
 pub use factory::{ServiceBundle, ServiceFactory};
-pub use importer::{
-    ImportFormat, ImportNode, ImportService, ImportTree, LocalImporter, LocalMarkdownImporter,
-};
+pub use importer::{ImportFormat, ImportNode, ImportService, ImportTree, LocalImporter};
 pub use license::{DisabledLicenseValidator, Ed25519Validator, LicenseClaims, LicenseValidator};
 pub use media::{LocalMediaService, MediaService, NoOpMedia};
 pub use memory::{LexicalProjectMemory, MemoryContext, MemoryRequest, ProjectMemoryService};

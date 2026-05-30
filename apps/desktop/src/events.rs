@@ -25,7 +25,7 @@ pub const SNAPSHOT_CREATED: &str = "snapshot.created";
 // here so the typed enum and subscribers share one stable name. Marked
 // dead_code until their emitters land — same convention as AppState's
 // not-yet-consumed service fields.
-#[allow(dead_code)]
+// `AI_SUGGESTION_RECEIVED` is already emitted by the AI inline command.
 pub const AI_SUGGESTION_RECEIVED: &str = "ai.suggestion.received";
 #[allow(dead_code)]
 pub const AI_VALIDATION_COMPLETED: &str = "ai.validation.completed";

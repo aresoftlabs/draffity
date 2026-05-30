@@ -7,8 +7,6 @@
 mod docx;
 mod markdown;
 
-pub use markdown::LocalMarkdownImporter;
-
 use crate::error::AppResult;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

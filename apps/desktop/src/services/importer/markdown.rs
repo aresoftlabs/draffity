@@ -16,35 +16,9 @@ use std::collections::HashMap;
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 
 use crate::domain::new_id;
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 
-use super::{ImportFormat, ImportNode, ImportService, ImportTree};
-
-/// Standalone Markdown importer — useful when a caller only needs the
-/// Markdown path and doesn't want the format dispatch in `LocalImporter`.
-/// Implementing `ImportService` for it keeps the trait surface uniform.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct LocalMarkdownImporter;
-
-impl ImportService for LocalMarkdownImporter {
-    fn supported_formats(&self) -> Vec<ImportFormat> {
-        vec![ImportFormat::Markdown]
-    }
-
-    fn import(
-        &self,
-        format: ImportFormat,
-        bytes: &[u8],
-        filename_hint: &str,
-    ) -> AppResult<ImportTree> {
-        match format {
-            ImportFormat::Markdown => import(bytes, filename_hint),
-            ImportFormat::Docx => Err(AppError::Unsupported(
-                "Markdown importer cannot read DOCX".into(),
-            )),
-        }
-    }
-}
+use super::{ImportNode, ImportTree};
 
 pub(super) fn import(bytes: &[u8], filename_hint: &str) -> AppResult<ImportTree> {
     let text = String::from_utf8_lossy(bytes);
