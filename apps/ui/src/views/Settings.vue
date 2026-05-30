@@ -92,7 +92,7 @@ const fontSelectGroups = computed(() => {
     {
       label: t('settings.fontGroupBuiltIn'),
       items: [
-        { label: 'Lora (Serif)', value: builtInFamily('serif') },
+        { label: 'Source Serif 4 (Serif)', value: builtInFamily('serif') },
         { label: 'Inter (Sans)', value: builtInFamily('sans') },
         { label: 'JetBrains Mono (Mono)', value: builtInFamily('mono') },
       ],

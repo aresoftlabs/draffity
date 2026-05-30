@@ -8,8 +8,8 @@ export type EditorFont = 'serif' | 'sans' | 'mono';
  *  in the Settings view) so the editor can resolve the family from a raw
  *  setting value without round-tripping through Vue components. */
 const BUILT_IN_FAMILIES: Record<EditorFont, string> = {
-  serif: "Lora, Georgia, 'Times New Roman', serif",
-  sans: "'Inter', system-ui, sans-serif",
+  serif: "'Source Serif 4 Variable', 'Source Serif 4', Lora, Georgia, 'Times New Roman', serif",
+  sans: "'Inter Variable', 'Inter', system-ui, sans-serif",
   mono: "'JetBrains Mono', Menlo, Consolas, monospace",
 };
 
