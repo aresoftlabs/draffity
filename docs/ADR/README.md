@@ -39,8 +39,10 @@ Usar [`0000-template.md`](./0000-template.md) como base. Mantener:
 
 ## Índice
 
-| #                                                 | Título                                | Estado   |
-| ------------------------------------------------- | ------------------------------------- | -------- |
-| [0001](./0001-tauri-sobre-electron.md)            | Tauri 2 sobre Electron                | Accepted |
-| [0002](./0002-sqlite-canonico-vs-por-proyecto.md) | SQLite canónica única vs por proyecto | Accepted |
-| [0003](./0003-premium-aditivo-via-traits.md)      | Premium aditivo vía traits            | Accepted |
+| #                                                           | Título                                      | Estado   |
+| ----------------------------------------------------------- | ------------------------------------------- | -------- |
+| [0001](./0001-tauri-sobre-electron.md)                      | Tauri 2 sobre Electron                      | Accepted |
+| [0002](./0002-sqlite-canonico-vs-por-proyecto.md)           | SQLite canónica única vs por proyecto       | Accepted |
+| [0003](./0003-premium-aditivo-via-traits.md)                | Premium aditivo vía traits                  | Accepted |
+| [0004](./0004-dispatch-por-match-para-formatos-cerrados.md) | Dispatch por `match` para formatos cerrados | Accepted |
+| [0005](./0005-storage-service-trait-monolitico.md)          | `StorageService` permanece como trait único | Accepted |
