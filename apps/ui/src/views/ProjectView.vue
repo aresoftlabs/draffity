@@ -18,7 +18,7 @@ import { useProjectStore } from '@/stores/project';
 import { useDocumentStore, type ReorderOp } from '@/stores/document';
 import { useUiStore, type ProjectViewMode } from '@/stores/ui';
 import { useIpcError } from '@/composables/useIpcError';
-import { useAutoSave } from '@/composables/useAutoSave';
+import { useEditorAutoSave } from '@/composables/useEditorAutoSave';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useTypewriterScroll } from '@/composables/useTypewriterScroll';
 import { registerCommands } from '@/composables/useCommandRegistry';
@@ -133,8 +133,14 @@ const readOnly = computed(() => project.value?.status === 'archived');
 
 const { selected, saveState, lastSavedAt, wordCount, totalWordCount } = storeToRefs(docStore);
 
-const editorContent = ref('');
-const editorContentJson = ref<string | null>(null);
+// The editor content is bound to the id of the document it belongs to, so an
+// autosave always targets that document — never the live selection (AUD-01).
+const editorDoc = useEditorAutoSave({
+  persist: (id, payload) => run(t('errors.saveDocument'), () => docStore.save(id, payload)),
+  readOnly: () => readOnly.value,
+});
+const editorContent = editorDoc.content;
+const editorContentJson = editorDoc.contentJson;
 const editorRef = ref<InstanceType<typeof TipTapEditor> | null>(null);
 const editor = computed(() => editorRef.value?.editor ?? null);
 
@@ -266,17 +272,6 @@ const sessionWordCount = computed(() => {
   return start === null ? 0 : Math.max(0, totalWordCount.value - start);
 });
 
-const auto = useAutoSave(async () => {
-  if (!selected.value) return;
-  if (readOnly.value) return;
-  await run(t('errors.saveDocument'), () =>
-    docStore.save(selected.value!.id, {
-      content: editorContent.value,
-      contentJson: editorContentJson.value ?? undefined,
-    }),
-  );
-}, 500);
-
 async function loadProject() {
   if (!projectStore.projects.length) {
     await run(t('errors.loadProjects'), () => projectStore.loadAll());
@@ -304,14 +299,12 @@ function onSnapshotRestored() {
 }
 
 function syncEditorFromSelection() {
-  editorContent.value = selected.value?.content ?? '';
-  editorContentJson.value = selected.value?.contentJson ?? null;
+  // load() flushes the previous document's pending save before swapping in the
+  // new content, so a fast selection change can't persist to the wrong doc.
+  void editorDoc.load(selected.value);
 }
 
-watch(selected, () => {
-  // When the selection changes, flush pending save then load new content.
-  void auto.flush().then(syncEditorFromSelection);
-});
+watch(selected, syncEditorFromSelection);
 
 const mediaStore = useMediaStore();
 
@@ -326,12 +319,11 @@ watch(projectId, async (next, prev) => {
 });
 
 function onEditorInput(value: string) {
-  editorContent.value = value;
-  if (!readOnly.value) auto.trigger();
+  editorDoc.onContent(value);
 }
 
 function onEditorJsonInput(value: string) {
-  editorContentJson.value = value;
+  editorDoc.onContentJson(value);
 }
 
 function onPickCitation(payload: { key: string; label: string }) {
@@ -543,7 +535,7 @@ async function onProjectDeadlineChange(deadline: number | null) {
 
 useShortcuts({
   flushSave: () => {
-    void auto.flush();
+    void editorDoc.flush();
   },
   newChapter: () => {
     if (!readOnly.value) onCreate('chapter');
