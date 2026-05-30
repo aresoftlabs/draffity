@@ -127,43 +127,33 @@ async function load() {
   }
 }
 
-watch(autosaveMs, async (v) => {
-  if (!loaded.value) return;
+/** Persist one setting, logging IPC failures instead of swallowing them
+ *  silently (AUD-19). A failed write is non-fatal — the in-memory value stays. */
+async function persist(key: string, value: string) {
   try {
-    await ipc.setSetting(KEY_AUTOSAVE, String(v));
-  } catch {
-    /* ignore — toast surface in callers */
+    await ipc.setSetting(key, value);
+  } catch (e) {
+    console.error('[editorSettings]', key, e);
   }
+}
+
+watch(autosaveMs, (v) => {
+  if (loaded.value) void persist(KEY_AUTOSAVE, String(v));
 });
 
-watch(font, async (v) => {
-  if (!loaded.value) return;
-  try {
-    await ipc.setSetting(KEY_FONT, v);
-  } catch {
-    /* ignore */
-  }
+watch(font, (v) => {
+  if (loaded.value) void persist(KEY_FONT, v);
 });
 
-watch(fontFamily, async (v) => {
-  if (!loaded.value) return;
-  try {
-    await ipc.setSetting(KEY_FONT_FAMILY, v);
-  } catch {
-    /* ignore */
-  }
+watch(fontFamily, (v) => {
+  if (loaded.value) void persist(KEY_FONT_FAMILY, v);
 });
 
-watch(customFontId, async (v) => {
-  if (!loaded.value) return;
-  try {
-    await ipc.setSetting(KEY_FONT_CUSTOM_ID, v ?? '');
-  } catch {
-    /* ignore */
-  }
+watch(customFontId, (v) => {
+  if (loaded.value) void persist(KEY_FONT_CUSTOM_ID, v ?? '');
 });
 
-watch(customCss, async (v) => {
+watch(customCss, (v) => {
   if (!loaded.value) return;
   // Defence: cap length so a runaway paste can't push the settings row past
   // a reasonable size. 4 KB is more than enough for the customisation knobs
@@ -172,38 +162,19 @@ watch(customCss, async (v) => {
     customCss.value = v.slice(0, MAX_CUSTOM_CSS);
     return;
   }
-  try {
-    await ipc.setSetting(KEY_CUSTOM_CSS, v);
-  } catch {
-    /* ignore */
-  }
+  void persist(KEY_CUSTOM_CSS, v);
 });
 
-watch(paperWidthCh, async (v) => {
-  if (!loaded.value) return;
-  try {
-    await ipc.setSetting(KEY_PAPER_WIDTH, String(v));
-  } catch {
-    /* ignore */
-  }
+watch(paperWidthCh, (v) => {
+  if (loaded.value) void persist(KEY_PAPER_WIDTH, String(v));
 });
 
-watch(compositionBg, async (v) => {
-  if (!loaded.value) return;
-  try {
-    await ipc.setSetting(KEY_COMPOSITION_BG, v);
-  } catch {
-    /* ignore */
-  }
+watch(compositionBg, (v) => {
+  if (loaded.value) void persist(KEY_COMPOSITION_BG, v);
 });
 
-watch(fadeLevel, async (v) => {
-  if (!loaded.value) return;
-  try {
-    await ipc.setSetting(KEY_FADE_LEVEL, v);
-  } catch {
-    /* ignore */
-  }
+watch(fadeLevel, (v) => {
+  if (loaded.value) void persist(KEY_FADE_LEVEL, v);
 });
 
 /** Map a built-in preset to its CSS font-family stack. Used by the
