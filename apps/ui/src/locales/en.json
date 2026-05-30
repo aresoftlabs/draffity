@@ -728,5 +728,9 @@
   },
   "topBar": {
     "breadcrumb": "Project navigation"
+  },
+  "rail": {
+    "label": "Activity",
+    "search": "Search"
   }
 }

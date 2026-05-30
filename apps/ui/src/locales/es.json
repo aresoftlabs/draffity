@@ -728,5 +728,9 @@
   },
   "topBar": {
     "breadcrumb": "Navegación del proyecto"
+  },
+  "rail": {
+    "label": "Actividad",
+    "search": "Buscar"
   }
 }
