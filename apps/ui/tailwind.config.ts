@@ -17,7 +17,9 @@ export default {
           'Roboto',
           'sans-serif',
         ],
-        // Prosa / lectura del manuscrito.
+        // Prosa / lectura del manuscrito. `serif` conserva Lora para reflejar el
+        // stack de back-compat de `BUILT_IN_FAMILIES.serif` (useEditorSettings);
+        // `reading` es la variante limpia para markup nuevo, sin el fallback legacy.
         serif: ['Source Serif 4 Variable', 'Source Serif 4', 'Lora', 'Georgia', 'serif'],
         reading: ['Source Serif 4 Variable', 'Source Serif 4', 'Georgia', 'serif'],
         // Títulos y nombres de proyecto — el sello editorial.
