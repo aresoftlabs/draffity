@@ -58,3 +58,6 @@ CLAUDE.local.md
 AGENTS.md
 .claude/
 backlog-v*.md
+
+# Superpowers visual brainstorming (local, not versioned)
+.superpowers/
