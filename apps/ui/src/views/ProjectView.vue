@@ -216,24 +216,7 @@ const actionItems = computed<MenuItem[]>(() => [
       showValidation.value = true;
     },
   },
-  { separator: true, visible: Boolean(voiceDictation.value || voiceTts.value || voiceNotes.value) },
-  {
-    label: t('voice.dictation.button'),
-    icon: 'pi pi-microphone',
-    visible: Boolean(voiceDictation.value),
-    disabled: readOnly.value,
-    command: () => {
-      dictation.toggle();
-    },
-  },
-  {
-    label: t('voice.readAloud.button'),
-    icon: 'pi pi-volume-up',
-    visible: Boolean(voiceTts.value),
-    command: () => {
-      readAloud.toggle();
-    },
-  },
+  { separator: true, visible: Boolean(voiceNotes.value) },
   {
     label: t('voice.notes.button'),
     icon: 'pi pi-comment',
@@ -950,9 +933,15 @@ onBeforeUnmount(() => {
         :session-words="sessionWordCount"
         :session-goal="uiStore.sessionGoal"
         :read-only="readOnly"
+        :voice-tts="voiceTts"
+        :voice-dictation="voiceDictation"
+        :read-aloud-active="readAloud.phase.value !== 'idle'"
+        :dictation-active="dictation.phase.value !== 'idle'"
         @update:project-goal="onProjectGoalChange"
         @update:project-deadline="onProjectDeadlineChange"
         @update:session-goal="uiStore.setSessionGoal"
+        @toggle-read-aloud="readAloud.toggle()"
+        @toggle-dictation="dictation.toggle()"
       />
 
       <!-- Composition mode control bar (K-09): hidden until hover at the top. -->
