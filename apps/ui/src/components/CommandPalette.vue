@@ -103,11 +103,17 @@ watch(results, clampActive);
         class="flex-1 bg-transparent outline-none text-surface-900 dark:text-surface-50"
         :placeholder="t('commandPalette.placeholder')"
         :aria-label="t('commandPalette.placeholder')"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls="cmd-palette-listbox"
+        :aria-activedescendant="
+          results[activeIndex] ? 'cmd-opt-' + results[activeIndex].id : undefined
+        "
         @keydown="onKeydown"
       />
     </div>
 
-    <div class="max-h-[24rem] overflow-auto py-2">
+    <div id="cmd-palette-listbox" role="listbox" class="max-h-[24rem] overflow-auto py-2">
       <p v-if="results.length === 0" class="px-4 py-6 text-center text-surface-500">
         {{ t('commandPalette.noResults') }}
       </p>
@@ -116,8 +122,11 @@ watch(results, clampActive);
         <button
           v-for="cmd in g.items"
           :key="cmd.id"
+          :id="'cmd-opt-' + cmd.id"
           data-test="command-item"
           type="button"
+          role="option"
+          :aria-selected="flatIndex(cmd) === activeIndex"
           class="w-full flex items-center gap-3 px-4 py-2 text-left text-surface-800 dark:text-surface-100"
           :class="flatIndex(cmd) === activeIndex ? 'bg-surface-100 dark:bg-surface-800' : ''"
           @mousemove="activeIndex = flatIndex(cmd)"
