@@ -10,6 +10,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Desarrollo del **backlog v4** (interno): cerrar brechas competitivas + capa
 premium (IA BYOK + voz). Aún sin release versionada.
 
+### Added — Épica L: rediseño visual y de usabilidad (fases 1–6)
+
+Rediseño integral de la interfaz para un look profesional, moderno y con
+identidad propia, sin perder funcionalidad (spec/planes en
+`docs/superpowers/`). Capa de presentación: no se tocó la lógica de dominio.
+
+- **Sistema visual cálido literario** (fase 1): tokens propios
+  (`styles/tokens.ts`, paleta terracota + superficies sepia) aplicados vía un
+  preset PrimeVue propio (`definePreset(Aura, …)` en `styles/preset.ts`).
+  Fuentes variables self-hosted (Inter, Fraunces, Source Serif 4) para render
+  idéntico offline. Tema claro "Literary Calm" + oscuro "Literary Dark"; alto
+  contraste y modo sistema conservados.
+- **Tipografía con rol** (fases 1/3b): Fraunces (`font-display`) en títulos de
+  pantalla y documento, Source Serif 4 en la prosa del editor/scrivenings,
+  Inter en la interfaz.
+- **Paleta de comandos ⌘K** (fase 2a): registro de comandos desacoplado
+  (`useCommandRegistry` + filtro acento-insensible) y `CommandPalette` con
+  navegación por teclado; comandos globales (panel, ajustes, tema, Nuevo Draft)
+  y de proyecto (buscar, foco, exportar, capítulo); atajo `ctrl+k`.
+- **Shell de navegación** (fases 2b–2d): `AppTopBar` (marca Fraunces + migas de
+  pan `AppBreadcrumb` + disparador ⌘K), riel de actividad `AppRail` (cambio de
+  vista + buscar + ajustes) y barra de estado inferior `AppStatusBar`
+  (guardado, contador, objetivos, pacemaker, pomodoro).
+- **Dashboard "Draft"** (fase 3a): tarjetas con portada tipográfica tonal
+  (`projectCover`) + branding "Tus Drafts" / "+ Nuevo Draft" + microcopy.
+- **Header del editor consolidado** (fase 3c): toggles de vista visibles
+  (foco/composición/split) + menú de proyecto "⋯" con las acciones (exportar,
+  bibliografía, plantilla, validar, notas de voz), gating premium preservado.
+- **Configuración en 10 secciones** (fase 4): `Settings` reorganizado a nav
+  lateral (Apariencia · Editor · Idioma · Audio y voz · IA y modelos · Atajos ·
+  Objetivos y sesión · Copias y datos · Plan/Premium · Acerca de) reusando los
+  controles existentes; toda la lógica async (IA/voz/premium/backups) intacta.
+- **Audio en contexto** (fase 5): controles de Leer en voz alta y Dictado en la
+  barra de estado, gateados por capability, con estado activo visible.
+- **QA y limpieza** (fase 6): verificado que toda la funcionalidad del mapa
+  (§7) sigue accesible tras el rediseño; a11y de los componentes nuevos
+  (aria-label/aria-current/combobox); eliminado código muerto
+  (`useDocumentSummary`, `ProjectViewToggle`).
+
 ### Added — Épica E: foundations premium (E-01..E-10)
 
 - **Secrets en keyring del SO** (E-01): trait `SecretStorage` +

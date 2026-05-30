@@ -40,7 +40,6 @@ declare module 'vue' {
     PacemakerWidget: typeof import('./components/PacemakerWidget.vue')['default']
     PomodoroWidget: typeof import('./components/PomodoroWidget.vue')['default']
     ProjectCard: typeof import('./components/ProjectCard.vue')['default']
-    ProjectViewToggle: typeof import('./components/ProjectViewToggle.vue')['default']
     ReadAloudBar: typeof import('./components/ReadAloudBar.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
