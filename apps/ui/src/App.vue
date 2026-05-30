@@ -46,6 +46,19 @@ onMounted(() => {
       keywords: ['tema', 'theme', 'oscuro', 'dark'],
       run: () => ui.cycleTheme(),
     },
+    {
+      id: 'global.newDraft',
+      label: t('command.newDraft'),
+      group: t('command.groupGlobal'),
+      icon: 'pi pi-plus',
+      keywords: ['nuevo', 'new', 'draft', 'proyecto', 'project'],
+      run: () => {
+        // requestNewProject sets a one-shot flag that Dashboard reads in
+        // onMounted and opens NewProjectWizard automatically.
+        ui.requestNewProject();
+        void router.push('/');
+      },
+    },
   ]);
 });
 onBeforeUnmount(() => offGlobalCmds?.());
