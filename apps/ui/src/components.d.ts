@@ -8,6 +8,7 @@ export {};
 declare module 'vue' {
   export interface GlobalComponents {
     AiInlinePanel: typeof import('./components/AiInlinePanel.vue')['default']
+    AppBreadcrumb: typeof import('./components/AppBreadcrumb.vue')['default']
     AppShell: typeof import('./components/AppShell.vue')['default']
     BibliographyDialog: typeof import('./components/BibliographyDialog.vue')['default']
     Binder: typeof import('./components/Binder.vue')['default']
