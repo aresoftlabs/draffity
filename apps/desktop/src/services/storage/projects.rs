@@ -122,12 +122,19 @@ pub(super) fn create_from_import(
     conn: &mut Connection,
     tree: &ImportTree,
     template_id: &str,
+    archive_active: bool,
 ) -> AppResult<Project> {
     let trimmed_title = tree.project_title.trim();
     if trimmed_title.is_empty() {
         return Err(AppError::Invariant("project title cannot be empty".into()));
     }
     let tx = conn.transaction()?;
+    // Archive the previous active project in the same transaction so the import
+    // respects the single-active invariant instead of hitting a raw SQL error
+    // on idx_projects_one_active (AUD-06).
+    if archive_active {
+        archive_active_within(&tx, None)?;
+    }
     let now = now_ms();
     let project = Project {
         id: new_id(),

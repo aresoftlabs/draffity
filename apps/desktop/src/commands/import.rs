@@ -30,8 +30,10 @@ pub fn import_project(
     let tree = state.importer.import(format, &bytes, &filename_hint)?;
     // Imported projects start without a template binding — the seeded
     // tree owns its structure, so we tag them as `generic` for the
-    // purposes of the templates picker.
-    let project = state.storage.create_project_from_import(&tree, "generic")?;
+    // purposes of the templates picker. Route through the ProjectManager so
+    // the active-project invariant is honoured (archive previous active in the
+    // same transaction) instead of hitting a raw SQL error (AUD-06).
+    let project = state.project_manager.create_from_import(&tree, "generic")?;
     let _ = app.emit(events::PROJECT_CREATED, &project);
     Ok(project)
 }

@@ -101,6 +101,7 @@ pub trait StorageService: Send + Sync {
         &self,
         tree: &ImportTree,
         template_id: &str,
+        archive_active: bool,
     ) -> AppResult<Project>;
     fn list_projects(&self) -> AppResult<Vec<Project>>;
     fn get_project(&self, id: &str) -> AppResult<Option<Project>>;
@@ -428,8 +429,9 @@ impl StorageService for LocalStorageService {
         &self,
         tree: &ImportTree,
         template_id: &str,
+        archive_active: bool,
     ) -> AppResult<Project> {
-        projects::create_from_import(&mut *self.db()?, tree, template_id)
+        projects::create_from_import(&mut *self.db()?, tree, template_id, archive_active)
     }
 
     fn list_projects(&self) -> AppResult<Vec<Project>> {

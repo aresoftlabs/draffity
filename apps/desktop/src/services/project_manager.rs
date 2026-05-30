@@ -15,6 +15,7 @@ use std::sync::Arc;
 
 use crate::domain::{Project, ProjectInput, ProjectStatus};
 use crate::error::AppResult;
+use crate::services::importer::ImportTree;
 use crate::services::storage::StorageService;
 use crate::services::templates::TemplatesService;
 use crate::services::tier::TierService;
@@ -28,6 +29,11 @@ pub trait ProjectManagerService: Send + Sync {
     /// Activate an existing project. Archives the currently-active one
     /// when single-active is enforced.
     fn activate(&self, id: &str) -> AppResult<Project>;
+
+    /// Create a project from an imported document tree, archiving the
+    /// currently-active project first when single-active is enforced. Routes
+    /// imports through the same invariant as `create` (AUD-06).
+    fn create_from_import(&self, tree: &ImportTree, template_id: &str) -> AppResult<Project>;
 
     fn archive(&self, id: &str) -> AppResult<()>;
     fn delete(&self, id: &str) -> AppResult<()>;
@@ -80,6 +86,11 @@ impl ProjectManagerService for LocalProjectManager {
     fn activate(&self, id: &str) -> AppResult<Project> {
         self.storage
             .activate_project_atomic(id, self.single_active_enforced())
+    }
+
+    fn create_from_import(&self, tree: &ImportTree, template_id: &str) -> AppResult<Project> {
+        self.storage
+            .create_project_from_import(tree, template_id, self.single_active_enforced())
     }
 
     fn archive(&self, id: &str) -> AppResult<()> {
@@ -254,6 +265,30 @@ mod tests {
             active.map(|p| p.id),
             Some(a.id),
             "A must remain the single active project after the rollback"
+        );
+    }
+
+    #[test]
+    fn import_archives_previous_active_project() {
+        use crate::services::importer::{ImportNode, ImportTree};
+        let (m, _) = pm(StubTemplates::empty());
+        let a = m.create(input("A", "x")).unwrap();
+        let tree = ImportTree {
+            project_title: "Imported".into(),
+            nodes: vec![ImportNode {
+                title: "Chapter".into(),
+                content_html: "<p>hi</p>".into(),
+                children: vec![],
+            }],
+        };
+        // Importing with an active project must archive it (single-active
+        // invariant), not hit a raw SQL error on idx_projects_one_active.
+        let imported = m.create_from_import(&tree, "generic").unwrap();
+        assert_eq!(imported.status, ProjectStatus::Active);
+        assert_eq!(m.active().unwrap().map(|p| p.id), Some(imported.id));
+        assert_eq!(
+            m.get(&a.id).unwrap().unwrap().status,
+            ProjectStatus::Archived
         );
     }
 
