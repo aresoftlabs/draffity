@@ -49,6 +49,27 @@ identidad propia, sin perder funcionalidad (spec/planes en
   (aria-label/aria-current/combobox); eliminado código muerto
   (`useDocumentSummary`, `ProjectViewToggle`).
 
+### Fixed — Épica L: pulido de shell y barra superior
+
+Round de usabilidad sobre el rediseño
+(`docs/superpowers/specs/2026-05-30-shell-fijo-barra-unificada-paleta-design.md`).
+
+- **Shell fijo a la ventana**: `App.vue` pasa a `h-screen`/`overflow-hidden`;
+  barra superior, riel y barra de estado quedan siempre visibles y sólo
+  scrollea el contenido interno (Dashboard/Settings con scroll propio).
+- **Una sola barra superior**: se elimina la cabecera duplicada de
+  `ProjectView`; sus acciones (foco/composición/split/menú "⋯") se
+  teletransportan a la `AppTopBar` única y fija.
+- **Engranajes deduplicados**: se quita el ⚙ redundante del riel (queda el de
+  la barra, global); el Pomodoro usa ícono de ajustes propio para no
+  confundirse con Configuración.
+- **Toggle rápido de tema a 2 estados** (claro/oscuro); las 4 opciones
+  (incl. alto contraste y sistema) siguen disponibles en Ajustes ▸ Apariencia.
+- **Volver desde Ajustes**: botón "atrás" en la barra que regresa al proyecto
+  sin perder contexto.
+- **Paleta ⌘K estilo Spotlight**: input grande, sección "Recientes"
+  persistida, y atajo de teclado real (configurable) por fila.
+
 ### Added — Épica E: foundations premium (E-01..E-10)
 
 - **Secrets en keyring del SO** (E-01): trait `SecretStorage` +
