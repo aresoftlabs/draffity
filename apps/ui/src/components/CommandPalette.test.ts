@@ -1,6 +1,17 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { setActivePinia, createPinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
+
+// The palette reads live keybindings via the store; stub the backend so
+// `keybindings.load()` resolves without a Tauri runtime.
+vi.mock('@/services/ipc', () => ({
+  ipc: {
+    getSetting: vi.fn().mockResolvedValue(null),
+    setSetting: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import CommandPalette from './CommandPalette.vue';
 import { useCommandRegistry, registerCommands } from '@/composables/useCommandRegistry';
 import { useCommandPalette } from '@/composables/useCommandPalette';
@@ -13,6 +24,7 @@ const i18n = createI18n({
       commandPalette: {
         placeholder: 'Escribí un comando o buscá…',
         noResults: 'Sin comandos coincidentes',
+        recent: 'Recientes',
         hintNavigate: '↑↓',
         hintRun: '↵',
         hintClose: 'esc',
@@ -34,6 +46,7 @@ function mountPalette() {
 
 describe('CommandPalette', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     useCommandRegistry().clearAll();
     useCommandPalette().close();
   });

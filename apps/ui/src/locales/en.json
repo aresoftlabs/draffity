@@ -719,6 +719,7 @@
   "commandPalette": {
     "placeholder": "Type a command or search…",
     "noResults": "No matching commands",
+    "recent": "Recent",
     "hintNavigate": "↑↓ to navigate",
     "hintRun": "↵ to run",
     "hintClose": "esc to close",

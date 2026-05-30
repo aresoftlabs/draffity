@@ -11,7 +11,6 @@ const i18n = createI18n({
     es: {
       viewMode: { editor: 'Manuscrito', corkboard: 'Corcho', outliner: 'Esquema', codex: 'Codex' },
       rail: { label: 'Actividad', search: 'Buscar' },
-      settings: { title: 'Configuración' },
     },
   },
 });
@@ -33,11 +32,9 @@ describe('AppRail', () => {
     expect(active.attributes('aria-label')).toBe('Esquema');
   });
 
-  it('emite search y settings desde sus botones', async () => {
+  it('emite search desde su botón', async () => {
     const w = mountRail('editor');
     await w.get('[aria-label="Buscar"]').trigger('click');
-    await w.get('[aria-label="Configuración"]').trigger('click');
     expect(w.emitted('search')).toBeTruthy();
-    expect(w.emitted('settings')).toBeTruthy();
   });
 });
