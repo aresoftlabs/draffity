@@ -93,6 +93,10 @@ export interface ValidationFinding {
   detail: string;
   excerpt?: string;
   suggestion?: string;
+  /** Stable i18n key for backend-generated findings; AI findings omit it and
+   *  carry model text in `title`/`detail` (AUD-20). */
+  code?: string;
+  params?: Record<string, string>;
 }
 
 /** A persisted validation report; `resultsJson` is a `ValidationFinding[]`. */

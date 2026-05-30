@@ -9,7 +9,7 @@
 //! logic is unit-tested without a network. The orchestrator (`OpenRouterValidators`)
 //! just wires the model in. See `backlog-v4.md` G-01..G-08.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -85,6 +85,14 @@ pub struct Finding {
     pub excerpt: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggestion: Option<String>,
+    /// Stable i18n key for backend-generated findings (local validators, run
+    /// errors). The frontend translates `code` + `params`; AI findings carry
+    /// model text in `title`/`detail` and leave `code` empty (AUD-20).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    /// Interpolation values for `code`'s i18n message.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<BTreeMap<String, String>>,
 }
 
 /// Owned inputs for a validation run, assembled by the command layer.
@@ -233,6 +241,9 @@ pub fn parse_findings(validator: ValidatorKind, raw: &str) -> Vec<Finding> {
                 detail,
                 excerpt: r.excerpt.filter(|s| !s.trim().is_empty()),
                 suggestion: r.suggestion.filter(|s| !s.trim().is_empty()),
+                // AI findings carry model text; no i18n code.
+                code: None,
+                params: None,
             })
         })
         .collect()
@@ -310,8 +321,13 @@ pub fn detect_repetitions(text: &str) -> Vec<Finding> {
             severity: Severity::Info,
             title: format!("Frase repetida: «{phrase}»"),
             detail: format!("Aparece {count} veces. Considerá variar la redacción."),
-            excerpt: Some(phrase),
+            excerpt: Some(phrase.clone()),
             suggestion: None,
+            code: Some("repeatedPhrase".into()),
+            params: Some(BTreeMap::from([
+                ("phrase".to_string(), phrase),
+                ("count".to_string(), count.to_string()),
+            ])),
         })
         .collect()
 }
@@ -331,6 +347,11 @@ pub fn detect_style_anomalies(text: &str) -> Vec<Finding> {
                 detail: "Las oraciones largas pueden cansar al lector; evaluá dividirla.".into(),
                 excerpt: Some(truncate(sentence, 160)),
                 suggestion: None,
+                code: Some("longSentence".into()),
+                params: Some(BTreeMap::from([(
+                    "words".to_string(),
+                    words.len().to_string(),
+                )])),
             });
         }
         let adverbs = words
@@ -348,6 +369,8 @@ pub fn detect_style_anomalies(text: &str) -> Vec<Finding> {
                 detail: "Varios adverbios en una oración suelen debilitar la prosa.".into(),
                 excerpt: Some(truncate(sentence, 160)),
                 suggestion: None,
+                code: Some("adverbPileup".into()),
+                params: Some(BTreeMap::from([("count".to_string(), adverbs.to_string())])),
             });
         }
         if looks_passive(sentence) {
@@ -358,6 +381,8 @@ pub fn detect_style_anomalies(text: &str) -> Vec<Finding> {
                 detail: "La voz activa suele ser más directa.".into(),
                 excerpt: Some(truncate(sentence, 160)),
                 suggestion: None,
+                code: Some("passiveVoice".into()),
+                params: None,
             });
         }
         if out.len() >= MAX_LOCAL_FINDINGS {
@@ -563,6 +588,23 @@ mod tests {
     }
 
     #[test]
+    fn local_findings_carry_i18n_code_and_params() {
+        let text =
+            "—dijo ella con calma. —dijo ella mirando al mar. Más tarde —dijo ella otra vez.";
+        let f = detect_repetitions(text);
+        let hit = f
+            .iter()
+            .find(|x| x.excerpt.as_deref() == Some("dijo ella"))
+            .expect("repetition finding");
+        // Local findings carry a stable code + params so the frontend can
+        // localize them instead of rendering backend Spanish (AUD-20).
+        assert_eq!(hit.code.as_deref(), Some("repeatedPhrase"));
+        let params = hit.params.as_ref().expect("params present");
+        assert_eq!(params.get("phrase").map(String::as_str), Some("dijo ella"));
+        assert!(params.contains_key("count"));
+    }
+
+    #[test]
     fn repetition_ignores_pure_stopword_grams() {
         let text = "de la de la de la de la de la";
         assert!(detect_repetitions(text).is_empty());
@@ -607,6 +649,8 @@ mod tests {
                 detail: "a".into(),
                 excerpt: None,
                 suggestion: None,
+                code: None,
+                params: None,
             },
             Finding {
                 validator: "character".into(),
@@ -615,6 +659,8 @@ mod tests {
                 detail: "b".into(),
                 excerpt: None,
                 suggestion: None,
+                code: None,
+                params: None,
             },
         ];
         assert_eq!(summarize(&findings), "1 crítico · 1 advertencia");

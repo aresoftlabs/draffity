@@ -563,7 +563,35 @@
       "voice": "Voz y tono",
       "repetition": "Repeticiones",
       "plot": "Trama y temporalidad",
-      "style": "Estilo"
+      "style": "Estilo",
+      "summary": {
+        "none": "sin hallazgos",
+        "critical": "{count} crítico | {count} críticos",
+        "warning": "{count} advertencia | {count} advertencias",
+        "info": "{count} info"
+      },
+      "findings": {
+        "repeatedPhrase": {
+          "title": "Frase repetida: «{phrase}»",
+          "detail": "Aparece {count} veces. Considerá variar la redacción."
+        },
+        "longSentence": {
+          "title": "Oración muy larga ({words} palabras)",
+          "detail": "Las oraciones largas pueden cansar al lector; evaluá dividirla."
+        },
+        "adverbPileup": {
+          "title": "Acumulación de adverbios ({count})",
+          "detail": "Varios adverbios en una oración suelen debilitar la prosa."
+        },
+        "passiveVoice": {
+          "title": "Posible voz pasiva",
+          "detail": "La voz activa suele ser más directa."
+        },
+        "validatorFailed": {
+          "title": "El validador no se pudo ejecutar",
+          "detail": "{error}"
+        }
+      }
     }
   },
   "collections": {

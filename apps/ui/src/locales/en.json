@@ -563,7 +563,35 @@
       "voice": "Voice & tone",
       "repetition": "Repetition",
       "plot": "Plot & timeline",
-      "style": "Style"
+      "style": "Style",
+      "summary": {
+        "none": "no findings",
+        "critical": "{count} critical | {count} critical",
+        "warning": "{count} warning | {count} warnings",
+        "info": "{count} info"
+      },
+      "findings": {
+        "repeatedPhrase": {
+          "title": "Repeated phrase: “{phrase}”",
+          "detail": "Appears {count} times. Consider varying the wording."
+        },
+        "longSentence": {
+          "title": "Very long sentence ({words} words)",
+          "detail": "Long sentences can tire the reader; consider splitting it."
+        },
+        "adverbPileup": {
+          "title": "Adverb pile-up ({count})",
+          "detail": "Several adverbs in one sentence often weaken the prose."
+        },
+        "passiveVoice": {
+          "title": "Possible passive voice",
+          "detail": "Active voice is usually more direct."
+        },
+        "validatorFailed": {
+          "title": "The validator could not run",
+          "detail": "{error}"
+        }
+      }
     }
   },
   "collections": {

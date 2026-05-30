@@ -65,7 +65,7 @@ const isSparse = computed(() => {
 /** Latest report per validator, with its findings parsed. */
 const latest = computed(() => {
   const seen = new Set<string>();
-  const out: { name: string; summary: string; findings: ValidationFinding[] }[] = [];
+  const out: { name: string; findings: ValidationFinding[] }[] = [];
   for (const r of reports.value) {
     if (seen.has(r.validatorName)) continue;
     seen.add(r.validatorName);
@@ -75,7 +75,7 @@ const latest = computed(() => {
     } catch {
       findings = [];
     }
-    out.push({ name: r.validatorName, summary: r.severitySummary, findings });
+    out.push({ name: r.validatorName, findings });
   }
   return out;
 });
@@ -111,6 +111,28 @@ function severityDot(s: string): string {
   if (s === 'critical') return 'bg-red-500';
   if (s === 'warning') return 'bg-amber-500';
   return 'bg-sky-500';
+}
+
+// Backend-generated findings carry a stable `code` + `params` so we localize
+// them here; AI findings carry model text in `title`/`detail` (AUD-20).
+function findingTitle(f: ValidationFinding): string {
+  return f.code ? t(`ai.validators.findings.${f.code}.title`, f.params ?? {}) : f.title;
+}
+function findingDetail(f: ValidationFinding): string {
+  return f.code ? t(`ai.validators.findings.${f.code}.detail`, f.params ?? {}) : f.detail;
+}
+
+/** Localized severity summary, derived from the findings so the header isn't
+ *  the backend's Spanish string (AUD-20). */
+function localizedSummary(findings: ValidationFinding[]): string {
+  if (findings.length === 0) return t('ai.validators.summary.none');
+  const counts = { critical: 0, warning: 0, info: 0 };
+  for (const f of findings) counts[f.severity] += 1;
+  const parts: string[] = [];
+  if (counts.critical) parts.push(t('ai.validators.summary.critical', counts.critical));
+  if (counts.warning) parts.push(t('ai.validators.summary.warning', counts.warning));
+  if (counts.info) parts.push(t('ai.validators.summary.info', counts.info));
+  return parts.join(' · ');
 }
 </script>
 
@@ -164,7 +186,9 @@ function severityDot(s: string): string {
         <section v-for="group in latest" :key="group.name">
           <h3 class="text-xs font-semibold uppercase tracking-wide opacity-70 mb-1">
             {{ t(`ai.validators.${group.name}`) }} ·
-            <span class="font-normal normal-case opacity-80">{{ group.summary }}</span>
+            <span class="font-normal normal-case opacity-80">{{
+              localizedSummary(group.findings)
+            }}</span>
           </h3>
           <ul class="space-y-2">
             <li
@@ -175,8 +199,8 @@ function severityDot(s: string): string {
               <div class="flex items-start gap-2">
                 <span class="mt-1 w-2 h-2 rounded-full shrink-0" :class="severityDot(f.severity)" />
                 <div class="min-w-0 flex-1">
-                  <p class="font-medium">{{ f.title }}</p>
-                  <p class="opacity-80">{{ f.detail }}</p>
+                  <p class="font-medium">{{ findingTitle(f) }}</p>
+                  <p class="opacity-80">{{ findingDetail(f) }}</p>
                   <p
                     v-if="f.excerpt"
                     class="mt-1 text-xs font-mono opacity-70 bg-surface-100 dark:bg-surface-800 rounded px-1.5 py-0.5 break-words"

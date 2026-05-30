@@ -177,6 +177,11 @@ pub async fn run_validators(
                 detail: e.to_string(),
                 excerpt: None,
                 suggestion: None,
+                code: Some("validatorFailed".to_string()),
+                params: Some(std::collections::BTreeMap::from([(
+                    "error".to_string(),
+                    e.to_string(),
+                )])),
             }]
         });
         let json = serde_json::to_string(&findings)?;
