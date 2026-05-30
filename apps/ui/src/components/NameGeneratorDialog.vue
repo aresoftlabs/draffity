@@ -31,7 +31,7 @@ const count = ref<number>(8);
 const results = ref<string[]>([]);
 
 const originOptions = computed(() => [
-  ...NAME_ORIGINS.map((o) => ({ value: o.id, label: o.label })),
+  ...NAME_ORIGINS.map((o) => ({ value: o.id, label: t(`nameGen.origin.${o.id}`) })),
   ...ui.customNameLists.map((l) => ({ value: l.id, label: `★ ${l.label}` })),
 ]);
 

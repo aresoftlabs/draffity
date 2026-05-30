@@ -22,7 +22,7 @@ const i18n = createI18n({
   messages: {
     es: {
       commandPalette: {
-        placeholder: 'Escribí un comando o buscá…',
+        placeholder: 'Escribe un comando o busca…',
         noResults: 'Sin comandos coincidentes',
         recent: 'Recientes',
         hintNavigate: '↑↓',

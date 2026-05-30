@@ -6,10 +6,9 @@
 export type NameGender = 'masc' | 'fem' | 'unisex';
 
 export interface NameOrigin {
-  /** Stable id used as the select value. */
+  /** Stable id used as the select value. The display label is resolved at
+   *  render time via i18n (`nameGen.origin.<id>`), never stored here. */
   id: string;
-  /** Display label (kept language-neutral / proper nouns). */
-  label: string;
   masc: string[];
   fem: string[];
   unisex: string[];
@@ -18,7 +17,6 @@ export interface NameOrigin {
 export const NAME_ORIGINS: NameOrigin[] = [
   {
     id: 'celtic',
-    label: 'Celta',
     masc: [
       'Aodh',
       'Brennan',
@@ -47,7 +45,6 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'norse',
-    label: 'Nórdico',
     masc: [
       'Bjorn',
       'Eirik',
@@ -76,7 +73,6 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'japanese',
-    label: 'Japonés',
     masc: [
       'Akira',
       'Daichi',
@@ -94,21 +90,18 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'arabic',
-    label: 'Árabe',
     masc: ['Amir', 'Bilal', 'Faris', 'Hakim', 'Karim', 'Nasir', 'Omar', 'Rashid', 'Tariq', 'Yusuf'],
     fem: ['Amira', 'Farah', 'Hana', 'Layla', 'Nadia', 'Nour', 'Rania', 'Salma', 'Yasmin', 'Zahra'],
     unisex: ['Nour', 'Rida', 'Sahar', 'Wisam'],
   },
   {
     id: 'modern-en',
-    label: 'Inglés moderno',
     masc: ['Aiden', 'Caleb', 'Ethan', 'Hunter', 'Liam', 'Logan', 'Mason', 'Noah', 'Owen', 'Wyatt'],
     fem: ['Ava', 'Chloe', 'Emma', 'Harper', 'Isla', 'Lily', 'Mia', 'Olivia', 'Sophia', 'Zoe'],
     unisex: ['Avery', 'Charlie', 'Jordan', 'Riley', 'Quinn', 'Sage'],
   },
   {
     id: 'spanish',
-    label: 'Español',
     masc: [
       'Alejandro',
       'Bruno',
@@ -137,7 +130,6 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'slavic',
-    label: 'Eslavo',
     masc: [
       'Aleksei',
       'Bohdan',
@@ -155,7 +147,6 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'greek',
-    label: 'Griego',
     masc: [
       'Andreas',
       'Dimitris',
@@ -184,14 +175,12 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'hebrew',
-    label: 'Hebreo',
     masc: ['Asher', 'Boaz', 'Eitan', 'Gideon', 'Lev', 'Noam', 'Ari', 'Reuben', 'Tovi', 'Yonatan'],
     fem: ['Adina', 'Ayelet', 'Dalia', 'Hila', 'Liora', 'Maya', 'Noa', 'Shira', 'Tamar', 'Yael'],
     unisex: ['Noa', 'Lev', 'Ariel', 'Or'],
   },
   {
     id: 'indian',
-    label: 'Indio',
     masc: [
       'Aarav',
       'Arjun',
@@ -209,7 +198,6 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'yoruba',
-    label: 'Yoruba',
     masc: [
       'Adewale',
       'Babatunde',
@@ -227,7 +215,6 @@ export const NAME_ORIGINS: NameOrigin[] = [
   },
   {
     id: 'fantasy',
-    label: 'Fantasía',
     masc: [
       'Aelar',
       'Darion',

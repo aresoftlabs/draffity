@@ -5,8 +5,8 @@
   },
   "dashboard": {
     "title": "Tus Drafts",
-    "subtitle": "Seguí donde lo dejaste",
-    "empty": "Todo gran libro empezó como un borrador. Empezá el tuyo.",
+    "subtitle": "Sigue donde lo dejaste",
+    "empty": "Todo gran libro empezó como un borrador. Empieza el tuyo.",
     "newProject": "Nuevo Draft",
     "importProject": "Importar…",
     "active": "Activo",
@@ -191,8 +191,8 @@
   },
   "split": {
     "toggle": "Editor partido",
-    "pickDocument": "Elegí un documento",
-    "empty": "Elegí un documento para editarlo en paralelo",
+    "pickDocument": "Elige un documento",
+    "empty": "Elige un documento para editarlo en paralelo",
     "saving": "Guardando",
     "close": "Cerrar panel",
     "lock": "Fijar documento del panel"
@@ -235,10 +235,10 @@
     "fontGroupBuiltIn": "Incluidas",
     "fontGroupSystem": "Sistema",
     "fontGroupCustom": "Personalizadas (subidas)",
-    "fontPickerPlaceholder": "Elegí una fuente",
+    "fontPickerPlaceholder": "Elige una fuente",
     "fontHint": "Las fuentes personalizadas se guardan junto al proyecto activo. Al cambiar de proyecto se mantiene la fuente; eliminar el proyecto fuente la elimina también.",
     "uploadFont": "Subir fuente personalizada (.ttf, .otf)…",
-    "uploadFontNoProject": "Abrí un proyecto antes de subir fuentes",
+    "uploadFontNoProject": "Abre un proyecto antes de subir fuentes",
     "fontUploaded": "Fuente subida y aplicada",
     "fontUploadFailed": "No se pudo subir la fuente",
     "autosave": "Intervalo de autoguardado",
@@ -249,7 +249,7 @@
     "goalMetStreak": "Racha de meta cumplida (días)",
     "dailyGoal": "Meta diaria de palabras",
     "dailyGoalNone": "Sin meta",
-    "dailyGoalHint": "Si escribís al menos esta cantidad en un día, cuenta para la racha de meta cumplida.",
+    "dailyGoalHint": "Si escribes al menos esta cantidad en un día, cuenta para la racha de meta cumplida.",
     "dailyGoalError": "No se pudo guardar la meta diaria.",
     "loadError": "No se pudo cargar el estado de los ajustes.",
     "linguisticFocusTitle": "Foco lingüístico",
@@ -259,10 +259,10 @@
     "readingSpeedHint": "Palabras por minuto para estimar el tiempo de lectura.",
     "lastWritingDate": "Última actividad",
     "crashReporting": "Enviar reportes de crash",
-    "crashReportingHint": "Desactivado por defecto. Si lo activás, Draffity puede enviar el stack trace y la versión de la app a la URL configurada por el build. El contenido de tus documentos nunca se incluye.",
+    "crashReportingHint": "Desactivado por defecto. Si lo activas, Draffity puede enviar el stack trace y la versión de la app a la URL configurada por el build. El contenido de tus documentos nunca se incluye.",
     "premiumTitle": "Premium",
-    "premiumHint": "Activá las funciones premium (IA, voz) con tu clave de licencia. La clave se guarda cifrada en el llavero del sistema, nunca en texto plano.",
-    "premiumKeyPlaceholder": "Pegá tu clave de licencia",
+    "premiumHint": "Activa las funciones premium (IA, voz) con tu clave de licencia. La clave se guarda cifrada en el llavero del sistema, nunca en texto plano.",
+    "premiumKeyPlaceholder": "Pega tu clave de licencia",
     "premiumActivate": "Activar",
     "premiumDeactivate": "Desactivar",
     "premiumActive": "Premium activo",
@@ -270,7 +270,7 @@
     "premiumDeactivated": "Premium desactivado.",
     "premiumInvalid": "Clave de licencia inválida.",
     "aiTitle": "IA",
-    "aiKeyHint": "Usás tu propia clave de OpenRouter (BYOK). Se guarda cifrada en el llavero del sistema, nunca en texto plano, y las peticiones van directo de tu equipo a OpenRouter.",
+    "aiKeyHint": "Usas tu propia clave de OpenRouter (BYOK). Se guarda cifrada en el llavero del sistema, nunca en texto plano, y las peticiones van directo de tu equipo a OpenRouter.",
     "aiKeyLabel": "Clave de API de OpenRouter",
     "aiKeyPlaceholder": "sk-or-...",
     "aiKeySave": "Guardar",
@@ -278,12 +278,12 @@
     "aiKeySaved": "Clave de OpenRouter guardada.",
     "aiKeySavedToast": "Clave guardada. La IA ya está lista para usar.",
     "aiKeyError": "No se pudo guardar la clave.",
-    "aiKeyGetLink": "Conseguí una clave en openrouter.ai/keys",
+    "aiKeyGetLink": "Consigue una clave en openrouter.ai/keys",
     "aiUsageThisMonth": "Este mes: {sent} tokens enviados · {received} recibidos",
     "aiUsageReset": "Reiniciar",
     "aiUsageCostsLink": "Ver costos en openrouter.ai/activity",
     "voiceTitle": "Voz",
-    "voiceHint": "El dictado funciona 100% local con Whisper. Descargá un modelo (opt-in) e instalá el binario de whisper.cpp; nada se sube a la nube.",
+    "voiceHint": "El dictado funciona 100% local con Whisper. Descarga un modelo (opt-in) e instala el binario de whisper.cpp; nada se sube a la nube.",
     "voiceBinaryInstalled": "Binario de Whisper instalado",
     "voiceBinaryMissing": "Falta el binario de Whisper",
     "voiceImportBinary": "Importar binario…",
@@ -309,7 +309,7 @@
     "typewriter": "Modo máquina de escribir",
     "typewriterHint": "Mantiene la línea actual centrada verticalmente en el editor.",
     "customCss": "CSS personalizado del editor",
-    "customCssHint": "Se inyecta como hoja de estilos. Usá .tiptap-content como prefijo. @import y url() están desactivados.",
+    "customCssHint": "Se inyecta como hoja de estilos. Usa .tiptap-content como prefijo. @import y url() están desactivados.",
     "customCssPlaceholder": ".tiptap-content p { color: #1a1a1a; }",
     "backupsTitle": "Backups",
     "backupsHint": "Se crea uno automático al iniciar la app cada día. Se conservan 7 diarios + 6 mensuales + todos los manuales.",
@@ -361,7 +361,7 @@
     "dialogTitle": "Guardar como",
     "successTitle": "Exportación completada",
     "successDetail": "Archivo guardado en {path}",
-    "pdfHint": "Vista previa abierta en el navegador. Usá Imprimir → Guardar como PDF para terminar.",
+    "pdfHint": "Vista previa abierta en el navegador. Usa Imprimir → Guardar como PDF para terminar.",
     "sectionContent": "Contenido",
     "sectionAppearance": "Apariencia",
     "sectionLayout": "Maquetación",
@@ -401,9 +401,9 @@
   },
   "shortcuts": {
     "title": "Atajos de teclado",
-    "hint": "Hacé clic en \"Cambiar\" y presioná la combinación nueva. Esc cancela.",
+    "hint": "Haz clic en \"Cambiar\" y presiona la combinación nueva. Esc cancela.",
     "rebind": "Cambiar",
-    "capturing": "Presioná la combinación…",
+    "capturing": "Presiona la combinación…",
     "reset": "Por defecto",
     "flushSave": "Guardar ahora",
     "newChapter": "Nuevo capítulo",
@@ -444,7 +444,7 @@
       "note": "Nota"
     },
     "refPickerTitle": "Insertar referencia al codex",
-    "refPickerSubtitle": "Elegí una entrada para insertarla como [[Nombre]] en el texto.",
+    "refPickerSubtitle": "Elige una entrada para insertarla como [[Nombre]] en el texto.",
     "refPickerSearch": "Buscar por nombre, descripción o etiqueta…",
     "pickerNoMatches": "Sin coincidencias."
   },
@@ -558,7 +558,7 @@
       "empty": "Aún no corriste ningún análisis sobre este documento.",
       "error": "No se pudo ejecutar el análisis",
       "locate": "Ir al texto",
-      "coverageWarning": "El codex describe {covered} de {total} personajes que aparecen en el texto. Los análisis de personajes y trama serán menos precisos; completá el codex para mejores resultados.",
+      "coverageWarning": "El codex describe {covered} de {total} personajes que aparecen en el texto. Los análisis de personajes y trama serán menos precisos; completa el codex para mejores resultados.",
       "character": "Coherencia de personajes",
       "voice": "Voz y tono",
       "repetition": "Repeticiones",
@@ -573,11 +573,11 @@
       "findings": {
         "repeatedPhrase": {
           "title": "Frase repetida: «{phrase}»",
-          "detail": "Aparece {count} veces. Considerá variar la redacción."
+          "detail": "Aparece {count} veces. Considera variar la redacción."
         },
         "longSentence": {
           "title": "Oración muy larga ({words} palabras)",
-          "detail": "Las oraciones largas pueden cansar al lector; evaluá dividirla."
+          "detail": "Las oraciones largas pueden cansar al lector; evalúa dividirla."
         },
         "adverbPileup": {
           "title": "Acumulación de adverbios ({count})",
@@ -679,13 +679,27 @@
     "copy": "Copiar",
     "import": "Importar lista (.txt/.json)",
     "importError": "No se pudo importar la lista.",
-    "empty": "Pulsá «Generar» para obtener nombres.",
-    "pickHint": "Clic en un nombre para usarlo."
+    "empty": "Pulsa «Generar» para obtener nombres.",
+    "pickHint": "Clic en un nombre para usarlo.",
+    "origin": {
+      "celtic": "Celta",
+      "norse": "Nórdico",
+      "japanese": "Japonés",
+      "arabic": "Árabe",
+      "modern-en": "Inglés moderno",
+      "spanish": "Español",
+      "slavic": "Eslavo",
+      "greek": "Griego",
+      "hebrew": "Hebreo",
+      "indian": "Indio",
+      "yoruba": "Yoruba",
+      "fantasy": "Fantasía"
+    }
   },
   "compile": {
     "preset": "Preset de compilación",
     "presetPlaceholder": "Elegir preset…",
-    "presetHint": "Aplica un conjunto de ajustes; podés afinarlos abajo.",
+    "presetHint": "Aplica un conjunto de ajustes; puedes afinarlos abajo.",
     "presetManuscript": "Manuscrito (envío editorial)",
     "presetEbook": "Ebook",
     "presetEditor": "Borrador para editor",
@@ -747,7 +761,7 @@
     }
   },
   "commandPalette": {
-    "placeholder": "Escribí un comando o buscá…",
+    "placeholder": "Escribe un comando o busca…",
     "noResults": "Sin comandos coincidentes",
     "recent": "Recientes",
     "hintNavigate": "↑↓ para navegar",
