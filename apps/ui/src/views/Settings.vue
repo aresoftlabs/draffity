@@ -560,550 +560,633 @@ function formatSize(bytes: number): string {
 function kindLabel(kind: BackupRecord['kind']): string {
   return t(`settings.backupKind.${kind}`);
 }
+
+type SettingsSection =
+  | 'appearance'
+  | 'editor'
+  | 'language'
+  | 'audio'
+  | 'ai'
+  | 'shortcuts'
+  | 'goals'
+  | 'data'
+  | 'plan'
+  | 'about';
+
+const activeSection = ref<SettingsSection>('appearance');
+
+const navSections: { id: SettingsSection; key: string }[] = [
+  { id: 'appearance', key: 'settings.nav.appearance' },
+  { id: 'editor', key: 'settings.nav.editor' },
+  { id: 'language', key: 'settings.nav.language' },
+  { id: 'audio', key: 'settings.nav.audio' },
+  { id: 'ai', key: 'settings.nav.ai' },
+  { id: 'shortcuts', key: 'settings.nav.shortcuts' },
+  { id: 'goals', key: 'settings.nav.goals' },
+  { id: 'data', key: 'settings.nav.data' },
+  { id: 'plan', key: 'settings.nav.plan' },
+  { id: 'about', key: 'settings.nav.about' },
+];
 </script>
 
 <template>
-  <section class="flex-1 p-8 max-w-2xl w-full mx-auto">
-    <h1 class="text-2xl font-display font-bold mb-8">{{ t('settings.title') }}</h1>
-
-    <div class="space-y-8">
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
-          {{ t('settings.theme') }}
-        </h2>
-        <SelectButton
-          v-model="themeModel"
-          :options="themeOptions"
-          option-label="label"
-          option-value="value"
-        />
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
-          {{ t('settings.language') }}
-        </h2>
-        <SelectButton
-          v-model="localeModel"
-          :options="localeOptions"
-          option-label="label"
-          option-value="value"
-        />
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
-          {{ t('settings.editorFont') }}
-        </h2>
-        <div class="flex items-center gap-2">
-          <Select
-            v-model="fontFamilyModel"
-            :options="fontSelectGroups"
-            option-label="label"
-            option-value="value"
-            option-group-label="label"
-            option-group-children="items"
-            class="flex-1"
-            :placeholder="t('settings.fontPickerPlaceholder')"
-          />
-          <Button
-            v-tooltip.left="
-              projectStore.active ? t('settings.uploadFont') : t('settings.uploadFontNoProject')
-            "
-            :aria-label="t('settings.uploadFont')"
-            icon="pi pi-upload"
-            size="small"
-            severity="secondary"
-            :disabled="!projectStore.active || uploadingFont"
-            :loading="uploadingFont"
-            @click="onUploadFont"
-          />
-        </div>
-        <p class="text-xs opacity-60 mt-2">{{ t('settings.fontHint') }}</p>
-        <!-- Legacy 3-button selector kept for users who prefer it as a quick
-             toggle; it just swaps the family stack underneath. -->
-        <div class="mt-3">
-          <SelectButton
-            v-model="font"
-            :options="fontOptions"
-            option-label="label"
-            option-value="value"
-            @update:model-value="(v: EditorFont) => (fontFamilyModel = builtInFamily(v))"
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
-          {{ t('settings.autosave') }}
-          <span class="font-mono opacity-60">{{ autosaveMs }} ms</span>
-        </h2>
-        <Slider v-model="autosaveMs" :min="200" :max="3000" :step="100" />
-        <p class="text-xs opacity-60 mt-2">{{ t('settings.autosaveHint') }}</p>
-      </section>
-
-      <section class="flex items-center justify-between gap-4">
-        <div>
-          <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
-            {{ t('settings.typewriter') }}
-          </h2>
-          <p class="text-xs opacity-60 mt-1">{{ t('settings.typewriterHint') }}</p>
-        </div>
-        <ToggleSwitch v-model="ui.typewriterMode" />
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-          {{ t('settings.linguisticFocusTitle') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('settings.linguisticFocusHint') }}</p>
-        <Chips
-          v-model="ui.linguisticExtraWords"
-          :placeholder="t('settings.linguisticExtraPlaceholder')"
-          separator=","
-          class="w-full"
-        />
-      </section>
-
-      <section class="flex items-center justify-between gap-4">
-        <div>
-          <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
-            {{ t('settings.readingSpeed') }}
-          </h2>
-          <p class="text-xs opacity-60 mt-1">{{ t('settings.readingSpeedHint') }}</p>
-        </div>
-        <InputNumber
-          v-model="ui.readingWpm"
-          :min="50"
-          :max="1000"
-          :step="10"
-          suffix=" wpm"
-          show-buttons
-          class="!w-40"
-        />
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-          {{ t('shortcuts.title') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('shortcuts.hint') }}</p>
-        <KeybindingsEditor />
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-          {{ t('settings.customCss') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('settings.customCssHint') }}</p>
-        <Textarea
-          v-model="customCss"
-          rows="6"
-          class="w-full font-mono text-xs"
-          :placeholder="t('settings.customCssPlaceholder')"
-          spellcheck="false"
-        />
-      </section>
-
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
-          {{ t('settings.writingStats') }}
-        </h2>
-        <dl v-if="stats" class="text-sm space-y-1">
-          <div class="flex justify-between gap-2">
-            <dt class="opacity-60">{{ t('settings.currentStreak') }}</dt>
-            <dd class="font-mono">{{ stats.currentStreak }}</dd>
-          </div>
-          <div class="flex justify-between gap-2">
-            <dt class="opacity-60">{{ t('settings.longestStreak') }}</dt>
-            <dd class="font-mono">{{ stats.longestStreak }}</dd>
-          </div>
-          <div class="flex justify-between gap-2">
-            <dt class="opacity-60">{{ t('settings.goalMetStreak') }}</dt>
-            <dd class="font-mono">{{ stats.goalMetStreak }}</dd>
-          </div>
-          <div v-if="stats.lastWritingDate" class="flex justify-between gap-2">
-            <dt class="opacity-60">{{ t('settings.lastWritingDate') }}</dt>
-            <dd class="font-mono">{{ stats.lastWritingDate }}</dd>
-          </div>
-        </dl>
-        <p v-else class="text-xs opacity-60">…</p>
-
-        <div class="mt-4 flex items-center justify-between gap-3">
-          <label for="set-daily-goal" class="text-sm opacity-80">
-            {{ t('settings.dailyGoal') }}
-          </label>
-          <InputNumber
-            input-id="set-daily-goal"
-            :model-value="dailyGoal"
-            :min="0"
-            :step="50"
-            show-buttons
-            :placeholder="t('settings.dailyGoalNone')"
-            class="!w-40"
-            @update:model-value="onDailyGoalChange"
-          />
-        </div>
-        <p class="text-xs opacity-55 mt-1">{{ t('settings.dailyGoalHint') }}</p>
-
-        <div class="mt-5">
-          <div class="flex items-baseline justify-between mb-2 text-xs">
-            <span class="opacity-70">{{ t('settings.last30Days') }}</span>
-            <span class="opacity-60">
-              {{ t('settings.totalWords', { count: totalWords30d }) }} ·
-              {{ t('settings.activeDays', { count: activeDays30d }) }}
-            </span>
-          </div>
-          <SparklineChart
-            :series="dailySeries"
-            :height="56"
-            :aria-label="t('settings.last30DaysAria')"
-          />
-        </div>
-      </section>
-
-      <section>
-        <div class="flex items-center justify-between mb-3 gap-3">
-          <div>
-            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
-              {{ t('settings.backupsTitle') }}
+  <section class="flex-1 p-8 max-w-5xl w-full mx-auto">
+    <h1 class="text-2xl font-display font-bold mb-6">{{ t('settings.title') }}</h1>
+    <div class="flex gap-8 items-start">
+      <nav class="w-52 shrink-0 flex flex-col gap-1 sticky top-4" :aria-label="t('settings.title')">
+        <button
+          v-for="s in navSections"
+          :key="s.id"
+          type="button"
+          class="text-left text-sm px-3 py-2 rounded-lg transition-colors"
+          :class="
+            activeSection === s.id
+              ? 'bg-surface-0 dark:bg-surface-800 font-medium text-surface-900 dark:text-surface-50 shadow-sm'
+              : 'text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
+          "
+          :aria-current="activeSection === s.id ? 'page' : undefined"
+          @click="activeSection = s.id"
+        >
+          {{ t(s.key) }}
+        </button>
+      </nav>
+      <div class="flex-1 min-w-0 max-w-2xl">
+        <!-- APARIENCIA -->
+        <div v-show="activeSection === 'appearance'" class="space-y-8">
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+              {{ t('settings.theme') }}
             </h2>
-            <p class="text-xs opacity-60 mt-1">{{ t('settings.backupsHint') }}</p>
-          </div>
-          <Button
-            :label="t('settings.backupNow')"
-            icon="pi pi-database"
-            size="small"
-            :loading="creatingBackup"
-            @click="onCreateBackup"
-          />
-        </div>
-        <div
-          v-if="backups.length === 0"
-          class="text-xs opacity-60 p-3 rounded border border-surface-200 dark:border-surface-700"
-        >
-          {{ t('settings.backupsEmpty') }}
-        </div>
-        <ul
-          v-else
-          class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
-        >
-          <li
-            v-for="b in backups"
-            :key="b.id"
-            class="flex items-center justify-between gap-3 p-3 text-sm"
-          >
-            <div class="flex flex-col min-w-0">
-              <span class="font-mono text-xs truncate">{{ b.id }}</span>
-              <span class="text-xs opacity-60">
-                {{ kindLabel(b.kind) }} · {{ formatDate(b.createdAt) }} ·
-                {{ formatSize(b.sizeBytes) }}
-              </span>
+            <SelectButton
+              v-model="themeModel"
+              :options="themeOptions"
+              option-label="label"
+              option-value="value"
+            />
+          </section>
+
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+              {{ t('settings.editorFont') }}
+            </h2>
+            <div class="flex items-center gap-2">
+              <Select
+                v-model="fontFamilyModel"
+                :options="fontSelectGroups"
+                option-label="label"
+                option-value="value"
+                option-group-label="label"
+                option-group-children="items"
+                class="flex-1"
+                :placeholder="t('settings.fontPickerPlaceholder')"
+              />
+              <Button
+                v-tooltip.left="
+                  projectStore.active ? t('settings.uploadFont') : t('settings.uploadFontNoProject')
+                "
+                :aria-label="t('settings.uploadFont')"
+                icon="pi pi-upload"
+                size="small"
+                severity="secondary"
+                :disabled="!projectStore.active || uploadingFont"
+                :loading="uploadingFont"
+                @click="onUploadFont"
+              />
             </div>
-            <Button
-              :label="t('settings.restore')"
-              size="small"
-              text
-              :loading="restoringId === b.id"
-              @click="onRestore(b)"
-            />
-          </li>
-        </ul>
-      </section>
-
-      <section v-if="crashReportingActive" class="flex items-center justify-between gap-4">
-        <div>
-          <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
-            {{ t('settings.crashReporting') }}
-          </h2>
-          <p class="text-xs opacity-60 mt-1">{{ t('settings.crashReportingHint') }}</p>
-        </div>
-        <ToggleSwitch
-          :model-value="crashReportingEnabled"
-          :aria-label="t('settings.crashReporting')"
-          @update:model-value="onToggleCrashReporting"
-        />
-      </section>
-
-      <section v-if="premium?.licensingConfigured">
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-          {{ t('settings.premiumTitle') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('settings.premiumHint') }}</p>
-        <div
-          v-if="premium?.active"
-          class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm"
-        >
-          <span>
-            {{ t('settings.premiumActive') }}
-            <span v-if="premium.holder" class="opacity-60">· {{ premium.holder }}</span>
-          </span>
-          <Button
-            :label="t('settings.premiumDeactivate')"
-            size="small"
-            text
-            @click="onDeactivatePremium"
-          />
-        </div>
-        <div v-else class="flex items-center gap-2">
-          <InputText
-            v-model="licenseKey"
-            class="flex-1 font-mono text-xs"
-            :placeholder="t('settings.premiumKeyPlaceholder')"
-            :aria-label="t('settings.premiumTitle')"
-          />
-          <Button
-            :label="t('settings.premiumActivate')"
-            size="small"
-            :loading="activatingPremium"
-            :disabled="!licenseKey.trim()"
-            @click="onActivatePremium"
-          />
-        </div>
-      </section>
-
-      <section v-if="aiEnabled">
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-          {{ t('settings.aiTitle') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('settings.aiKeyHint') }}</p>
-        <div
-          v-if="aiStatus?.hasKey"
-          class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm"
-        >
-          <span>
-            <i class="pi pi-check-circle text-green-500 mr-1" />
-            {{ t('settings.aiKeySaved') }}
-          </span>
-          <Button
-            :label="t('settings.aiKeyClear')"
-            size="small"
-            text
-            severity="danger"
-            @click="onClearOpenrouterKey"
-          />
-        </div>
-        <div v-else class="flex items-center gap-2">
-          <InputText
-            v-model="openrouterKey"
-            type="password"
-            class="flex-1 font-mono text-xs"
-            :placeholder="t('settings.aiKeyPlaceholder')"
-            :aria-label="t('settings.aiKeyLabel')"
-            @keydown.enter="onSaveOpenrouterKey"
-          />
-          <Button
-            :label="t('settings.aiKeySave')"
-            size="small"
-            :loading="savingKey"
-            :disabled="!openrouterKey.trim()"
-            @click="onSaveOpenrouterKey"
-          />
-        </div>
-        <a
-          class="text-xs underline opacity-60 hover:opacity-100 mt-2 inline-block"
-          href="https://openrouter.ai/keys"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t('settings.aiKeyGetLink') }}
-        </a>
-
-        <div class="mt-4 pt-3 border-t border-surface-200 dark:border-surface-700">
-          <div class="flex items-center justify-between gap-2 text-xs">
-            <span class="opacity-70">
-              {{
-                t('settings.aiUsageThisMonth', { sent: aiUsage.sent, received: aiUsage.received })
-              }}
-            </span>
-            <Button
-              :label="t('settings.aiUsageReset')"
-              size="small"
-              text
-              severity="secondary"
-              @click="aiUsage.reset()"
-            />
-          </div>
-          <a
-            class="text-xs underline opacity-60 hover:opacity-100 mt-1 inline-block"
-            href="https://openrouter.ai/activity"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ t('settings.aiUsageCostsLink') }}
-          </a>
-        </div>
-      </section>
-
-      <section v-if="voiceEnabled">
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
-          {{ t('settings.voiceTitle') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('settings.voiceHint') }}</p>
-
-        <!-- Whisper binary -->
-        <div
-          class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
-        >
-          <span>
-            <i
-              :class="
-                voiceStatus?.binaryInstalled
-                  ? 'pi pi-check-circle text-green-500'
-                  : 'pi pi-exclamation-circle text-amber-500'
-              "
-              class="mr-1"
-            />
-            {{
-              voiceStatus?.binaryInstalled
-                ? t('settings.voiceBinaryInstalled')
-                : t('settings.voiceBinaryMissing')
-            }}
-          </span>
-          <Button
-            :label="t('settings.voiceImportBinary')"
-            size="small"
-            text
-            :loading="importingBinary"
-            @click="onImportBinary"
-          />
-        </div>
-
-        <!-- Models -->
-        <ul
-          class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
-        >
-          <li
-            v-for="m in voiceModels"
-            :key="m.id"
-            class="flex items-center justify-between gap-3 p-3 text-sm"
-          >
-            <div class="min-w-0">
-              <span class="font-medium">{{ m.id }}</span>
-              <span
-                v-if="m.recommended"
-                class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
-              >
-                {{ t('settings.voiceRecommended') }}
-              </span>
-              <span class="block text-xs opacity-60">{{ `${m.sizeMb} MB` }}</span>
+            <p class="text-xs opacity-60 mt-2">{{ t('settings.fontHint') }}</p>
+            <!-- Legacy 3-button selector kept for users who prefer it as a quick
+                 toggle; it just swaps the family stack underneath. -->
+            <div class="mt-3">
+              <SelectButton
+                v-model="font"
+                :options="fontOptions"
+                option-label="label"
+                option-value="value"
+                @update:model-value="(v: EditorFont) => (fontFamilyModel = builtInFamily(v))"
+              />
             </div>
-            <div class="shrink-0">
-              <span v-if="downloadPct[m.id] !== undefined" class="text-xs font-mono opacity-70">
-                {{ `${downloadPct[m.id]}%` }}
+          </section>
+
+          <section class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+                {{ t('settings.readingSpeed') }}
+              </h2>
+              <p class="text-xs opacity-60 mt-1">{{ t('settings.readingSpeedHint') }}</p>
+            </div>
+            <InputNumber
+              v-model="ui.readingWpm"
+              :min="50"
+              :max="1000"
+              :step="10"
+              suffix=" wpm"
+              show-buttons
+              class="!w-40"
+            />
+          </section>
+
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('settings.customCss') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('settings.customCssHint') }}</p>
+            <Textarea
+              v-model="customCss"
+              rows="6"
+              class="w-full font-mono text-xs"
+              :placeholder="t('settings.customCssPlaceholder')"
+              spellcheck="false"
+            />
+          </section>
+        </div>
+
+        <!-- EDITOR -->
+        <div v-show="activeSection === 'editor'" class="space-y-8">
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+              {{ t('settings.autosave') }}
+              <span class="font-mono opacity-60">{{ autosaveMs }} ms</span>
+            </h2>
+            <Slider v-model="autosaveMs" :min="200" :max="3000" :step="100" />
+            <p class="text-xs opacity-60 mt-2">{{ t('settings.autosaveHint') }}</p>
+          </section>
+
+          <section class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+                {{ t('settings.typewriter') }}
+              </h2>
+              <p class="text-xs opacity-60 mt-1">{{ t('settings.typewriterHint') }}</p>
+            </div>
+            <ToggleSwitch v-model="ui.typewriterMode" />
+          </section>
+
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('settings.linguisticFocusTitle') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('settings.linguisticFocusHint') }}</p>
+            <Chips
+              v-model="ui.linguisticExtraWords"
+              :placeholder="t('settings.linguisticExtraPlaceholder')"
+              separator=","
+              class="w-full"
+            />
+          </section>
+        </div>
+
+        <!-- IDIOMA -->
+        <div v-show="activeSection === 'language'" class="space-y-8">
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+              {{ t('settings.language') }}
+            </h2>
+            <SelectButton
+              v-model="localeModel"
+              :options="localeOptions"
+              option-label="label"
+              option-value="value"
+            />
+          </section>
+        </div>
+
+        <!-- AUDIO -->
+        <div v-show="activeSection === 'audio'" class="space-y-8">
+          <section v-if="voiceEnabled">
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('settings.voiceTitle') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('settings.voiceHint') }}</p>
+
+            <!-- Whisper binary -->
+            <div
+              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
+            >
+              <span>
+                <i
+                  :class="
+                    voiceStatus?.binaryInstalled
+                      ? 'pi pi-check-circle text-green-500'
+                      : 'pi pi-exclamation-circle text-amber-500'
+                  "
+                  class="mr-1"
+                />
+                {{
+                  voiceStatus?.binaryInstalled
+                    ? t('settings.voiceBinaryInstalled')
+                    : t('settings.voiceBinaryMissing')
+                }}
               </span>
               <Button
-                v-else-if="m.installed"
-                :label="t('settings.voiceModelDelete')"
+                :label="t('settings.voiceImportBinary')"
+                size="small"
+                text
+                :loading="importingBinary"
+                @click="onImportBinary"
+              />
+            </div>
+
+            <!-- Models -->
+            <ul
+              class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
+            >
+              <li
+                v-for="m in voiceModels"
+                :key="m.id"
+                class="flex items-center justify-between gap-3 p-3 text-sm"
+              >
+                <div class="min-w-0">
+                  <span class="font-medium">{{ m.id }}</span>
+                  <span
+                    v-if="m.recommended"
+                    class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
+                  >
+                    {{ t('settings.voiceRecommended') }}
+                  </span>
+                  <span class="block text-xs opacity-60">{{ `${m.sizeMb} MB` }}</span>
+                </div>
+                <div class="shrink-0">
+                  <span v-if="downloadPct[m.id] !== undefined" class="text-xs font-mono opacity-70">
+                    {{ `${downloadPct[m.id]}%` }}
+                  </span>
+                  <Button
+                    v-else-if="m.installed"
+                    :label="t('settings.voiceModelDelete')"
+                    size="small"
+                    text
+                    severity="danger"
+                    @click="onDeleteModel(m)"
+                  />
+                  <Button
+                    v-else
+                    :label="t('settings.voiceModelDownload')"
+                    icon="pi pi-download"
+                    size="small"
+                    text
+                    @click="onDownloadModel(m)"
+                  />
+                </div>
+              </li>
+            </ul>
+
+            <!-- Read-aloud: Piper binary + voices -->
+            <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mt-4 mb-2">
+              {{ t('settings.voiceReadAloud') }}
+            </h3>
+            <div
+              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
+            >
+              <span>
+                <i
+                  :class="
+                    voiceStatus?.piperInstalled
+                      ? 'pi pi-check-circle text-green-500'
+                      : 'pi pi-exclamation-circle text-amber-500'
+                  "
+                  class="mr-1"
+                />
+                {{
+                  voiceStatus?.piperInstalled
+                    ? t('settings.voicePiperInstalled')
+                    : t('settings.voicePiperMissing')
+                }}
+              </span>
+              <Button
+                :label="t('settings.voiceImportPiper')"
+                size="small"
+                text
+                :loading="importingPiper"
+                @click="onImportPiper"
+              />
+            </div>
+            <ul
+              class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
+            >
+              <li
+                v-for="v in voiceVoices"
+                :key="v.id"
+                class="flex items-center justify-between gap-3 p-3 text-sm"
+              >
+                <div class="min-w-0">
+                  <span class="font-medium">{{ v.name }}</span>
+                  <span
+                    v-if="v.recommended"
+                    class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
+                  >
+                    {{ t('settings.voiceRecommended') }}
+                  </span>
+                  <span class="block text-xs opacity-60">{{ `${v.sizeMb} MB` }}</span>
+                </div>
+                <div class="shrink-0">
+                  <span v-if="downloadPct[v.id] !== undefined" class="text-xs font-mono opacity-70">
+                    {{ `${downloadPct[v.id]}%` }}
+                  </span>
+                  <span v-else-if="v.installed" class="text-xs text-green-600 dark:text-green-400">
+                    {{ t('settings.voiceInstalled') }}
+                  </span>
+                  <Button
+                    v-else
+                    :label="t('settings.voiceModelDownload')"
+                    icon="pi pi-download"
+                    size="small"
+                    text
+                    @click="onDownloadVoice(v)"
+                  />
+                </div>
+              </li>
+            </ul>
+          </section>
+          <p v-if="!voiceEnabled" class="text-sm opacity-60">{{ t('capability.unavailable') }}</p>
+        </div>
+
+        <!-- IA -->
+        <div v-show="activeSection === 'ai'" class="space-y-8">
+          <section v-if="aiEnabled">
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('settings.aiTitle') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('settings.aiKeyHint') }}</p>
+            <div
+              v-if="aiStatus?.hasKey"
+              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm"
+            >
+              <span>
+                <i class="pi pi-check-circle text-green-500 mr-1" />
+                {{ t('settings.aiKeySaved') }}
+              </span>
+              <Button
+                :label="t('settings.aiKeyClear')"
                 size="small"
                 text
                 severity="danger"
-                @click="onDeleteModel(m)"
-              />
-              <Button
-                v-else
-                :label="t('settings.voiceModelDownload')"
-                icon="pi pi-download"
-                size="small"
-                text
-                @click="onDownloadModel(m)"
+                @click="onClearOpenrouterKey"
               />
             </div>
-          </li>
-        </ul>
+            <div v-else class="flex items-center gap-2">
+              <InputText
+                v-model="openrouterKey"
+                type="password"
+                class="flex-1 font-mono text-xs"
+                :placeholder="t('settings.aiKeyPlaceholder')"
+                :aria-label="t('settings.aiKeyLabel')"
+                @keydown.enter="onSaveOpenrouterKey"
+              />
+              <Button
+                :label="t('settings.aiKeySave')"
+                size="small"
+                :loading="savingKey"
+                :disabled="!openrouterKey.trim()"
+                @click="onSaveOpenrouterKey"
+              />
+            </div>
+            <a
+              class="text-xs underline opacity-60 hover:opacity-100 mt-2 inline-block"
+              href="https://openrouter.ai/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ t('settings.aiKeyGetLink') }}
+            </a>
 
-        <!-- Read-aloud: Piper binary + voices -->
-        <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mt-4 mb-2">
-          {{ t('settings.voiceReadAloud') }}
-        </h3>
-        <div
-          class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm mb-3"
-        >
-          <span>
-            <i
-              :class="
-                voiceStatus?.piperInstalled
-                  ? 'pi pi-check-circle text-green-500'
-                  : 'pi pi-exclamation-circle text-amber-500'
-              "
-              class="mr-1"
-            />
-            {{
-              voiceStatus?.piperInstalled
-                ? t('settings.voicePiperInstalled')
-                : t('settings.voicePiperMissing')
-            }}
-          </span>
-          <Button
-            :label="t('settings.voiceImportPiper')"
-            size="small"
-            text
-            :loading="importingPiper"
-            @click="onImportPiper"
-          />
-        </div>
-        <ul
-          class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
-        >
-          <li
-            v-for="v in voiceVoices"
-            :key="v.id"
-            class="flex items-center justify-between gap-3 p-3 text-sm"
-          >
-            <div class="min-w-0">
-              <span class="font-medium">{{ v.name }}</span>
-              <span
-                v-if="v.recommended"
-                class="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300"
+            <div class="mt-4 pt-3 border-t border-surface-200 dark:border-surface-700">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="opacity-70">
+                  {{
+                    t('settings.aiUsageThisMonth', {
+                      sent: aiUsage.sent,
+                      received: aiUsage.received,
+                    })
+                  }}
+                </span>
+                <Button
+                  :label="t('settings.aiUsageReset')"
+                  size="small"
+                  text
+                  severity="secondary"
+                  @click="aiUsage.reset()"
+                />
+              </div>
+              <a
+                class="text-xs underline opacity-60 hover:opacity-100 mt-1 inline-block"
+                href="https://openrouter.ai/activity"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {{ t('settings.voiceRecommended') }}
-              </span>
-              <span class="block text-xs opacity-60">{{ `${v.sizeMb} MB` }}</span>
+                {{ t('settings.aiUsageCostsLink') }}
+              </a>
             </div>
-            <div class="shrink-0">
-              <span v-if="downloadPct[v.id] !== undefined" class="text-xs font-mono opacity-70">
-                {{ `${downloadPct[v.id]}%` }}
-              </span>
-              <span v-else-if="v.installed" class="text-xs text-green-600 dark:text-green-400">
-                {{ t('settings.voiceInstalled') }}
-              </span>
-              <Button
-                v-else
-                :label="t('settings.voiceModelDownload')"
-                icon="pi pi-download"
-                size="small"
-                text
-                @click="onDownloadVoice(v)"
+          </section>
+          <p v-if="!aiEnabled" class="text-sm opacity-60">{{ t('capability.unavailable') }}</p>
+        </div>
+
+        <!-- ATAJOS -->
+        <div v-show="activeSection === 'shortcuts'" class="space-y-8">
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('shortcuts.title') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('shortcuts.hint') }}</p>
+            <KeybindingsEditor />
+          </section>
+        </div>
+
+        <!-- OBJETIVOS -->
+        <div v-show="activeSection === 'goals'" class="space-y-8">
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+              {{ t('settings.writingStats') }}
+            </h2>
+            <dl v-if="stats" class="text-sm space-y-1">
+              <div class="flex justify-between gap-2">
+                <dt class="opacity-60">{{ t('settings.currentStreak') }}</dt>
+                <dd class="font-mono">{{ stats.currentStreak }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="opacity-60">{{ t('settings.longestStreak') }}</dt>
+                <dd class="font-mono">{{ stats.longestStreak }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="opacity-60">{{ t('settings.goalMetStreak') }}</dt>
+                <dd class="font-mono">{{ stats.goalMetStreak }}</dd>
+              </div>
+              <div v-if="stats.lastWritingDate" class="flex justify-between gap-2">
+                <dt class="opacity-60">{{ t('settings.lastWritingDate') }}</dt>
+                <dd class="font-mono">{{ stats.lastWritingDate }}</dd>
+              </div>
+            </dl>
+            <p v-else class="text-xs opacity-60">…</p>
+
+            <div class="mt-4 flex items-center justify-between gap-3">
+              <label for="set-daily-goal" class="text-sm opacity-80">
+                {{ t('settings.dailyGoal') }}
+              </label>
+              <InputNumber
+                input-id="set-daily-goal"
+                :model-value="dailyGoal"
+                :min="0"
+                :step="50"
+                show-buttons
+                :placeholder="t('settings.dailyGoalNone')"
+                class="!w-40"
+                @update:model-value="onDailyGoalChange"
               />
             </div>
-          </li>
-        </ul>
-      </section>
+            <p class="text-xs opacity-55 mt-1">{{ t('settings.dailyGoalHint') }}</p>
 
-      <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
-          {{ t('settings.legal') }}
-        </h2>
-        <p class="text-xs opacity-60 mb-2">{{ t('settings.legalHint') }}</p>
-        <div class="flex flex-col gap-1 text-sm">
-          <a
-            class="underline opacity-80 hover:opacity-100 cursor-pointer"
-            tabindex="0"
-            @click="onOpenPolicy('privacy')"
-            @keydown.enter="onOpenPolicy('privacy')"
-          >
-            {{ t('settings.privacyLink') }}
-          </a>
-          <a
-            class="underline opacity-80 hover:opacity-100 cursor-pointer"
-            tabindex="0"
-            @click="onOpenPolicy('tos')"
-            @keydown.enter="onOpenPolicy('tos')"
-          >
-            {{ t('settings.tosLink') }}
-          </a>
+            <div class="mt-5">
+              <div class="flex items-baseline justify-between mb-2 text-xs">
+                <span class="opacity-70">{{ t('settings.last30Days') }}</span>
+                <span class="opacity-60">
+                  {{ t('settings.totalWords', { count: totalWords30d }) }} ·
+                  {{ t('settings.activeDays', { count: activeDays30d }) }}
+                </span>
+              </div>
+              <SparklineChart
+                :series="dailySeries"
+                :height="56"
+                :aria-label="t('settings.last30DaysAria')"
+              />
+            </div>
+          </section>
         </div>
-      </section>
+
+        <!-- COPIAS -->
+        <div v-show="activeSection === 'data'" class="space-y-8">
+          <section>
+            <div class="flex items-center justify-between mb-3 gap-3">
+              <div>
+                <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+                  {{ t('settings.backupsTitle') }}
+                </h2>
+                <p class="text-xs opacity-60 mt-1">{{ t('settings.backupsHint') }}</p>
+              </div>
+              <Button
+                :label="t('settings.backupNow')"
+                icon="pi pi-database"
+                size="small"
+                :loading="creatingBackup"
+                @click="onCreateBackup"
+              />
+            </div>
+            <div
+              v-if="backups.length === 0"
+              class="text-xs opacity-60 p-3 rounded border border-surface-200 dark:border-surface-700"
+            >
+              {{ t('settings.backupsEmpty') }}
+            </div>
+            <ul
+              v-else
+              class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"
+            >
+              <li
+                v-for="b in backups"
+                :key="b.id"
+                class="flex items-center justify-between gap-3 p-3 text-sm"
+              >
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono text-xs truncate">{{ b.id }}</span>
+                  <span class="text-xs opacity-60">
+                    {{ kindLabel(b.kind) }} · {{ formatDate(b.createdAt) }} ·
+                    {{ formatSize(b.sizeBytes) }}
+                  </span>
+                </div>
+                <Button
+                  :label="t('settings.restore')"
+                  size="small"
+                  text
+                  :loading="restoringId === b.id"
+                  @click="onRestore(b)"
+                />
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- PLAN -->
+        <div v-show="activeSection === 'plan'" class="space-y-8">
+          <section v-if="premium?.licensingConfigured">
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('settings.premiumTitle') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('settings.premiumHint') }}</p>
+            <div
+              v-if="premium?.active"
+              class="flex items-center justify-between gap-3 p-3 rounded border border-surface-200 dark:border-surface-700 text-sm"
+            >
+              <span>
+                {{ t('settings.premiumActive') }}
+                <span v-if="premium.holder" class="opacity-60">· {{ premium.holder }}</span>
+              </span>
+              <Button
+                :label="t('settings.premiumDeactivate')"
+                size="small"
+                text
+                @click="onDeactivatePremium"
+              />
+            </div>
+            <div v-else class="flex items-center gap-2">
+              <InputText
+                v-model="licenseKey"
+                class="flex-1 font-mono text-xs"
+                :placeholder="t('settings.premiumKeyPlaceholder')"
+                :aria-label="t('settings.premiumTitle')"
+              />
+              <Button
+                :label="t('settings.premiumActivate')"
+                size="small"
+                :loading="activatingPremium"
+                :disabled="!licenseKey.trim()"
+                @click="onActivatePremium"
+              />
+            </div>
+          </section>
+          <p v-if="!premium?.licensingConfigured" class="text-sm opacity-60">
+            {{ t('capability.unavailable') }}
+          </p>
+        </div>
+
+        <!-- ACERCA DE -->
+        <div v-show="activeSection === 'about'" class="space-y-8">
+          <section v-if="crashReportingActive" class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">
+                {{ t('settings.crashReporting') }}
+              </h2>
+              <p class="text-xs opacity-60 mt-1">{{ t('settings.crashReportingHint') }}</p>
+            </div>
+            <ToggleSwitch
+              :model-value="crashReportingEnabled"
+              :aria-label="t('settings.crashReporting')"
+              @update:model-value="onToggleCrashReporting"
+            />
+          </section>
+
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
+              {{ t('settings.legal') }}
+            </h2>
+            <p class="text-xs opacity-60 mb-2">{{ t('settings.legalHint') }}</p>
+            <div class="flex flex-col gap-1 text-sm">
+              <a
+                class="underline opacity-80 hover:opacity-100 cursor-pointer"
+                tabindex="0"
+                @click="onOpenPolicy('privacy')"
+                @keydown.enter="onOpenPolicy('privacy')"
+              >
+                {{ t('settings.privacyLink') }}
+              </a>
+              <a
+                class="underline opacity-80 hover:opacity-100 cursor-pointer"
+                tabindex="0"
+                @click="onOpenPolicy('tos')"
+                @keydown.enter="onOpenPolicy('tos')"
+              >
+                {{ t('settings.tosLink') }}
+              </a>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
 
     <LegalDialog v-model:visible="legalVisible" :kind="legalKind" />

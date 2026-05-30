@@ -207,8 +207,21 @@
     "cancel": "Cancelar",
     "delete": "Eliminar"
   },
+  "capability": { "unavailable": "No disponible en esta versión" },
   "settings": {
     "title": "Ajustes",
+    "nav": {
+      "appearance": "Apariencia",
+      "editor": "Editor",
+      "language": "Idioma y región",
+      "audio": "Audio y voz",
+      "ai": "IA y modelos",
+      "shortcuts": "Atajos de teclado",
+      "goals": "Objetivos y sesión",
+      "data": "Copias y datos",
+      "plan": "Plan / Premium",
+      "about": "Acerca de"
+    },
     "theme": "Tema",
     "themeLight": "Claro",
     "themeDark": "Oscuro",
