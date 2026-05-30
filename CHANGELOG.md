@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Desarrollo del **backlog v4** (interno): cerrar brechas competitivas + capa
 premium (IA BYOK + voz). Aún sin release versionada.
 
+### Fixed / Changed — Remediación de auditoría (`docs/AUDITORIA-2026-05-30.md`)
+
+Remediación cruzada de la auditoría de calidad. Detalle por item en el documento;
+resumen por sprint:
+
+- **Bloqueantes de datos + seguridad (Sprint 1)**: autosave que guardaba en el
+  documento equivocado y pérdida de ediciones en el panel split corregidos vía
+  `useEditorAutoSave` (liga el contenido a su `boundId`); backup/restore seguros
+  en modo WAL (online backup API de SQLite); superficies `v-html` saneadas con
+  DOMPurify (XSS). [AUD-01..03, 08]
+- **Robustez del core (Sprint 2)**: mutex de storage mapea _poison_ a error
+  tipado en vez de panic; `archive+create`/`activate` e import atómicos en una
+  transacción (respetan `idx_projects_one_active`); delta de palabras de
+  `update_document` sin race; visibilidad de errores en Settings/`useCapability`/
+  `get_ai_status`. [AUD-04..07, 16..18]
+- **Honestidad de "done" (Sprint 3)**: DOCX respeta el preset Manuscript (Courier
+  12pt/página); separador de escena emitido en todos los exportadores; errores de
+  dictado/read-aloud visibles; slider de autoguardado conectado al debounce real;
+  texto de validadores i18n (backend→claves). Diferidos por inputs externos:
+  voz out-of-the-box, Sentry, pubkey de licencia, checksums, imágenes DOCX.
+  [AUD-13, 15, 20, 30, 31]
+- **Arquitectura, deuda y tests (Sprint 4)**: hardcoded menores (placeholder
+  i18n, mes local, frontmatter CRLF); helper `replaceById`; código muerto
+  eliminado; lógica de dominio fuera de comandos (`ValidationContextBuilder`,
+  compile passes de export); tunables de red consolidados; manejo IPC revisado;
+  ADR-0004/0005 (dispatch por `match`; `StorageService` monolítico). El god-view
+  `Settings.vue` pasó de 1215L a 496L extrayendo 5 secciones a subcomponentes
+  (`SettingsBackups/AI/Voice/Premium/Stats`), cada una con smoke test.
+  [AUD-19, 21..27, 33..36]
+
 ### Added — Épica L: rediseño visual y de usabilidad (fases 1–6)
 
 Rediseño integral de la interfaz para un look profesional, moderno y con
