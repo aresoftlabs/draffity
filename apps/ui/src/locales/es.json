@@ -701,6 +701,26 @@
       "error": "No se pudo completar la operación de notas de voz."
     }
   },
+  "commandPalette": {
+    "placeholder": "Escribí un comando o buscá…",
+    "noResults": "Sin comandos coincidentes",
+    "hintNavigate": "↑↓ para navegar",
+    "hintRun": "↵ para ejecutar",
+    "hintClose": "esc para cerrar",
+    "open": "Paleta de comandos"
+  },
+  "command": {
+    "groupGlobal": "General",
+    "groupProject": "Proyecto",
+    "goDashboard": "Ir al panel",
+    "openSettings": "Abrir configuración",
+    "toggleTheme": "Alternar tema claro/oscuro",
+    "newDraft": "Nuevo Draft",
+    "exportManuscript": "Exportar manuscrito",
+    "toggleFocus": "Alternar modo foco",
+    "searchProject": "Buscar en el proyecto",
+    "newChapter": "Capítulo nuevo"
+  },
   "editor": {
     "image": {
       "missing": "Imagen no disponible"

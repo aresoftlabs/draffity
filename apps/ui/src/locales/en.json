@@ -701,6 +701,26 @@
       "error": "Could not complete the voice notes operation."
     }
   },
+  "commandPalette": {
+    "placeholder": "Type a command or search…",
+    "noResults": "No matching commands",
+    "hintNavigate": "↑↓ to navigate",
+    "hintRun": "↵ to run",
+    "hintClose": "esc to close",
+    "open": "Command palette"
+  },
+  "command": {
+    "groupGlobal": "General",
+    "groupProject": "Project",
+    "goDashboard": "Go to dashboard",
+    "openSettings": "Open settings",
+    "toggleTheme": "Toggle light/dark theme",
+    "newDraft": "New Draft",
+    "exportManuscript": "Export manuscript",
+    "toggleFocus": "Toggle focus mode",
+    "searchProject": "Search in project",
+    "newChapter": "New chapter"
+  },
   "editor": {
     "image": {
       "missing": "Image unavailable"
