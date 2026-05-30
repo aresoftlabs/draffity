@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
 import TipTapEditor from '@/editor/TipTapEditor.vue';
-import { useAutoSave } from '@/composables/useAutoSave';
+import { useEditorAutoSave } from '@/composables/useEditorAutoSave';
 import { useDocumentStore } from '@/stores/document';
 import { useUiStore } from '@/stores/ui';
 import { ipc } from '@/services/ipc';
@@ -34,10 +34,20 @@ const { t } = useI18n();
 const docStore = useDocumentStore();
 const uiStore = useUiStore();
 
-const editorContent = ref('');
-const editorContentJson = ref<string | null>(null);
-const loadedId = ref<string | null>(null);
 const saving = ref(false);
+const editorDoc = useEditorAutoSave({
+  persist: async (id, payload) => {
+    saving.value = true;
+    try {
+      await docStore.save(id, payload);
+    } finally {
+      saving.value = false;
+    }
+  },
+  readOnly: () => props.readOnly,
+});
+const editorContent = editorDoc.content;
+const editorContentJson = editorDoc.contentJson;
 /** When locked, the pane pins its current doc — the picker/bookmarks are
  *  disabled so it can't be swapped by accident (K-10). */
 const locked = ref(false);
@@ -77,48 +87,29 @@ watch(
   () => props.secondaryDocId,
   async (id) => {
     if (!id) {
-      editorContent.value = '';
-      editorContentJson.value = null;
-      loadedId.value = null;
+      await editorDoc.load(null);
       return;
     }
-    if (loadedId.value === id) return;
+    if (editorDoc.boundId.value === id) return;
     try {
       const doc = await ipc.getDocument(id);
       if (!doc) return;
-      editorContent.value = doc.content ?? '';
-      editorContentJson.value = doc.contentJson ?? null;
-      loadedId.value = id;
+      // load() flushes the previously-loaded doc's pending edit before swapping
+      // in the new content, so switching panes can't discard edits (AUD-02).
+      await editorDoc.load({ id, content: doc.content, contentJson: doc.contentJson });
       uiStore.pushSplitBookmark(props.projectId, id);
     } catch {
-      editorContent.value = '';
-      editorContentJson.value = null;
+      await editorDoc.load(null);
     }
   },
   { immediate: true },
 );
 
-const auto = useAutoSave(async () => {
-  const id = props.secondaryDocId;
-  if (!id || props.readOnly) return;
-  saving.value = true;
-  try {
-    await docStore.save(id, {
-      content: editorContent.value,
-      contentJson: editorContentJson.value ?? undefined,
-    });
-  } finally {
-    saving.value = false;
-  }
-}, 500);
-
 function onInput(v: string) {
-  editorContent.value = v;
-  auto.trigger();
+  editorDoc.onContent(v);
 }
 function onJsonInput(v: string) {
-  editorContentJson.value = v;
-  auto.trigger();
+  editorDoc.onContentJson(v);
 }
 </script>
 
