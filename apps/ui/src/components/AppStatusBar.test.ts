@@ -11,6 +11,7 @@ const i18n = createI18n({
       statusBar: { words: 'palabras', session: 'Sesión', goal: 'Objetivo' },
       save: { saving: 'Guardando…', saved: 'Guardado', error: 'Error', idle: '' },
       pomodoro: { title: 'Temporizador' },
+      voice: { readAloud: { button: 'Leer en voz alta' }, dictation: { button: 'Dictado' } },
     },
   },
 });
@@ -54,5 +55,23 @@ describe('AppStatusBar', () => {
       3000,
     );
     expect(wrapper.emitted('update:projectGoal')?.[0]).toEqual([3000]);
+  });
+
+  it('no muestra controles de audio sin capabilities', () => {
+    const wrapper = mountBar();
+    expect(wrapper.find('[data-test="read-aloud"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="dictation"]').exists()).toBe(false);
+  });
+
+  it('muestra y togglea Leer en voz alta cuando la capability está activa', async () => {
+    const wrapper = mountBar({ voiceTts: true });
+    await wrapper.get('[data-test="read-aloud"]').trigger('click');
+    expect(wrapper.emitted('toggleReadAloud')).toBeTruthy();
+  });
+
+  it('muestra y togglea Dictado cuando la capability está activa', async () => {
+    const wrapper = mountBar({ voiceDictation: true });
+    await wrapper.get('[data-test="dictation"]').trigger('click');
+    expect(wrapper.emitted('toggleDictation')).toBeTruthy();
   });
 });

@@ -17,12 +17,18 @@ defineProps<{
   sessionWords: number;
   sessionGoal: number | null;
   readOnly: boolean;
+  voiceTts?: boolean;
+  voiceDictation?: boolean;
+  readAloudActive?: boolean;
+  dictationActive?: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:projectGoal': [number | null];
   'update:projectDeadline': [number | null];
   'update:sessionGoal': [number | null];
+  toggleReadAloud: [];
+  toggleDictation: [];
 }>();
 
 const { t } = useI18n();
@@ -33,6 +39,42 @@ const { t } = useI18n();
     class="h-9 shrink-0 flex items-center gap-4 px-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50/90 dark:bg-surface-900/90 backdrop-blur text-xs text-surface-600 dark:text-surface-300"
   >
     <SaveIndicator :state="saveState" :last-saved-at="lastSavedAt" />
+
+    <button
+      v-if="voiceTts"
+      type="button"
+      data-test="read-aloud"
+      class="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+      :class="
+        readAloudActive
+          ? 'text-primary-500'
+          : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
+      "
+      :title="t('voice.readAloud.button')"
+      :aria-label="t('voice.readAloud.button')"
+      :aria-pressed="readAloudActive"
+      @click="emit('toggleReadAloud')"
+    >
+      <i class="pi pi-volume-up text-xs" />
+    </button>
+    <button
+      v-if="voiceDictation"
+      type="button"
+      data-test="dictation"
+      class="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+      :class="
+        dictationActive
+          ? 'text-red-500'
+          : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
+      "
+      :disabled="readOnly"
+      :title="t('voice.dictation.button')"
+      :aria-label="t('voice.dictation.button')"
+      :aria-pressed="dictationActive"
+      @click="emit('toggleDictation')"
+    >
+      <i class="pi pi-microphone text-xs" />
+    </button>
 
     <span class="font-mono tabular-nums">
       {{ totalWordCount.toLocaleString() }}
