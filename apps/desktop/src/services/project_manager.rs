@@ -56,21 +56,11 @@ impl LocalProjectManager {
         }
     }
 
-    fn archive_active_if_needed(&self) -> AppResult<()> {
-        self.archive_active_if_needed_except(None)
-    }
-
-    fn archive_active_if_needed_except(&self, keep_id: Option<&str>) -> AppResult<()> {
-        if self.tier.is_enabled("multi_active_projects") {
-            return Ok(());
-        }
-        if let Some(active) = self.storage.get_active_project()? {
-            if Some(active.id.as_str()) != keep_id {
-                self.storage
-                    .set_project_status(&active.id, ProjectStatus::Archived)?;
-            }
-        }
-        Ok(())
+    /// Whether the single-active invariant applies (i.e. archive the previous
+    /// active project when creating/activating another). Premium can lift it
+    /// via the `multi_active_projects` capability.
+    fn single_active_enforced(&self) -> bool {
+        !self.tier.is_enabled("multi_active_projects")
     }
 }
 
@@ -81,16 +71,15 @@ impl ProjectManagerService for LocalProjectManager {
             .get(&input.template_id)
             .map(|t| t.structure)
             .unwrap_or_default();
-        self.archive_active_if_needed()?;
-        self.storage.create_project_atomic(input, &structure)
+        // Archive + create run in one transaction inside storage, so a failed
+        // create can't leave the user with zero active projects (AUD-05).
+        self.storage
+            .create_project_atomic(input, &structure, self.single_active_enforced())
     }
 
     fn activate(&self, id: &str) -> AppResult<Project> {
-        self.archive_active_if_needed_except(Some(id))?;
-        self.storage.set_project_status(id, ProjectStatus::Active)?;
         self.storage
-            .get_project(id)?
-            .ok_or_else(|| crate::error::AppError::NotFound(format!("project {id}")))
+            .activate_project_atomic(id, self.single_active_enforced())
     }
 
     fn archive(&self, id: &str) -> AppResult<()> {
@@ -250,6 +239,22 @@ mod tests {
         let still_a = m.activate(&a.id).unwrap();
         assert_eq!(still_a.status, ProjectStatus::Active);
         assert_eq!(m.list().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn activate_missing_project_rolls_back_and_keeps_current_active() {
+        let (m, _) = pm(StubTemplates::empty());
+        let a = m.create(input("A", "x")).unwrap();
+        // Activating a non-existent project must fail WITHOUT archiving A:
+        // the archive + activate run in one transaction, so the failed
+        // activation rolls the archive back (AUD-05).
+        assert!(m.activate("does-not-exist").is_err());
+        let active = m.active().unwrap();
+        assert_eq!(
+            active.map(|p| p.id),
+            Some(a.id),
+            "A must remain the single active project after the rollback"
+        );
     }
 
     #[test]

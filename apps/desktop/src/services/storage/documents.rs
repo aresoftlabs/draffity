@@ -408,6 +408,7 @@ mod tests {
                     metadata: None,
                 },
                 &structure,
+                true,
             )
             .unwrap();
         let docs = s.list_documents(&p.id).unwrap();

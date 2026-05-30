@@ -81,12 +81,18 @@ pub trait StorageService: Send + Sync {
     fn create_project(&self, input: ProjectInput) -> AppResult<Project>;
     /// Atomically create a project and seed its initial document tree from a
     /// template structure. The whole operation lives in a single SQLite
-    /// transaction — on any failure nothing is persisted.
+    /// transaction — on any failure nothing is persisted. When `archive_active`
+    /// is true the currently-active project is archived in the same transaction
+    /// (free-tier single-active invariant).
     fn create_project_atomic(
         &self,
         input: ProjectInput,
         structure: &[TemplateNode],
+        archive_active: bool,
     ) -> AppResult<Project>;
+    /// Activate `id`, optionally archiving the other active project(s) in the
+    /// same transaction. A failed activation rolls the archive back.
+    fn activate_project_atomic(&self, id: &str, archive_others: bool) -> AppResult<Project>;
     /// Create a project and seed its document tree from an importer's
     /// `ImportTree` in a single transaction. Use this instead of
     /// `create_project_atomic` when the source is a file import (the tree
@@ -409,8 +415,13 @@ impl StorageService for LocalStorageService {
         &self,
         input: ProjectInput,
         structure: &[TemplateNode],
+        archive_active: bool,
     ) -> AppResult<Project> {
-        projects::create_atomic(&mut *self.db()?, input, structure)
+        projects::create_atomic(&mut *self.db()?, input, structure, archive_active)
+    }
+
+    fn activate_project_atomic(&self, id: &str, archive_others: bool) -> AppResult<Project> {
+        projects::activate_atomic(&mut *self.db()?, id, archive_others)
     }
 
     fn create_project_from_import(

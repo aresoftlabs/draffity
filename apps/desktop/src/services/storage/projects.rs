@@ -1,6 +1,6 @@
 //! Project CRUD + atomic creation with template seed.
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
 use crate::domain::{new_id, now_ms, Project, ProjectInput, ProjectStatus, TemplateNode};
 use crate::error::{AppError, AppResult};
@@ -49,13 +49,32 @@ pub(super) fn create(conn: &Connection, input: ProjectInput) -> AppResult<Projec
     Ok(project)
 }
 
+/// Archive every currently-active project within `tx`, optionally keeping
+/// `keep_id` active. Runs inside the caller's transaction so the archive and
+/// whatever follows commit or roll back together (AUD-05). `id IS NOT ?` is
+/// NULL-safe: with `keep_id = None` it archives all active rows.
+fn archive_active_within(tx: &Transaction<'_>, keep_id: Option<&str>) -> AppResult<()> {
+    tx.execute(
+        "UPDATE projects SET status=?1, updated_at=?2 WHERE status='active' AND id IS NOT ?3",
+        params![ProjectStatus::Archived.as_str(), now_ms(), keep_id],
+    )?;
+    Ok(())
+}
+
 pub(super) fn create_atomic(
     conn: &mut Connection,
     input: ProjectInput,
     structure: &[TemplateNode],
+    archive_active: bool,
 ) -> AppResult<Project> {
     input.validate()?;
     let tx = conn.transaction()?;
+
+    // Free tier keeps a single active project: archive the previous one in the
+    // same transaction so a later failure can't leave zero active projects.
+    if archive_active {
+        archive_active_within(&tx, None)?;
+    }
 
     let now = now_ms();
     let project = Project {
@@ -171,6 +190,32 @@ pub(super) fn set_status(conn: &Connection, id: &str, status: ProjectStatus) -> 
         return Err(AppError::NotFound(format!("project {id}")));
     }
     Ok(())
+}
+
+/// Activate `id`, optionally archiving every other active project first — all
+/// in one transaction. If `id` doesn't exist the activation fails and the
+/// archive is rolled back, so the previously-active project stays active
+/// (AUD-05).
+pub(super) fn activate_atomic(
+    conn: &mut Connection,
+    id: &str,
+    archive_others: bool,
+) -> AppResult<Project> {
+    let tx = conn.transaction()?;
+    if archive_others {
+        archive_active_within(&tx, Some(id))?;
+    }
+    let updated = tx.execute(
+        "UPDATE projects SET status=?1, updated_at=?2 WHERE id=?3",
+        params![ProjectStatus::Active.as_str(), now_ms(), id],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("project {id}")));
+    }
+    let sql = format!("SELECT {COLS} FROM projects WHERE id=?1");
+    let project = tx.query_row(&sql, params![id], row_to_project)?;
+    tx.commit()?;
+    Ok(project)
 }
 
 /// Set or clear the project's target word count. `None` removes the goal.
@@ -329,6 +374,7 @@ mod tests {
                     metadata: None,
                 },
                 &structure,
+                true,
             )
             .unwrap();
 
@@ -374,6 +420,7 @@ mod tests {
                 metadata: None,
             },
             &[],
+            true,
         );
         assert!(result.is_err());
         assert_eq!(s.list_projects().unwrap().len(), 0);
