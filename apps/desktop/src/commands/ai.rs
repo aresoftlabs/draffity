@@ -23,6 +23,114 @@ use crate::state::AppState;
 
 type CmdResult<T> = Result<T, AppError>;
 
+// --- curated AI model list ---
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiModelInfo {
+    pub id: String,
+    pub name: String,
+    pub provider: String,
+    pub context_length: u32,
+    pub cost_per_1k_tokens: f64,
+}
+
+/// Curated OpenRouter model list — hardcoded defaults, not fetched dynamically.
+/// Ids match OpenRouter slugs so the user can paste them from their dashboard.
+fn curated_ai_models() -> Vec<AiModelInfo> {
+    vec![
+        AiModelInfo {
+            id: "openai/gpt-4o".into(),
+            name: "GPT-4o".into(),
+            provider: "OpenAI".into(),
+            context_length: 128_000,
+            cost_per_1k_tokens: 0.0025,
+        },
+        AiModelInfo {
+            id: "openai/gpt-4o-mini".into(),
+            name: "GPT-4o Mini".into(),
+            provider: "OpenAI".into(),
+            context_length: 128_000,
+            cost_per_1k_tokens: 0.00015,
+        },
+        AiModelInfo {
+            id: "openai/o3-mini".into(),
+            name: "o3 Mini".into(),
+            provider: "OpenAI".into(),
+            context_length: 200_000,
+            cost_per_1k_tokens: 0.0011,
+        },
+        AiModelInfo {
+            id: "anthropic/claude-3.5-haiku".into(),
+            name: "Claude 3.5 Haiku".into(),
+            provider: "Anthropic".into(),
+            context_length: 200_000,
+            cost_per_1k_tokens: 0.0008,
+        },
+        AiModelInfo {
+            id: "anthropic/claude-3.5-sonnet".into(),
+            name: "Claude 3.5 Sonnet".into(),
+            provider: "Anthropic".into(),
+            context_length: 200_000,
+            cost_per_1k_tokens: 0.003,
+        },
+        AiModelInfo {
+            id: "anthropic/claude-opus-4".into(),
+            name: "Claude Opus 4".into(),
+            provider: "Anthropic".into(),
+            context_length: 200_000,
+            cost_per_1k_tokens: 0.015,
+        },
+        AiModelInfo {
+            id: "google/gemini-2.0-flash-001".into(),
+            name: "Gemini 2.0 Flash".into(),
+            provider: "Google".into(),
+            context_length: 1_048_576,
+            cost_per_1k_tokens: 0.0001,
+        },
+        AiModelInfo {
+            id: "google/gemini-2.0-pro-001".into(),
+            name: "Gemini 2.0 Pro".into(),
+            provider: "Google".into(),
+            context_length: 2_000_000,
+            cost_per_1k_tokens: 0.002,
+        },
+        AiModelInfo {
+            id: "mistral/mistral-large-2411".into(),
+            name: "Mistral Large".into(),
+            provider: "Mistral".into(),
+            context_length: 128_000,
+            cost_per_1k_tokens: 0.002,
+        },
+        AiModelInfo {
+            id: "mistral/mistral-small-2501".into(),
+            name: "Mistral Small".into(),
+            provider: "Mistral".into(),
+            context_length: 32_000,
+            cost_per_1k_tokens: 0.0004,
+        },
+        AiModelInfo {
+            id: "deepseek/deepseek-chat".into(),
+            name: "DeepSeek V3".into(),
+            provider: "DeepSeek".into(),
+            context_length: 128_000,
+            cost_per_1k_tokens: 0.0005,
+        },
+        AiModelInfo {
+            id: "qwen/qwq-32b".into(),
+            name: "QwQ 32B".into(),
+            provider: "Qwen".into(),
+            context_length: 32_000,
+            cost_per_1k_tokens: 0.0002,
+        },
+    ]
+}
+
+#[tauri::command]
+pub fn list_ai_models() -> Vec<AiModelInfo> {
+    curated_ai_models()
+}
+
 // --- BYOK key + status ---
 
 #[derive(Serialize)]
@@ -246,4 +354,40 @@ pub fn list_ai_history(
     limit: u32,
 ) -> CmdResult<Vec<AiHistoryEntry>> {
     state.storage.list_ai_history(&project_id, limit)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_ai_models_returns_non_empty_curated_list() {
+        let models = list_ai_models();
+        assert!(!models.is_empty(), "should return at least one model");
+        // Verify it contains well-known providers
+        let providers: Vec<&str> = models.iter().map(|m| m.provider.as_str()).collect();
+        assert!(providers.contains(&"OpenAI"));
+        assert!(providers.contains(&"Anthropic"));
+        assert!(providers.contains(&"Google"));
+    }
+
+    #[test]
+    fn list_ai_models_every_model_has_valid_fields() {
+        for m in list_ai_models() {
+            assert!(!m.id.is_empty(), "model id must not be empty");
+            assert!(!m.name.is_empty(), "model name must not be empty");
+            assert!(!m.provider.is_empty(), "model provider must not be empty");
+            assert!(m.context_length > 0, "context length must be > 0");
+            assert!(m.cost_per_1k_tokens >= 0.0, "cost must be non-negative");
+        }
+    }
+
+    #[test]
+    fn list_ai_models_serializes_camel_case() {
+        let models = list_ai_models();
+        let json = serde_json::to_value(&models[0]).unwrap();
+        assert!(json.get("id").is_some());
+        assert!(json.get("contextLength").is_some());
+        assert!(json.get("costPer1kTokens").is_some());
+    }
 }

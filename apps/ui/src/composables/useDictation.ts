@@ -1,7 +1,21 @@
 import { ref, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { useAudioRecorder } from '@/audio/useAudioRecorder';
+import { useVoiceSettingsStore } from '@/stores/voiceSettings';
 import { ipc } from '@/services/ipc';
+
+/**
+ * Resolve the current ASR model ID from the settings store.
+ * Returns null when none is set (backend uses its default).
+ */
+export function resolveAsrModelId(): string | null {
+  try {
+    const store = useVoiceSettingsStore();
+    return store.asrModelId;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Dictation orchestration (H-04). Wires the (engine-agnostic) recorder to the
@@ -44,7 +58,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
     phase.value = 'transcribing';
     try {
       const rec = await recorder.stop();
-      const transcript = await ipc.transcribeAudio(rec.wav);
+      const transcript = await ipc.transcribeAudio(rec.wav, resolveAsrModelId());
       insertAtCursor(transcript.text);
     } catch (e) {
       fail(e);

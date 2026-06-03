@@ -67,6 +67,7 @@ pub fn run() {
             commands::ai_cancel,
             commands::ai_record_accepted,
             commands::list_ai_history,
+            commands::list_ai_models,
             // ai validators (épica g)
             commands::check_codex_coverage,
             commands::run_validators,
@@ -102,6 +103,9 @@ pub fn run() {
             commands::import_piper_binary,
             commands::download_voice_voice,
             commands::synthesize_speech,
+            commands::test_synthesize,
+            commands::get_disk_usage,
+            commands::list_available_models,
             commands::save_voice_note,
             commands::list_voice_notes,
             commands::delete_voice_note,

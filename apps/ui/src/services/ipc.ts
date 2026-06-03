@@ -167,6 +167,39 @@ export interface VoiceDownloadProgress {
   total: number | null;
 }
 
+/** A voice or model entry in the available models catalog. */
+export interface AvailableModelEntry {
+  id: string;
+  name: string;
+  lang: string;
+  sizeMb: number;
+  recommended: boolean;
+  installed: boolean;
+  diskBytes: number;
+  kind: 'voice' | 'model';
+}
+
+/** A group of available models by language. */
+export interface LanguageGroup {
+  lang: string;
+  items: AvailableModelEntry[];
+}
+
+/** Per-model disk usage. */
+export interface DiskUsageEntry {
+  id: string;
+  bytes: number;
+}
+
+/** Curated AI model info from the backend. */
+export interface AiModelInfo {
+  id: string;
+  name: string;
+  provider: string;
+  contextLength: number;
+  costPer1kTokens: number;
+}
+
 /**
  * Thin typed wrapper over Tauri IPC commands.
  * Keep this file as the single boundary between Vue and Rust.
@@ -199,8 +232,9 @@ export const ipc = {
     model?: string | null;
     response: string;
   }) => invoke<unknown>('ai_record_accepted', { input }),
+  listAiModels: () => invoke<AiModelInfo[]>('list_ai_models'),
 
-  // AI validators (Ã‰pica G)
+  // AI validators (épica G)
   checkCodexCoverage: (projectId: string, documentId: string) =>
     invoke<CoverageReport>('check_codex_coverage', { projectId, documentId }),
   runValidators: (projectId: string, documentId: string, validators: string[]) =>
@@ -214,7 +248,7 @@ export const ipc = {
   downloadVoiceModel: (modelId: string) => invoke<void>('download_voice_model', { modelId }),
   deleteVoiceModel: (modelId: string) => invoke<void>('delete_voice_model', { modelId }),
   importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
-  transcribeAudio: (wav: Uint8Array) =>
+  transcribeAudio: (wav: Uint8Array, _modelId?: string | null) =>
     invoke<Transcript>('transcribe_audio', { wav: Array.from(wav) }),
   listVoiceVoices: () => invoke<VoiceVoice[]>('list_voice_voices'),
   downloadVoiceVoice: (voiceId: string) => invoke<void>('download_voice_voice', { voiceId }),
@@ -235,6 +269,10 @@ export const ipc = {
     }),
   listVoiceNotes: (projectId: string) => invoke<MediaAsset[]>('list_voice_notes', { projectId }),
   deleteVoiceNote: (id: string) => invoke<void>('delete_voice_note', { id }),
+  listAvailableModels: () => invoke<LanguageGroup[]>('list_available_models'),
+  testSynthesize: (voiceId: string, text: string) =>
+    invoke<string>('test_synthesize', { voiceId, text }),
+  getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

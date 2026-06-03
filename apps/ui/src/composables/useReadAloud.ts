@@ -1,7 +1,22 @@
+import { useVoiceSettingsStore } from '@/stores/voiceSettings';
 import { onBeforeUnmount, ref, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { ipc } from '@/services/ipc';
 import { findMatches } from './useProseMirrorSearch';
+
+/**
+ * Resolve the current TTS voice ID from the settings store.
+ * Falls back to empty string when none is set (legacy behavior).
+ */
+export function resolveVoiceId(): string {
+  // Guard: Pinia store may not be active outside setup().
+  try {
+    const store = useVoiceSettingsStore();
+    return store.ttsVoiceId ?? '';
+  } catch {
+    return '';
+  }
+}
 
 /**
  * Read-aloud (H-07). Splits the document into sentences and synthesizes them
@@ -69,7 +84,7 @@ export function useReadAloud(editor: Ref<Editor | null>, options: ReadAloudOptio
     highlight(sentence);
     let audio;
     try {
-      audio = await ipc.synthesizeSpeech(sentence, '');
+      audio = await ipc.synthesizeSpeech(sentence, resolveVoiceId());
     } catch (e) {
       const message = String((e as { message?: string })?.message ?? e);
       error.value = message;
