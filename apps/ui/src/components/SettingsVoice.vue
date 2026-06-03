@@ -160,8 +160,15 @@ async function onDownloadBinary(binaryId: 'whisper' | 'piper') {
   try {
     await ipc.downloadVoiceBinary(binaryId);
     notifyDownloaded();
-  } catch {
-    notifyVoiceError();
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[settings] downloadBinary failed:', binaryId, msg);
+    toast.add({
+      severity: 'error',
+      summary: t('settings.voiceTitle'),
+      detail: msg,
+      life: 8000,
+    });
   } finally {
     const rest = { ...downloadPct.value };
     delete rest[pctKey];

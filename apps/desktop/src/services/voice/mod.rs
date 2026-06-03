@@ -174,6 +174,12 @@ fn extract_binary_impl(
             let mut archive = zip::ZipArchive::new(cursor)
                 .map_err(|e| AppError::Unexpected(format!("zip: {e}")))?;
 
+            // Log entries for debugging
+            let all_names: Vec<String> = (0..archive.len())
+                .filter_map(|i| archive.by_index(i).ok().map(|e| e.name().to_string()))
+                .collect();
+            tracing::debug!(?all_names, "zip entries for {binary_id}");
+
             for i in 0..archive.len() {
                 let mut entry = archive
                     .by_index(i)
