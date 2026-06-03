@@ -207,7 +207,6 @@
     "cancel": "Cancelar",
     "delete": "Eliminar"
   },
-  "capability": { "unavailable": "No disponible en esta versión" },
   "settings": {
     "title": "Ajustes",
     "nav": {
@@ -219,7 +218,6 @@
       "shortcuts": "Atajos de teclado",
       "goals": "Objetivos y sesión",
       "data": "Copias y datos",
-      "plan": "Plan / Premium",
       "about": "Acerca de"
     },
     "theme": "Tema",
@@ -260,15 +258,6 @@
     "lastWritingDate": "Última actividad",
     "crashReporting": "Enviar reportes de crash",
     "crashReportingHint": "Desactivado por defecto. Si lo activas, Draffity puede enviar el stack trace y la versión de la app a la URL configurada por el build. El contenido de tus documentos nunca se incluye.",
-    "premiumTitle": "Premium",
-    "premiumHint": "Activa las funciones premium (IA, voz) con tu clave de licencia. La clave se guarda cifrada en el llavero del sistema, nunca en texto plano.",
-    "premiumKeyPlaceholder": "Pega tu clave de licencia",
-    "premiumActivate": "Activar",
-    "premiumDeactivate": "Desactivar",
-    "premiumActive": "Premium activo",
-    "premiumActivated": "Premium activado. Las funciones nuevas ya están disponibles.",
-    "premiumDeactivated": "Premium desactivado.",
-    "premiumInvalid": "Clave de licencia inválida.",
     "aiTitle": "IA",
     "aiKeyHint": "Usas tu propia clave de OpenRouter (BYOK). Se guarda cifrada en el llavero del sistema, nunca en texto plano, y las peticiones van directo de tu equipo a OpenRouter.",
     "aiKeyLabel": "Clave de API de OpenRouter",
