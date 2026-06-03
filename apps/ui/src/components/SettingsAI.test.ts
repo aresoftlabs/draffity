@@ -33,11 +33,9 @@ const i18n = createI18n({
   },
 });
 
-// AI is enabled in both cases (useCapability caches `true` for the module run);
-// the variable is whether a key is already stored.
+// The variable is whether a key is already stored.
 function mockEnabled(hasKey: boolean) {
   invokeMock.mockImplementation((cmd: string) => {
-    if (cmd === 'capability_enabled') return Promise.resolve(true);
     if (cmd === 'get_ai_status') return Promise.resolve({ available: true, hasKey });
     return Promise.resolve(undefined);
   });

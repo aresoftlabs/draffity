@@ -5,17 +5,15 @@ import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import { ipc, type AiStatus } from '@/services/ipc';
-import { useCapability } from '@/composables/useCapability';
 import { useAiUsageStore } from '@/stores/aiUsage';
 
 /**
  * AI / BYOK section of Settings (extracted from the god-view, AUD-28).
- * Premium-gated (`ai_features`); manages the OpenRouter key (stored in the OS
- * keyring) and shows the token-usage meter. Self-contained.
+ * Manages the OpenRouter BYOK key (stored in the OS keyring) and shows
+ * the token-usage meter. Self-contained.
  */
 const { t } = useI18n();
 const toast = useToast();
-const aiEnabled = useCapability('ai_features');
 
 const aiStatus = ref<AiStatus | null>(null);
 const openrouterKey = ref('');
@@ -73,7 +71,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section v-if="aiEnabled">
+  <section>
     <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
       {{ t('settings.aiTitle') }}
     </h2>
@@ -143,5 +141,4 @@ onMounted(() => {
       </a>
     </div>
   </section>
-  <p v-else class="text-sm opacity-60">{{ t('capability.unavailable') }}</p>
 </template>
