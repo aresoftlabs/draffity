@@ -1,15 +1,13 @@
-//! Orchestrates project lifecycle, enforcing the active/archived invariant
-//! and seeding the initial document tree from the chosen template.
+//! Orchestrates project lifecycle, enforcing the single-active invariant:
+//! activating/creating a project archives the currently active one.
 //!
-//! In the MVP / free tier, at most one project can be `active` at a time.
-//! Activating a project archives the currently active one. Premium can flip
-//! the `multi_active_projects` capability and the manager will skip the
-//! archive step automatically — no UI changes required.
+//! The single-active rule is an unconditional design invariant — exactly one
+//! project is `active` at any time, and switching projects archives the
+//! previous one atomically (no partial state on failure).
 //!
 //! Behind `ProjectManagerService` so a future `CloudProjectManager`
-//! (premium remote-sync) can swap in without touching `AppState`,
-//! commands or the rest of the wiring. Pattern: §2 CLAUDE.md
-//! ("Trait + impl NoOp services premium-ready").
+//! (remote-sync) can swap in without touching `AppState`, commands or the
+//! rest of the wiring. Pattern: §2 CLAUDE.md ("Trait + impl NoOp services").
 
 use std::sync::Arc;
 
@@ -18,8 +16,6 @@ use crate::error::AppResult;
 use crate::services::importer::ImportTree;
 use crate::services::storage::StorageService;
 use crate::services::templates::TemplatesService;
-use crate::services::tier::TierService;
-
 pub trait ProjectManagerService: Send + Sync {
     /// Create a new project, seeding it from the requested template if known.
     /// If single-active is enforced (free tier), any currently-active project
@@ -45,28 +41,12 @@ pub trait ProjectManagerService: Send + Sync {
 
 pub struct LocalProjectManager {
     storage: Arc<dyn StorageService>,
-    tier: Arc<dyn TierService>,
     templates: Arc<dyn TemplatesService>,
 }
 
 impl LocalProjectManager {
-    pub fn new(
-        storage: Arc<dyn StorageService>,
-        tier: Arc<dyn TierService>,
-        templates: Arc<dyn TemplatesService>,
-    ) -> Self {
-        Self {
-            storage,
-            tier,
-            templates,
-        }
-    }
-
-    /// Whether the single-active invariant applies (i.e. archive the previous
-    /// active project when creating/activating another). Premium can lift it
-    /// via the `multi_active_projects` capability.
-    fn single_active_enforced(&self) -> bool {
-        !self.tier.is_enabled("multi_active_projects")
+    pub fn new(storage: Arc<dyn StorageService>, templates: Arc<dyn TemplatesService>) -> Self {
+        Self { storage, templates }
     }
 }
 
@@ -79,18 +59,16 @@ impl ProjectManagerService for LocalProjectManager {
             .unwrap_or_default();
         // Archive + create run in one transaction inside storage, so a failed
         // create can't leave the user with zero active projects (AUD-05).
-        self.storage
-            .create_project_atomic(input, &structure, self.single_active_enforced())
+        self.storage.create_project_atomic(input, &structure, true)
     }
 
     fn activate(&self, id: &str) -> AppResult<Project> {
-        self.storage
-            .activate_project_atomic(id, self.single_active_enforced())
+        self.storage.activate_project_atomic(id, true)
     }
 
     fn create_from_import(&self, tree: &ImportTree, template_id: &str) -> AppResult<Project> {
         self.storage
-            .create_project_from_import(tree, template_id, self.single_active_enforced())
+            .create_project_from_import(tree, template_id, true)
     }
 
     fn archive(&self, id: &str) -> AppResult<()> {
@@ -121,7 +99,6 @@ mod tests {
         DocumentType, ProjectInput, Template, TemplateKind, TemplateNode, TemplateTier,
     };
     use crate::services::storage::LocalStorageService;
-    use crate::services::tier::FreeTier;
 
     /// Minimal in-test templates source: a single `novela` template with one
     /// folder + one chapter, plus a `generic` empty template. Lets the manager
@@ -191,7 +168,7 @@ mod tests {
             LocalStorageService::open_in_memory().expect("in-memory SQLite should always open"),
         );
         storage.migrate().expect("fresh DB migrate should succeed");
-        let m = LocalProjectManager::new(storage.clone(), Arc::new(FreeTier), Arc::new(tpl));
+        let m = LocalProjectManager::new(storage.clone(), Arc::new(tpl));
         (m, storage)
     }
 
@@ -212,7 +189,7 @@ mod tests {
     }
 
     #[test]
-    fn second_project_archives_first_in_free_tier() {
+    fn second_project_archives_first() {
         let (m, _) = pm(StubTemplates::empty());
         let a = m.create(input("A", "x")).unwrap();
         let b = m.create(input("B", "x")).unwrap();

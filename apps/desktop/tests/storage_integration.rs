@@ -7,7 +7,7 @@ use std::sync::Arc;
 use draffity_desktop_lib as app;
 
 use app::services::{
-    BuiltInTemplates, FreeTier, LocalProjectManager, LocalStorageService, ProjectManagerService,
+    BuiltInTemplates, LocalProjectManager, LocalStorageService, ProjectManagerService,
     StorageService,
 };
 
@@ -19,7 +19,6 @@ fn build() -> Box<dyn ProjectManagerService> {
     let templates = BuiltInTemplates::load().expect("load built-in templates from embedded JSON");
     Box::new(LocalProjectManager::new(
         Arc::new(storage),
-        Arc::new(FreeTier),
         Arc::new(templates),
     ))
 }

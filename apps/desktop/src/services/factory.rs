@@ -63,11 +63,8 @@ impl ServiceFactory {
             app_data_dir.join("templates").join("user"),
         ));
         let templates: Arc<dyn TemplatesService> = Self::build_templates(user_templates.clone())?;
-        let project_manager: Arc<dyn ProjectManagerService> = Arc::new(LocalProjectManager::new(
-            storage.clone(),
-            tier_service.clone(),
-            templates.clone(),
-        ));
+        let project_manager: Arc<dyn ProjectManagerService> =
+            Arc::new(LocalProjectManager::new(storage.clone(), templates.clone()));
 
         let media: Arc<dyn MediaService> =
             Arc::new(LocalMediaService::new(storage.clone(), app_data_dir));

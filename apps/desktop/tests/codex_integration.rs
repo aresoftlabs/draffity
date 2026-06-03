@@ -16,7 +16,7 @@ use draffity_desktop_lib::domain::{
 };
 use draffity_desktop_lib::services::exporter::MediaBundle;
 use draffity_desktop_lib::services::{
-    BuiltInTemplates, ExportConfig, ExportFormat, ExportService, FreeTier, LocalExporter,
+    BuiltInTemplates, ExportConfig, ExportFormat, ExportService, LocalExporter,
     LocalProjectManager, LocalStorageService, ProjectManagerService, StorageService,
 };
 
@@ -29,7 +29,6 @@ fn build() -> (Box<dyn ProjectManagerService>, Arc<LocalStorageService>) {
     let storage = Arc::new(storage);
     let pm: Box<dyn ProjectManagerService> = Box::new(LocalProjectManager::new(
         storage.clone(),
-        Arc::new(FreeTier),
         Arc::new(templates),
     ));
     (pm, storage)
