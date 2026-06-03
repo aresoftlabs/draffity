@@ -1,9 +1,9 @@
-//! Template loader. Built-in templates are embedded at compile time. Premium
-//! adds extra discovery sources (user dir, cloud) without changing this trait.
+//! Template loader. Built-in templates are embedded at compile time.
+//! The loader trait allows swapping in user/cloud templates without changing this trait.
 
 use std::collections::HashMap;
 
-use crate::domain::{Template, TemplateTier};
+use crate::domain::Template;
 use crate::error::{AppError, AppResult};
 use crate::services::user_templates::UserTemplatesLoader;
 
@@ -58,27 +58,17 @@ impl BuiltInTemplates {
         }
         Ok(Self { by_id })
     }
-
-    /// Free MVP only exposes free-tier templates. Premium activation will
-    /// extend this filter to include premium-tier built-ins and user/cloud
-    /// templates.
-    fn visible(&self) -> impl Iterator<Item = &Template> {
-        self.by_id.values().filter(|t| t.tier == TemplateTier::Free)
-    }
 }
 
 impl TemplatesService for BuiltInTemplates {
     fn list(&self) -> Vec<Template> {
-        let mut all: Vec<Template> = self.visible().cloned().collect();
+        let mut all: Vec<Template> = self.by_id.values().cloned().collect();
         all.sort_by(|a, b| a.name.cmp(&b.name));
         all
     }
 
     fn get(&self, id: &str) -> Option<Template> {
-        self.by_id
-            .get(id)
-            .filter(|t| t.tier == TemplateTier::Free)
-            .cloned()
+        self.by_id.get(id).cloned()
     }
 }
 

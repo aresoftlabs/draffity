@@ -1,7 +1,7 @@
 //! Template schema (v1). Loaded from JSON, applied at project creation.
 //!
-//! Premium-ready: the loader trait can swap in user/cloud templates without
-//! changing this domain type. The free MVP only loads `tier: "free"`.
+//! The loader trait can swap in user/cloud templates without changing this
+//! domain type. All built-in templates are visible to every user.
 
 use serde::{Deserialize, Serialize};
 
@@ -18,13 +18,6 @@ pub enum TemplateKind {
     Manga,
     Screenplay,
     Generic,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TemplateTier {
-    Free,
-    Premium,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -72,7 +65,6 @@ pub struct Template {
     pub description: Option<String>,
     pub kind: TemplateKind,
     pub locale: String,
-    pub tier: TemplateTier,
     #[serde(default)]
     pub structure: Vec<TemplateNode>,
     #[serde(default, rename = "metadataFields")]
@@ -143,7 +135,6 @@ mod tests {
             description: None,
             kind: TemplateKind::Generic,
             locale: "es".into(),
-            tier: TemplateTier::Free,
             structure: vec![],
             metadata_fields: vec![],
         }
@@ -223,7 +214,6 @@ mod tests {
             "name": "Demo",
             "kind": "novel",
             "locale": "en",
-            "tier": "free",
             "structure": [
               { "title": "Act 1", "docType": "folder",
                 "children": [ { "title": "Ch 1", "docType": "chapter" } ] }

@@ -5,7 +5,6 @@
   "description": "Estructura estándar para artículos científicos: Abstract, Introduction, Methods, Results, Discussion, References.",
   "kind": "paper",
   "locale": "es",
-  "tier": "free",
   "structure": [
     {
       "title": "Front matter",

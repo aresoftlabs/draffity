@@ -5,7 +5,6 @@
   "description": "Capítulos como carpetas, con páginas hijas y notas de paneles. Ideal para guion de manga.",
   "kind": "manga",
   "locale": "es",
-  "tier": "free",
   "structure": [
     {
       "title": "Notas",

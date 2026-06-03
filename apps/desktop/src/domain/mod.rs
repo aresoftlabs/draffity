@@ -30,8 +30,7 @@ pub use search::SearchHit;
 pub use snapshot::Snapshot;
 pub use stats::{count_words_in_html, DailyWriting, WritingStats};
 pub use template::{
-    FieldType, MetadataField, Template, TemplateKind, TemplateNode, TemplateTier,
-    TEMPLATE_SCHEMA_VERSION,
+    FieldType, MetadataField, Template, TemplateKind, TemplateNode, TEMPLATE_SCHEMA_VERSION,
 };
 
 /// Current epoch in milliseconds (UTC). Domain-level helper.

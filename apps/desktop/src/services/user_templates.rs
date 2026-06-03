@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::{
-    new_id, DocNode, DocumentType, Project, Template, TemplateKind, TemplateNode, TemplateTier,
+    new_id, DocNode, DocumentType, Project, Template, TemplateKind, TemplateNode,
     TEMPLATE_SCHEMA_VERSION,
 };
 use crate::error::{AppError, AppResult};
@@ -98,7 +98,6 @@ pub fn template_from_project(
             .filter(|s| !s.is_empty()),
         kind,
         locale: locale.to_string(),
-        tier: TemplateTier::Free,
         structure: build_structure(documents, None),
         // We don't carry the project's runtime metadata onto the template —
         // users can add their own fields later by editing the file. The

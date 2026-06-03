@@ -92,9 +92,7 @@ impl ProjectManagerService for LocalProjectManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        DocumentType, ProjectInput, Template, TemplateKind, TemplateNode, TemplateTier,
-    };
+    use crate::domain::{DocumentType, ProjectInput, Template, TemplateKind, TemplateNode};
     use crate::services::storage::LocalStorageService;
 
     /// Minimal in-test templates source: a single `novela` template with one
@@ -119,7 +117,6 @@ mod tests {
                         description: None,
                         kind: TemplateKind::Generic,
                         locale: "es".into(),
-                        tier: TemplateTier::Free,
                         structure: vec![],
                         metadata_fields: vec![],
                     },
@@ -130,7 +127,6 @@ mod tests {
                         description: None,
                         kind: TemplateKind::Novel,
                         locale: "es".into(),
-                        tier: TemplateTier::Free,
                         structure: vec![TemplateNode {
                             title: "Acto 1".into(),
                             doc_type: DocumentType::Folder,
