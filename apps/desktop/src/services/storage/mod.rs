@@ -83,7 +83,7 @@ pub trait StorageService: Send + Sync {
     /// template structure. The whole operation lives in a single SQLite
     /// transaction — on any failure nothing is persisted. When `archive_active`
     /// is true the currently-active project is archived in the same transaction
-    /// (free-tier single-active invariant).
+    /// (single-active invariant).
     fn create_project_atomic(
         &self,
         input: ProjectInput,

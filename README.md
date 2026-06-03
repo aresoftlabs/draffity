@@ -5,11 +5,11 @@
 
 [![CI](https://github.com/OWNER/draffity/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
 
-Draffity es una aplicación desktop ligera y rápida para escritores que trabajan en distintos formatos. Inspirada en Scrivener, repensada con stack moderno y un modelo freemium honesto: el tier gratuito es **completamente funcional**; el premium es un complemento (multi-proyecto, IA con BYOK, cloud sync, voz a texto), nunca un gate de funcionalidad básica.
+Draffity es una aplicación desktop ligera y rápida para escritores que trabajan en distintos formatos. Inspirada en Scrivener, repensada con stack moderno. **100% gratuita y de código abierto**: editor completo, IA con BYOK (OpenRouter), voz local — sin tiers, sin suscripciones, sin gates de funcionalidad.
 
 ## Estado
 
-**v0.12.0-beta + capa premium en desarrollo.** El núcleo free está completo (editor TipTap, binder con vistas Scrivener-like, codex, export/import DOCX/EPUB/MD/PDF, backups, plantillas, stats, a11y). En desarrollo la **capa premium**: editor IA inline con BYOK (OpenRouter) — continuar/expandir/reescribir/describir con streaming y diff —, fundaciones de licencia (Ed25519 offline) y voz local (próximamente). Ver `CHANGELOG.md` para el detalle.
+**v0.12.0-beta.** Editor TipTap completo, binder con vistas Scrivener-like, codex, export/import DOCX/EPUB/MD/PDF, backups, plantillas, stats, a11y. Editor IA inline con BYOK (OpenRouter) — continuar/expandir/reescribir/describir con streaming y diff. Voz local (TTS + dictado) integrada. Ver `CHANGELOG.md` para el detalle.
 
 Guía de usuario: [ES](./docs/USER-GUIDE.md) · [EN](./docs/USER-GUIDE.en.md).
 
@@ -51,7 +51,7 @@ draffity/
 ├── packages/
 │   ├── templates/     # Plantillas built-in (JSON)
 │   └── shared-types/  # Tipos compartidos Rust ↔ TS
-├── docs/              # ARCHITECTURE, PREMIUM-INTEGRATION, TEMPLATES-SPEC
+├── docs/              # ARCHITECTURE, TEMPLATES-SPEC, ADR/
 ├── backlog.md         # Backlog del MVP
 └── ...
 ```
@@ -60,15 +60,13 @@ draffity/
 
 Ver [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). Patrones clave:
 
-- **Service traits Rust** (`StorageService`, `ExportService`, `AIService`, `CloudSyncService`, `ASRService`) con implementaciones NoOp en MVP — premium se añade como nuevas implementaciones, sin tocar el core.
-- **Capability gates centralizados** en `apps/desktop/src/capabilities.rs`. La UI consulta vía `useCapability()`.
-- **SQLite canónica única** (`<app_data>/draffity.db`) con migraciones versionadas. Tablas premium reservadas para migraciones futuras. FTS5 sobre `documents` para búsqueda cross-proyecto. Razonamiento detallado en [ADR 0002](./docs/ADR/0002-sqlite-canonico-vs-por-proyecto.md).
+- **Service traits Rust** (`StorageService`, `ExportService`, `AIService`, `ASRService`, `TTSService`) con implementaciones locales intercambiables — nuevas implementaciones se conectan sin tocar el core.
+- **SQLite canónica única** (`<app_data>/draffity.db`) con migraciones versionadas aditivas. FTS5 sobre `documents` para búsqueda cross-proyecto. Invariante "1 proyecto activo" enforzado por índice parcial UNIQUE a nivel SQL. Razonamiento detallado en [ADR 0002](./docs/ADR/0002-sqlite-canonico-vs-por-proyecto.md).
 - **Plantillas como plugins** descriptas en JSON, descubiertas en `packages/templates/`.
 
 ## Modelo del producto
 
-- **Free**: 1 proyecto activo (editable, exportable) + N proyectos archivados (read-only). Sin límite de palabras, capítulos ni exportaciones.
-- **Premium** (post-MVP): multi-proyecto activo, IA con BYOK (OpenRouter), cloud sync/backup, voz a texto, plantillas premium.
+Draffity es completamente gratuito. 1 proyecto activo (editable, exportable) + N proyectos archivados (read-only). Sin límite de palabras, capítulos ni exportaciones. IA con BYOK (trae tu propia key de OpenRouter). Voz local sin suscripción.
 
 ## Licencia
 

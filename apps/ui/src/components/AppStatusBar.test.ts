@@ -57,19 +57,19 @@ describe('AppStatusBar', () => {
     expect(wrapper.emitted('update:projectGoal')?.[0]).toEqual([3000]);
   });
 
-  it('no muestra controles de audio sin capabilities', () => {
+  it('no muestra controles de audio sin disponibilidad de voz', () => {
     const wrapper = mountBar();
     expect(wrapper.find('[data-test="read-aloud"]').exists()).toBe(false);
     expect(wrapper.find('[data-test="dictation"]').exists()).toBe(false);
   });
 
-  it('muestra y togglea Leer en voz alta cuando la capability está activa', async () => {
+  it('muestra y togglea Leer en voz alta cuando voiceTts está disponible', async () => {
     const wrapper = mountBar({ voiceTts: true });
     await wrapper.get('[data-test="read-aloud"]').trigger('click');
     expect(wrapper.emitted('toggleReadAloud')).toBeTruthy();
   });
 
-  it('muestra y togglea Dictado cuando la capability está activa', async () => {
+  it('muestra y togglea Dictado cuando voiceDictation está disponible', async () => {
     const wrapper = mountBar({ voiceDictation: true });
     await wrapper.get('[data-test="dictation"]').trigger('click');
     expect(wrapper.emitted('toggleDictation')).toBeTruthy();

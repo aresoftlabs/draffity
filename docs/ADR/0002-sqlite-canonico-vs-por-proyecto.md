@@ -58,4 +58,4 @@ Combina lo peor de los dos mundos: complejidad de DB múltiples + necesidad de m
 - Implementación: `apps/desktop/src/lib.rs:42-45`, `apps/desktop/src/services/storage.rs`
 - Índice partial UNIQUE: `apps/desktop/src/migrations/001_init.sql:25-27`
 - Test que verifica el enforcement a nivel SQL: `apps/desktop/src/services/storage.rs` (`unique_active_project_constraint_enforced_by_db`)
-- Plan premium multi-active: `docs/PREMIUM-INTEGRATION.md` sección "Multi-proyecto"
+- Plan premium multi-active: `docs/PREMIUM-INTEGRATION.md` sección "Multi-proyecto" (documento eliminado — Draffity es 100% gratuito desde v0.12; ver ADR-0006)
