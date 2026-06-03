@@ -246,6 +246,7 @@ export const ipc = {
   getVoiceStatus: () => invoke<VoiceStatus>('get_voice_status'),
   listVoiceModels: () => invoke<VoiceModel[]>('list_voice_models'),
   downloadVoiceModel: (modelId: string) => invoke<void>('download_voice_model', { modelId }),
+  downloadVoiceBinary: (binaryId: string) => invoke<void>('download_voice_binary', { binaryId }),
   deleteVoiceModel: (modelId: string) => invoke<void>('delete_voice_model', { modelId }),
   importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
   transcribeAudio: (wav: Uint8Array, _modelId?: string | null) =>

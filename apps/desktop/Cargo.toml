@@ -37,6 +37,8 @@ roxmltree = "0.20"
 scraper = { version = "0.20", default-features = false }
 ego-tree = "0.6"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+flate2 = "1"
+tar = "0.4"
 biblatex = "0.10"
 sha2 = "0.10"
 base64 = "0.22"
@@ -46,6 +48,9 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-serde = "0.0.12"
 specta-typescript = "0.0.12"
+
+[dev-dependencies]
+tempfile = "3"
 
 [[bin]]
 name = "gen-types"

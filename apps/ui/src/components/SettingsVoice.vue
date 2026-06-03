@@ -40,6 +40,7 @@ const diskUsage = ref<DiskUsageEntry[]>([]);
 const downloadPct = ref<Record<string, number>>({});
 const importingBinary = ref(false);
 const importingPiper = ref(false);
+const downloadingBinary = ref<string | null>(null);
 let unlistenVoiceProgress: UnlistenFn | null = null;
 
 function formatBytes(bytes: number): string {
@@ -148,6 +149,24 @@ async function onImportPiper() {
     notifyVoiceError();
   } finally {
     importingPiper.value = false;
+    await loadVoice();
+  }
+}
+
+async function onDownloadBinary(binaryId: 'whisper' | 'piper') {
+  const pctKey = `binary-${binaryId}`;
+  downloadPct.value = { ...downloadPct.value, [pctKey]: 0 };
+  downloadingBinary.value = binaryId;
+  try {
+    await ipc.downloadVoiceBinary(binaryId);
+    notifyDownloaded();
+  } catch {
+    notifyVoiceError();
+  } finally {
+    const rest = { ...downloadPct.value };
+    delete rest[pctKey];
+    downloadPct.value = rest;
+    downloadingBinary.value = null;
     await loadVoice();
   }
 }
@@ -358,13 +377,25 @@ onBeforeUnmount(() => {
             : t('settings.voiceBinaryMissing')
         }}
       </span>
-      <Button
-        :label="t('settings.voiceImportBinary')"
-        size="small"
-        text
-        :loading="importingBinary"
-        @click="onImportBinary"
-      />
+      <div class="flex items-center gap-2">
+        <span v-if="downloadingBinary === 'whisper'" class="text-xs font-mono opacity-70 mr-2">
+          {{ `${downloadPct['binary-whisper'] ?? 0}%` }}
+        </span>
+        <Button
+          v-if="!voiceStatus?.binaryInstalled && downloadingBinary !== 'whisper'"
+          :label="t('settings.voiceDownloadBinary')"
+          icon="pi pi-download"
+          size="small"
+          @click="onDownloadBinary('whisper')"
+        />
+        <Button
+          :label="t('settings.voiceImportBinary')"
+          size="small"
+          text
+          :loading="importingBinary"
+          @click="onImportBinary"
+        />
+      </div>
     </div>
 
     <!-- Models -->
@@ -513,13 +544,25 @@ onBeforeUnmount(() => {
             : t('settings.voicePiperMissing')
         }}
       </span>
-      <Button
-        :label="t('settings.voiceImportPiper')"
-        size="small"
-        text
-        :loading="importingPiper"
-        @click="onImportPiper"
-      />
+      <div class="flex items-center gap-2">
+        <span v-if="downloadingBinary === 'piper'" class="text-xs font-mono opacity-70 mr-2">
+          {{ `${downloadPct['binary-piper'] ?? 0}%` }}
+        </span>
+        <Button
+          v-if="!voiceStatus?.piperInstalled && downloadingBinary !== 'piper'"
+          :label="t('settings.voiceDownloadBinary')"
+          icon="pi pi-download"
+          size="small"
+          @click="onDownloadBinary('piper')"
+        />
+        <Button
+          :label="t('settings.voiceImportPiper')"
+          size="small"
+          text
+          :loading="importingPiper"
+          @click="onImportPiper"
+        />
+      </div>
     </div>
     <ul
       class="rounded border border-surface-200 dark:border-surface-700 divide-y divide-surface-200 dark:divide-surface-700"

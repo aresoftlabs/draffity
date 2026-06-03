@@ -122,6 +122,40 @@ pub fn recommended_voice() -> Option<&'static PiperVoiceInfo> {
     piper_voices().iter().find(|v| v.recommended)
 }
 
+// ---------------------------------------------------------------------------
+// Binary info for whisper.cpp and Piper (auto-download). The URLs below point
+// to the latest stable release archives per platform.
+// ---------------------------------------------------------------------------
+
+pub struct BinaryInfo {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub win_url: &'static str,
+    pub linux_url: &'static str,
+    pub size_mb: u32,
+}
+
+pub fn binary_info(name: &str) -> Option<&'static BinaryInfo> {
+    BINARY_INFOS.iter().find(|b| b.id == name)
+}
+
+const BINARY_INFOS: &[BinaryInfo] = &[
+    BinaryInfo {
+        id: "whisper",
+        name: "whisper.cpp",
+        win_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip",
+        linux_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip",
+        size_mb: 30,
+    },
+    BinaryInfo {
+        id: "piper",
+        name: "Piper",
+        win_url: "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip",
+        linux_url: "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz",
+        size_mb: 8,
+    },
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,5 +184,30 @@ mod tests {
         let len = ids.len();
         ids.dedup();
         assert_eq!(ids.len(), len, "duplicate model ids");
+    }
+
+    #[test]
+    fn binary_info_lookup_whisper() {
+        let info = binary_info("whisper").unwrap();
+        assert_eq!(info.id, "whisper");
+        assert_eq!(info.name, "whisper.cpp");
+        assert!(info.win_url.contains("whisper.cpp"));
+        assert!(info.linux_url.contains("whisper.cpp"));
+        assert!(info.size_mb > 0);
+    }
+
+    #[test]
+    fn binary_info_lookup_piper() {
+        let info = binary_info("piper").unwrap();
+        assert_eq!(info.id, "piper");
+        assert_eq!(info.name, "Piper");
+        assert!(info.win_url.contains("piper"));
+        assert!(info.linux_url.contains("piper"));
+        assert!(info.size_mb > 0);
+    }
+
+    #[test]
+    fn binary_info_nonexistent() {
+        assert!(binary_info("nope").is_none());
     }
 }

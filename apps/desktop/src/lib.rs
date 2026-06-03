@@ -98,6 +98,7 @@ pub fn run() {
             commands::download_voice_model,
             commands::delete_voice_model,
             commands::import_voice_binary,
+            commands::download_voice_binary,
             commands::transcribe_audio,
             commands::list_voice_voices,
             commands::import_piper_binary,

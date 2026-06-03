@@ -13,9 +13,9 @@ use crate::domain::{now_ms, MediaAsset};
 use crate::error::AppError;
 use crate::services::tts::SynthesizedAudio;
 use crate::services::voice::{
-    bin_path, download_to_file, installed_models, model_by_id, model_path, model_url,
-    piper_bin_path, piper_voices, voice_by_id, voice_config_filename, voice_dir, voice_file_path,
-    whisper_models,
+    bin_path, download_and_extract_binary, download_to_file, installed_models, model_by_id,
+    model_path, model_url, piper_bin_path, piper_voices, voice_by_id, voice_config_filename,
+    voice_dir, voice_file_path, whisper_models,
 };
 use crate::services::Transcript;
 use crate::state::AppState;
@@ -127,6 +127,38 @@ pub async fn download_voice_model(
 
     tauri::async_runtime::spawn_blocking(move || {
         download_to_file(&url, &dest, sha, |downloaded, total| {
+            let _ = app2.emit(
+                "voice.download.progress",
+                DownloadProgress {
+                    model_id: id.clone(),
+                    downloaded,
+                    total,
+                },
+            );
+        })
+    })
+    .await
+    .map_err(|e| AppError::Unexpected(format!("descarga: {e}")))?
+}
+
+/// Download a binary (whisper.cpp or Piper) from GitHub releases, extract
+/// the executable, and place it in the voice bin directory.
+/// Emits `voice.download.progress` events using the binary id as the model_id.
+#[tauri::command]
+pub async fn download_voice_binary(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    binary_id: String,
+) -> CmdResult<()> {
+    if binary_id != "whisper" && binary_id != "piper" {
+        return Err(AppError::NotFound(format!("binary {binary_id}")));
+    }
+    let app2 = app.clone();
+    let id = binary_id.clone();
+    let dir = state.app_data_dir.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        download_and_extract_binary(&id, &dir, |downloaded, total| {
             let _ = app2.emit(
                 "voice.download.progress",
                 DownloadProgress {
@@ -544,14 +576,14 @@ mod tests {
         let es = groups.iter().find(|g| g.lang == "es").unwrap();
         assert_eq!(es.items.len(), 1);
         assert_eq!(es.items[0].id, "es_ES-carlfm");
-        assert_eq!(es.items[0].installed, true);
+        assert!(es.items[0].installed);
         assert_eq!(es.items[0].disk_bytes, 44000);
         assert_eq!(es.items[0].kind, "voice");
 
         let other = groups.iter().find(|g| g.lang == "other").unwrap();
         assert_eq!(other.items.len(), 1);
         assert_eq!(other.items[0].id, "base");
-        assert_eq!(other.items[0].installed, false);
+        assert!(!other.items[0].installed);
         assert_eq!(other.items[0].kind, "model");
     }
 
