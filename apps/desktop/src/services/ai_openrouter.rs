@@ -284,6 +284,12 @@ mod tests {
     }
 
     #[test]
+    fn whitespace_only_key_is_unavailable() {
+        let s = svc(Some("   "));
+        assert!(!s.available());
+    }
+
+    #[test]
     fn sse_parse_assembles_text_and_usage_and_streams_deltas() {
         let body = concat!(
             "data: {\"choices\":[{\"delta\":{\"content\":\"Hola\"}}]}\n",

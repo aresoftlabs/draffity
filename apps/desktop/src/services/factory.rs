@@ -185,7 +185,7 @@ impl ServiceFactory {
         Ok(Arc::new(MutableTier::new(tier)))
     }
 
-    // `ai` is the BYOK `ByokAIService` (F-01), gated at call time. The voice
+    // `ai` is the BYOK `ByokAIService` (F-01), gated by the stored key at call time. The voice
     // builders below still return NoOp stubs until `WhisperLocalASR` /
     // `PiperTTSService` land in Épica H; activating premium flips their
     // capability *gates* but the services stay stubs until then. See

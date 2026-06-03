@@ -28,10 +28,9 @@ type CmdResult<T> = Result<T, AppError>;
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AiStatus {
-    /// AI is usable right now: premium tier active AND a key is stored.
+    /// AI is usable right now: a key is stored.
     pub available: bool,
-    /// A key is stored (independent of tier) — lets the UI show "key saved"
-    /// even before premium is active.
+    /// A key is stored.
     pub has_key: bool,
 }
 
@@ -124,7 +123,7 @@ struct AiDelta {
 }
 
 /// Run an inline AI action, streaming deltas as events and returning the
-/// assembled result. Gated by `ai.available()` (premium + key).
+/// assembled result. Gated by `ai.available()` (key required).
 #[tauri::command]
 pub async fn ai_run_action(
     app: AppHandle,

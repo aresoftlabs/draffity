@@ -84,10 +84,10 @@ pub struct CompletionResponse {
 pub trait AIService: Send + Sync {
     fn available(&self) -> bool;
 
-    /// Non-streaming completion. Default errors (free tier).
+    /// Non-streaming completion. Default errors out (no key / NoOp impl).
     fn complete(&self, _req: CompletionRequest) -> AppResult<CompletionResponse> {
         Err(crate::error::AppError::Unsupported(
-            "AI features not available in free tier".into(),
+            "las funciones de IA no están disponibles".into(),
         ))
     }
 
