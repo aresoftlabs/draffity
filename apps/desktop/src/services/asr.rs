@@ -1,12 +1,9 @@
-//! ASR (voice-to-text) abstraction. **Premium-ready.**
+//! ASR (voice-to-text) abstraction.
 //!
-//! Free MVP ships `NoOpASR`. Premium adds `WhisperLocalASR` (whisper.cpp
-//! sidecar) implementing this trait — no core change. See `backlog-v4.md`
-//! E-04 / H-03.
-//!
-//! Two contracts: `transcribe_file` (batch, for voice notes H-09) and
-//! `transcribe_stream` (chunked dictation H-03). Streaming uses a callback
-//! sink — same object-safe, runtime-free pattern as `AIService`.
+//! Implementado por `WhisperLocalASR` (sidecar whisper.cpp).
+//! Dos contratos: `transcribe_file` (batch, para notas de voz) y
+//! `transcribe_stream` (dictado por chunks). El streaming usa un callback
+//! sink — mismo patrón object-safe sin runtime que `AIService`.
 
 use serde::Serialize;
 
@@ -41,17 +38,16 @@ impl Transcript {
 pub trait ASRService: Send + Sync {
     fn available(&self) -> bool;
 
-    /// Batch transcription of a complete audio file (voice notes).
+    /// Transcripción batch de un archivo de audio completo (notas de voz).
     fn transcribe_file(&self, _path: &str) -> AppResult<Transcript> {
         Err(crate::error::AppError::Unsupported(
-            "voice-to-text not available in free tier".into(),
+            "la transcripción de voz no está disponible".into(),
         ))
     }
 
-    /// Streaming dictation. `samples` is mono PCM16 at `sample_rate`; the
-    /// premium impl recognizes incrementally and calls `on_partial` with the
-    /// best-so-far transcript, returning the final transcript at the end.
-    /// The default errors (free tier).
+    /// Dictado en streaming. `samples` es PCM16 mono a `sample_rate`; la impl
+    /// reconoce de forma incremental y llama a `on_partial` con el mejor
+    /// transcript parcial, devolviendo el final al terminar.
     fn transcribe_stream(
         &self,
         _samples: &[i16],
@@ -59,37 +55,7 @@ pub trait ASRService: Send + Sync {
         _on_partial: &mut dyn FnMut(&Transcript),
     ) -> AppResult<Transcript> {
         Err(crate::error::AppError::Unsupported(
-            "voice-to-text not available in free tier".into(),
+            "la transcripción de voz no está disponible".into(),
         ))
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy)]
-pub struct NoOpASR;
-
-impl ASRService for NoOpASR {
-    fn available(&self) -> bool {
-        false
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn noop_is_unavailable() {
-        let a = NoOpASR;
-        assert!(!a.available());
-        assert!(a.transcribe_file("x.wav").is_err());
-    }
-
-    #[test]
-    fn noop_stream_errors_without_partials() {
-        let a = NoOpASR;
-        let mut partials = 0usize;
-        let res = a.transcribe_stream(&[0i16; 16], 16_000, &mut |_| partials += 1);
-        assert!(res.is_err());
-        assert_eq!(partials, 0);
     }
 }

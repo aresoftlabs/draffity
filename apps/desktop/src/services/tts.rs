@@ -1,9 +1,8 @@
-//! Text-to-speech abstraction. **Premium-ready.**
+//! Abstracción de text-to-speech.
 //!
-//! Free MVP ships `NoOpTTS`. Premium adds `PiperTTSService` (Piper ONNX
-//! sidecar) implementing this trait — no core change. See `backlog-v4.md`
-//! E-04 / H-06. Separate from `ASRService` because synthesis and recognition
-//! are independent concerns with independent premium impls.
+//! Implementado por `PiperTTSService` (sidecar Piper ONNX).
+//! Separado de `ASRService` porque síntesis y reconocimiento son
+//! responsabilidades independientes con impls independientes.
 
 use serde::Serialize;
 
@@ -30,37 +29,15 @@ pub struct SynthesizedAudio {
 pub trait TTSService: Send + Sync {
     fn available(&self) -> bool;
 
-    /// Voices installed locally. Empty until a premium engine + model land.
+    /// Voces instaladas localmente. Vacío si no hay motor ni modelo descargado.
     fn voices(&self) -> Vec<Voice> {
         Vec::new()
     }
 
-    /// Synthesize `text` with the given `voice_id`. Default errors (free tier).
+    /// Sintetiza `text` con la voz `voice_id`.
     fn synthesize(&self, _text: &str, _voice_id: &str) -> AppResult<SynthesizedAudio> {
         Err(crate::error::AppError::Unsupported(
-            "text-to-speech not available in free tier".into(),
+            "la lectura en voz alta no está disponible".into(),
         ))
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy)]
-pub struct NoOpTTS;
-
-impl TTSService for NoOpTTS {
-    fn available(&self) -> bool {
-        false
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn noop_is_unavailable_and_has_no_voices() {
-        let t = NoOpTTS;
-        assert!(!t.available());
-        assert!(t.voices().is_empty());
-        assert!(t.synthesize("hola", "es-default").is_err());
     }
 }

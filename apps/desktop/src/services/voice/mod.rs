@@ -5,8 +5,7 @@
 //! break `tauri build` when the files are absent).
 //!
 //! Everything here degrades gracefully: with no binary/model installed,
-//! `WhisperLocalASR::available()` is `false` and the UI offers nothing — same
-//! surface as the old `NoOpASR`.
+//! `WhisperLocalASR::available()` is `false` and the UI offers nothing.
 
 use std::path::{Path, PathBuf};
 

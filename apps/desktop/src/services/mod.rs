@@ -34,7 +34,7 @@ pub use ai_validators::{
     codex_coverage, summarize, AIValidatorService, CoverageReport, Finding, OpenRouterValidators,
     Severity, ValidationInput, ValidatorKind,
 };
-pub use asr::{ASRService, NoOpASR, Transcript, TranscriptSegment};
+pub use asr::{ASRService, Transcript, TranscriptSegment};
 pub use backup::{BackupKind, BackupRecord, BackupService, LocalBackupService, NoOpBackup};
 pub use bibliography::{BibliographyService, LocalBibliographyService, ParseSummary};
 pub use crash_reporter::{
@@ -53,7 +53,7 @@ pub use secrets::{InMemorySecretStorage, KeyringSecretStorage, SecretStorage};
 pub use storage::{CitationUpsert, LocalStorageService, StorageService};
 pub use templates::{BuiltInTemplates, LayeredTemplatesService, TemplatesService};
 pub use token_counter::{estimate_request_tokens, estimate_tokens};
-pub use tts::{NoOpTTS, SynthesizedAudio, TTSService, Voice};
+pub use tts::{SynthesizedAudio, TTSService, Voice};
 pub use user_templates::{template_from_project, UserTemplatesLoader};
 pub use validation_context::ValidationContextBuilder;
 pub use voice::{PiperTTSService, WhisperLocalASR};
