@@ -29,10 +29,10 @@ fn main() {
         .nth(1)
         .map(PathBuf::from)
         .unwrap_or_else(|| {
-            // Default: write next to the manual shared-types index so a
-            // local `cargo run --bin gen-types` produces the file CI checks
-            // for drift.
-            PathBuf::from("../../packages/shared-types/src/generated.ts")
+            // Default: resolve relative to the crate manifest dir, so this
+            // works regardless of the caller's working directory (CI, repo root, etc.).
+            let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            manifest.join("../../packages/shared-types/src/generated.ts")
         });
 
     let exporter = Typescript::default().header(BANNER);

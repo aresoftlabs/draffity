@@ -15,10 +15,8 @@ jobs:
     name: Lint & test (JS)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+- uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -59,7 +57,7 @@ jobs:
       - name: Fail on shared-types drift
         run: |
           if ! git diff --quiet packages/shared-types/src/generated.ts; then
-            echo "::error::generated.ts is out of date. Run 'cargo run --bin gen-types' locally and commit." >&2
+            echo "::error::generated.ts is out of date. Run 'cargo run --manifest-path apps/desktop/Cargo.toml --bin gen-types' locally and commit." >&2
             git --no-pager diff packages/shared-types/src/generated.ts
             exit 1
           fi
