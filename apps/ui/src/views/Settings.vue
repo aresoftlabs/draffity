@@ -17,7 +17,6 @@ import LegalDialog, { type LegalKind } from '@/components/LegalDialog.vue';
 import SettingsBackups from '@/components/SettingsBackups.vue';
 import SettingsAI from '@/components/SettingsAI.vue';
 import SettingsVoice from '@/components/SettingsVoice.vue';
-import SettingsPremium from '@/components/SettingsPremium.vue';
 import SettingsStats from '@/components/SettingsStats.vue';
 import { useUiStore } from '@/stores/ui';
 import { useProjectStore } from '@/stores/project';
@@ -170,10 +169,9 @@ const localeModel = computed({
 });
 
 /**
- * Surface a loader IPC failure instead of degrading silently to "free"/empty.
- * Always logs (telemetry-ready); `notify` also toasts for the tier-relevant
- * loaders, so a licensed user whose status failed to load isn't shown the app
- * as free without any signal (AUD-16).
+ * Surface a loader IPC failure instead of degrading silently to an empty state.
+ * Always logs (telemetry-ready); `notify` also toasts so the user gets a signal
+ * when a settings loader fails (AUD-16).
  */
 function reportLoadError(scope: string, e: unknown, notify = false) {
   console.error('[settings]', scope, e);
@@ -231,7 +229,6 @@ type SettingsSection =
   | 'shortcuts'
   | 'goals'
   | 'data'
-  | 'plan'
   | 'about';
 
 const activeSection = ref<SettingsSection>('appearance');
@@ -245,7 +242,6 @@ const navSections: { id: SettingsSection; key: string }[] = [
   { id: 'shortcuts', key: 'settings.nav.shortcuts' },
   { id: 'goals', key: 'settings.nav.goals' },
   { id: 'data', key: 'settings.nav.data' },
-  { id: 'plan', key: 'settings.nav.plan' },
   { id: 'about', key: 'settings.nav.about' },
 ];
 </script>
@@ -440,11 +436,6 @@ const navSections: { id: SettingsSection; key: string }[] = [
         <!-- COPIAS -->
         <div v-show="activeSection === 'data'" class="space-y-8">
           <SettingsBackups />
-        </div>
-
-        <!-- PLAN -->
-        <div v-show="activeSection === 'plan'" class="space-y-8">
-          <SettingsPremium />
         </div>
 
         <!-- ACERCA DE -->
