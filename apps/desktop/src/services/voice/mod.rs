@@ -146,6 +146,7 @@ fn extract_binary_impl(
     use crate::error::AppError;
 
     // Determine possible filenames the binary could have inside the archive.
+    // whisper.cpp releases ship the CLI as `whisper-cli` not `whisper`.
     let binary_names: &[&str] = match binary_id {
         "piper" => {
             if cfg!(windows) {
@@ -156,9 +157,9 @@ fn extract_binary_impl(
         }
         _ => {
             if cfg!(windows) {
-                &["whisper.exe"]
+                &["whisper.exe", "whisper-cli.exe"]
             } else {
-                &["whisper"]
+                &["whisper", "whisper-cli"]
             }
         }
     };
@@ -180,27 +181,51 @@ fn extract_binary_impl(
                 .collect();
             tracing::debug!(?all_names, "zip entries for {binary_id}");
 
+            let target_dir = target.parent().unwrap_or(target);
+            std::fs::create_dir_all(target_dir)?;
+
+            let mut main_extracted = false;
+            let mut extra_files = Vec::new();
+
             for i in 0..archive.len() {
                 let mut entry = archive
                     .by_index(i)
                     .map_err(|e| AppError::Unexpected(format!("entrada zip: {e}")))?;
                 let name = entry.name().to_string();
+
+                // whisper.cpp releases ship nested under Release/ — strip the directory
                 let file_name = std::path::Path::new(&name)
                     .file_name()
                     .and_then(|s| s.to_str())
-                    .unwrap_or("");
+                    .unwrap_or("")
+                    .to_string();
 
-                let matches = binary_names.contains(&file_name);
-                if !matches {
+                // Main binary matches (whisper.exe/whisper-cli.exe or piper.exe/piper)
+                let is_main = binary_names.contains(&file_name.as_str());
+
+                if is_main && !main_extracted {
+                    // Copy to target path — may rename (e.g. whisper-cli.exe → whisper.exe)
+                    let mut out = std::fs::File::create(target)?;
+                    std::io::copy(&mut entry, &mut out)?;
+                    main_extracted = true;
                     continue;
                 }
 
-                // Found it — extract.
-                if let Some(parent) = target.parent() {
-                    std::fs::create_dir_all(parent)?;
+                // Extract sibling DLLs / shared libs next to the binary
+                let ext = std::path::Path::new(&file_name)
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("");
+                if matches!(ext, "dll" | "pdb" | "so" | "dylib") {
+                    let dest = target_dir.join(&file_name);
+                    let mut out = std::fs::File::create(&dest)?;
+                    std::io::copy(&mut entry, &mut out)?;
+                    extra_files.push(file_name);
                 }
-                let mut out = std::fs::File::create(target)?;
-                std::io::copy(&mut entry, &mut out)?;
+            }
+
+            if main_extracted {
+                tracing::debug!(extra = ?extra_files, "extracted binary to {}", target.display());
                 return Ok(());
             }
 
