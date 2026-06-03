@@ -13,19 +13,17 @@
 
 ## Reglas de oro del proyecto
 
-1. **Premium es aditivo, no invasivo.** Cualquier abstracción nueva debe seguir el patrón `trait + impl NoOp`. Si tu PR requiere "refactorizar X para añadir premium luego", la arquitectura ya falló — corrígela primero.
-2. **Sin premium leakage en la UI del MVP.** Ningún botón, banner o mensaje habla de premium. Los gates simplemente devuelven `false` y la UI se comporta acorde.
-3. **Sin pop-ups de venta agresivos.** Nunca.
-4. **No infra propia de IA.** Premium usa BYOK (OpenRouter). No se hostea ningún LLM.
-5. **Free es completamente funcional.** Limitar features básicas en free es contrario a la propuesta del producto. La única limitación del free es: 1 proyecto activo + N archivados read-only.
+1. **Toda abstracción nueva sigue el patrón `trait + impl local`.** Si tu PR requiere una clase/struct concreta en la firma pública, la arquitectura ya falló — definí el trait primero.
+2. **Sin pop-ups ni banners de venta.** Nunca.
+3. **No infra propia de IA.** La IA funciona vía BYOK: el usuario aporta su propia clave de OpenRouter. No se hostea ningún LLM.
+4. **Voz por binarios locales.** ASR (Whisper) y TTS (Piper) corren como sidecars en la máquina del usuario. Sin APIs de pago ni suscripciones de terceros.
+5. **Draffity es 100 % gratis.** No hay tier premium, licencias ni paywalls. Todas las features son accesibles para todos los usuarios. La única regla de negocio es: 1 proyecto activo + N archivados read-only (invariante de foco del escritor).
 
 ## Estructura del código
 
 - **`apps/desktop/src/domain/`** — entidades + invariantes puras, sin dependencias de SQLite ni Tauri. Testeable aislado.
-- **`apps/desktop/src/services/`** — traits + implementaciones (storage, exporter, ai, sync, asr, tier).
+- **`apps/desktop/src/services/`** — traits + implementaciones (storage, exporter, ai, asr, tts).
 - **`apps/desktop/src/commands/`** — sólo IPC commands. No lógica de negocio aquí, sólo orquestación.
-- **`apps/desktop/src/capabilities.rs`** — única fuente de verdad de feature gates.
-- **`apps/ui/src/composables/useCapability.ts`** — única forma en que la UI consulta capabilities.
 
 ## Cobertura de tests
 
@@ -44,4 +42,4 @@ Decisiones arquitectónicas importantes van en `docs/ADR/`. Usar la plantilla [`
 
 ## Issues
 
-Etiqueta tus issues con `sprint-0`...`sprint-8`, `bug`, `enhancement`, `premium-ready` (cuando toca abstracciones que premium reutilizará), `arch` (cuando toca límites de módulos).
+Etiqueta tus issues con `sprint-0`...`sprint-8`, `bug`, `enhancement`, `arch` (cuando toca límites de módulos).
