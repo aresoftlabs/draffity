@@ -43,7 +43,7 @@ import { useCodexStore } from '@/stores/codex';
 import { useMediaStore } from '@/stores/media';
 import { useLabelStore } from '@/stores/labels';
 import { useCustomFieldStore } from '@/stores/customFields';
-import { ipc } from '@/services/ipc';
+import { ipc, type AiStatus, type VoiceStatus } from '@/services/ipc';
 import FindReplaceBar from '@/components/FindReplaceBar.vue';
 import AppRail from '@/components/AppRail.vue';
 import CorkboardView from '@/views/CorkboardView.vue';
@@ -57,7 +57,6 @@ import ValidationDialog from '@/components/ValidationDialog.vue';
 import DictationOverlay from '@/components/DictationOverlay.vue';
 import ReadAloudBar from '@/components/ReadAloudBar.vue';
 import VoiceNotesDialog from '@/components/VoiceNotesDialog.vue';
-import { useCapability } from '@/composables/useCapability';
 import { useEditorSettings } from '@/composables/useEditorSettings';
 import { useDictation } from '@/composables/useDictation';
 import { useReadAloud } from '@/composables/useReadAloud';
@@ -186,10 +185,13 @@ const editingFootnoteContent = ref('');
 const showSaveAsTemplate = ref(false);
 const showSearch = ref(false);
 const showValidation = ref(false);
-const aiInline = useCapability('ai_inline');
-const voiceDictation = useCapability('voice_dictation');
-const voiceTts = useCapability('voice_tts');
-const voiceNotes = useCapability('voice_notes');
+const aiStatus = ref<AiStatus | null>(null);
+const voiceStatus = ref<VoiceStatus | null>(null);
+// Availability comes from real prerequisites now (BYOK key / installed
+// binaries), not a premium gate. Voice notes are local storage → always on.
+const aiInline = computed(() => aiStatus.value?.available ?? false);
+const voiceDictation = computed(() => voiceStatus.value?.dictationAvailable ?? false);
+const voiceTts = computed(() => voiceStatus.value?.ttsAvailable ?? false);
 const showVoiceNotes = ref(false);
 function notifyVoiceError(message: string) {
   toast.add({ severity: 'error', summary: t('voice.error'), detail: message, life: 6000 });
@@ -228,11 +230,10 @@ const actionItems = computed<MenuItem[]>(() => [
       showValidation.value = true;
     },
   },
-  { separator: true, visible: Boolean(voiceNotes.value) },
+  { separator: true },
   {
     label: t('voice.notes.button'),
     icon: 'pi pi-comment',
-    visible: Boolean(voiceNotes.value),
     command: () => {
       showVoiceNotes.value = true;
     },
@@ -580,6 +581,22 @@ let offProjectCmds: (() => void) | null = null;
 
 onMounted(() => {
   loadProject();
+  ipc
+    .getAiStatus()
+    .then((s) => {
+      aiStatus.value = s;
+    })
+    .catch((e) => {
+      console.error('[project]', 'aiStatus', e);
+    });
+  ipc
+    .getVoiceStatus()
+    .then((s) => {
+      voiceStatus.value = s;
+    })
+    .catch((e) => {
+      console.error('[project]', 'voiceStatus', e);
+    });
   window.addEventListener(CODEX_REF_EVENT, onCodexRefClick as EventListener);
   window.addEventListener('draffity:open-footnote', onFootnoteClickFromEditor as EventListener);
   window.addEventListener('keydown', onDictateKey);
