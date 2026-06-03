@@ -53,7 +53,9 @@ jobs:
       - run: cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --manifest-path apps/desktop/Cargo.toml --all
       - name: Regenerate TypeScript types from Rust (D-01)
-        run: cargo run --manifest-path apps/desktop/Cargo.toml --bin gen-types
+        run: |
+          cargo run --manifest-path apps/desktop/Cargo.toml --bin gen-types
+          npx prettier --write packages/shared-types/src/generated.ts
       - name: Fail on shared-types drift
         run: |
           if ! git diff --quiet packages/shared-types/src/generated.ts; then
