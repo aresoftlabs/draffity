@@ -12,16 +12,13 @@ import {
   type VoiceVoice,
   type VoiceDownloadProgress,
 } from '@/services/ipc';
-import { useCapability } from '@/composables/useCapability';
-
 /**
  * Voice section of Settings (Épica H), extracted from the god-view (AUD-28).
- * Premium-gated (`voice_to_text`): manage the Whisper/Piper binaries and the
- * downloadable model/voice catalog, with live download progress. Self-contained.
+ * Manages the Whisper/Piper binaries and the downloadable model/voice catalog,
+ * with live download progress. Self-contained.
  */
 const { t } = useI18n();
 const toast = useToast();
-const voiceEnabled = useCapability('voice_to_text');
 
 const voiceStatus = ref<VoiceStatus | null>(null);
 const voiceModels = ref<VoiceModel[]>([]);
@@ -167,7 +164,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section v-if="voiceEnabled">
+  <section>
     <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
       {{ t('settings.voiceTitle') }}
     </h2>
@@ -311,5 +308,4 @@ onBeforeUnmount(() => {
       </li>
     </ul>
   </section>
-  <p v-else class="text-sm opacity-60">{{ t('capability.unavailable') }}</p>
 </template>

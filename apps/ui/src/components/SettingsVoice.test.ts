@@ -45,7 +45,6 @@ describe('SettingsVoice', () => {
 
   it('lists models and binary status when voice is enabled', async () => {
     invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'capability_enabled') return Promise.resolve(true);
       if (cmd === 'get_voice_status')
         return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
       if (cmd === 'list_voice_models')
