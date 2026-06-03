@@ -37,7 +37,7 @@ const themeOptions = computed(() => [
 ]);
 
 const localeOptions = [
-  { label: 'EspaÃ±ol', value: 'es' },
+  { label: 'Español', value: 'es' },
   { label: 'English', value: 'en' },
 ];
 

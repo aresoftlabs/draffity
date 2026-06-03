@@ -9,8 +9,13 @@ const invokeMock = vi.mocked(invoke);
 
 function mkCitation(over: Partial<Citation> = {}): Citation {
   return {
+    id: over.id ?? 'cit1',
+    projectId: over.projectId ?? 'p1',
     key: over.key ?? 'test2024',
+    entryType: over.entryType ?? 'article',
     fields: over.fields ?? { author: 'Doe, John', title: 'A Test', year: '2024' },
+    createdAt: over.createdAt ?? 0,
+    updatedAt: over.updatedAt ?? 0,
   };
 }
 

@@ -16,6 +16,7 @@ function mkEntry(over: Partial<CodexEntry> = {}): CodexEntry {
     body: over.body ?? '<p>Protagonist</p>',
     tags: over.tags ?? ['main'],
     createdAt: over.createdAt ?? 0,
+    updatedAt: over.updatedAt ?? 0,
   };
 }
 
