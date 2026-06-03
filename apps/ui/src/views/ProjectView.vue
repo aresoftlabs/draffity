@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -135,7 +135,7 @@ const readOnly = computed(() => project.value?.status === 'archived');
 const { selected, saveState, lastSavedAt, wordCount, totalWordCount } = storeToRefs(docStore);
 
 // The editor content is bound to the id of the document it belongs to, so an
-// autosave always targets that document — never the live selection (AUD-01).
+// autosave always targets that document â€” never the live selection (AUD-01).
 const editorDoc = useEditorAutoSave({
   persist: (id, payload) => run(t('errors.saveDocument'), () => docStore.save(id, payload)),
   readOnly: () => readOnly.value,
@@ -188,7 +188,7 @@ const showValidation = ref(false);
 const aiStatus = ref<AiStatus | null>(null);
 const voiceStatus = ref<VoiceStatus | null>(null);
 // Availability comes from real prerequisites now (BYOK key / installed
-// binaries), not a premium gate. Voice notes are local storage → always on.
+// binaries), real prerequisites (BYOK key / installed binaries). Voice notes are local storage => always on.. Voice notes are local storage â†’ always on.
 const aiInline = computed(() => aiStatus.value?.available ?? false);
 const voiceDictation = computed(() => voiceStatus.value?.dictationAvailable ?? false);
 const voiceTts = computed(() => voiceStatus.value?.ttsAvailable ?? false);
@@ -346,7 +346,7 @@ function onPickCodexRef(payload: { id: string; name: string }) {
 }
 
 /** Opens the OS file picker, reads the picked file, uploads it via the
- *  media service, and inserts an `<img data-media-id="…">` node. The
+ *  media service, and inserts an `<img data-media-id="â€¦">` node. The
  *  NodeView resolves a Blob URL for display. */
 async function onInsertImage() {
   if (!project.value || !editor.value) return;
@@ -430,7 +430,7 @@ async function onCodexRefClick(e: Event) {
   await codexStore.loadFor(project.value.id);
   // The CodexView is bound to `projectId` and reads from the store; just
   // switching views is enough to surface the entry in the grid. Opening
-  // the edit dialog directly would require coupling we don't need yet —
+  // the edit dialog directly would require coupling we don't need yet â€”
   // the user can click the card if they want to edit.
   const entry = codexStore.byId.get(detail.id);
   if (!entry) {
@@ -439,7 +439,7 @@ async function onCodexRefClick(e: Event) {
 }
 
 function tracingWarnMissing(id: string) {
-  // Stale ref to a deleted entry — leave a console hint for the user.
+  // Stale ref to a deleted entry â€” leave a console hint for the user.
   console.warn(`[codex] cross-ref points to missing entry ${id}`);
 }
 
@@ -964,7 +964,7 @@ onBeforeUnmount(() => {
             :label="t('composition.exit')"
             @click="uiStore.toggleCompositionMode()"
           />
-          <span class="text-xs opacity-60 font-mono">{{ wordCount }} · {{ totalWordCount }}</span>
+          <span class="text-xs opacity-60 font-mono">{{ wordCount }} Â· {{ totalWordCount }}</span>
           <span class="flex-1" />
           <label class="flex items-center gap-2 text-xs opacity-70">
             {{ t('composition.paperWidth') }}
@@ -1029,3 +1029,4 @@ onBeforeUnmount(() => {
   transform: translateY(0);
 }
 </style>
+

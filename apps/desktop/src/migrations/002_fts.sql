@@ -1,4 +1,4 @@
--- Draffity schema v2 — full-text search.
+﻿-- Draffity schema v2 â€” full-text search.
 --
 -- FTS5 mirror of `documents` kept in sync by triggers. We intentionally use
 -- a regular (non-external-content) FTS5 table so the index can be updated

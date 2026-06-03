@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -67,7 +67,7 @@ const editor = useEditor({
     Placeholder.configure({
       placeholder: () => props.placeholder || t('editor.placeholder'),
     }),
-    // Tables — header row enabled by default, columns are resizable by drag.
+    // Tables â€” header row enabled by default, columns are resizable by drag.
     Table.configure({ resizable: true, HTMLAttributes: { class: 'tiptap-table' } }),
     TableRow,
     TableHeader,
@@ -78,14 +78,14 @@ const editor = useEditor({
     // Inline codex cross-references `[[Name]]` resolved to an entry id.
     // Clicking dispatches `draffity:open-codex` on `window`.
     CodexRef,
-    // Images stored as `<img data-media-id="…">` with a Vue NodeView that
+    // Images stored as `<img data-media-id="â€¦">` with a Vue NodeView that
     // resolves a Blob URL from the media store at render time.
     Image,
-    // Footnotes — body lives inline as a node attribute; numbering at
+    // Footnotes â€” body lives inline as a node attribute; numbering at
     // export time. Click on a marker emits `draffity:open-footnote`.
     Footnote,
     // Linguistic Focus (J-06): toggleable highlight overlay (adverbs, passive
-    // voice, dialogue) via decorations — never mutates the document.
+    // voice, dialogue) via decorations â€” never mutates the document.
     LinguisticFocus,
     // Repetition heatmap (J-08): local highlight of over-used words/phrases.
     RepetitionHeatmap,
@@ -107,7 +107,7 @@ const editor = useEditor({
     try {
       emit('update:modelValueJson', JSON.stringify(ed.getJSON()));
     } catch {
-      // Highly unlikely (PM JSON is plain objects) — silently skip.
+      // Highly unlikely (PM JSON is plain objects) â€” silently skip.
     }
   },
 });

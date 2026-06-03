@@ -1,5 +1,5 @@
 -- Draffity schema v1
--- Free MVP. Premium tables (ai_cache, sync_state, codex_entries, voice_takes)
+-- Free MVP. Feature tables (ai_cache, sync_state, codex_entries, voice_takes)
 -- are reserved for future migrations in the 100_* range.
 
 CREATE TABLE IF NOT EXISTS meta (
@@ -21,8 +21,7 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at   INTEGER NOT NULL
 );
 
--- Free invariant: at most one project with status='active'.
--- Premium drops this index in a future migration to enable multi-active.
+-- Invariant: at most one project with status='active'.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_one_active
   ON projects(status) WHERE status='active';
 

@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { Citation } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
@@ -61,7 +61,7 @@ export const useCitationsStore = defineStore('citations', () => {
 function surnameOf(c: Citation): string {
   const author = c.fields.author ?? '';
   if (!author) return '';
-  // First author only — BibTeX joins with " and ".
+  // First author only â€” BibTeX joins with " and ".
   const first = author.split(' and ')[0].trim();
   if (first.includes(',')) {
     return first.split(',')[0].trim();

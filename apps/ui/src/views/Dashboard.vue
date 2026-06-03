@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -146,7 +146,7 @@ function onDelete(id: string) {
       </div>
     </header>
 
-    <div v-if="loading" class="text-sm opacity-60">…</div>
+    <div v-if="loading" class="text-sm opacity-60">â€¦</div>
 
     <template v-else-if="projects.length === 0">
       <div class="flex-1 flex flex-col items-center justify-center text-center gap-4 opacity-80">

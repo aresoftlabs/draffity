@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { CustomField, CustomFieldInput } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';

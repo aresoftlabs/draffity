@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
@@ -9,7 +9,7 @@ import { useIpcError } from '@/composables/useIpcError';
 
 /**
  * Backups section of Settings (extracted from the Settings god-view, AUD-28):
- * list snapshots, take a manual one, and restore. Self-contained — owns its
+ * list snapshots, take a manual one, and restore. Self-contained â€” owns its
  * own state and loads on mount.
  */
 const { t } = useI18n();
@@ -106,7 +106,7 @@ onMounted(loadBackups);
         <div class="flex flex-col min-w-0">
           <span class="font-mono text-xs truncate">{{ b.id }}</span>
           <span class="text-xs opacity-60">
-            {{ kindLabel(b.kind) }} · {{ formatDate(b.createdAt) }} ·
+            {{ kindLabel(b.kind) }} Â· {{ formatDate(b.createdAt) }} Â·
             {{ formatSize(b.sizeBytes) }}
           </span>
         </div>

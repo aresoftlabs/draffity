@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Tag from 'primevue/tag';
@@ -37,7 +37,7 @@ const bodyPreview = computed(() => {
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  return stripped.length > 220 ? `${stripped.slice(0, 220)}…` : stripped;
+  return stripped.length > 220 ? `${stripped.slice(0, 220)}â€¦` : stripped;
 });
 </script>
 

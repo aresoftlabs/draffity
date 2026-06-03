@@ -1,10 +1,10 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+﻿import { Node, mergeAttributes } from '@tiptap/core';
 import { VueNodeViewRenderer } from '@tiptap/vue-3';
 import ImageNodeView from './image-node-view.vue';
 
 /**
  * Inline-block image referencing a `MediaAsset` by id. The persisted HTML
- * is `<img data-media-id="<id>" alt="…">` — never carries a `src` (the
+ * is `<img data-media-id="<id>" alt="â€¦">` â€” never carries a `src` (the
  * Blob URL is local to the running session). At render time the
  * `ImageNodeView` Vue component pulls a Blob URL from the media store and
  * binds it; exporters resolve `data-media-id` to bytes themselves.
@@ -54,7 +54,7 @@ export const Image = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    // Persisted form never includes a `src` — bytes are local to the
+    // Persisted form never includes a `src` â€” bytes are local to the
     // session and re-resolved at load time by the NodeView.
     return ['img', mergeAttributes(HTMLAttributes, { class: 'draffity-image' })];
   },

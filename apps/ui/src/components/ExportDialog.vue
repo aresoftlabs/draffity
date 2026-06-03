@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { open, save } from '@tauri-apps/plugin-dialog';
@@ -46,7 +46,7 @@ const sceneKind = ref<'stars' | 'dashes' | 'blank' | 'custom'>('stars');
 const sceneCustom = ref('');
 
 /** Selected page-size key. Custom is a special path with width/height fields,
- * but for the dialog we only expose the three standard sizes — Custom is
+ * but for the dialog we only expose the three standard sizes â€” Custom is
  * reserved for power users via stored config (or a future advanced toggle). */
 const pageKey = ref<'a4' | 'letter' | 'legal'>('a4');
 
@@ -146,7 +146,7 @@ function buildSceneSeparator(): SceneSeparator {
 
 function buildPageSize(): PageSize {
   // Custom dims survive across edits even though the dropdown only shows
-  // the three presets — if the stored config had custom, switching presets
+  // the three presets â€” if the stored config had custom, switching presets
   // here overrides it intentionally.
   return pageKey.value;
 }
@@ -246,7 +246,7 @@ async function onExport() {
   exporting.value = false;
   if (result) {
     if (format.value === 'pdf') {
-      // The "PDF" file is print-ready HTML — opening it with the OS
+      // The "PDF" file is print-ready HTML â€” opening it with the OS
       // default app launches the browser, which auto-triggers
       // `window.print()` so the user lands directly in the system
       // print dialog and can pick "Save as PDF".
@@ -367,7 +367,7 @@ function coverFilename(path: string | null | undefined): string {
               class="flex-1"
               size="small"
             />
-            <span aria-hidden="true" class="opacity-50">{{ '→' }}</span>
+            <span aria-hidden="true" class="opacity-50">{{ 'â†’' }}</span>
             <InputText
               v-model="rule.replacement"
               :placeholder="t('compile.findReplacement')"

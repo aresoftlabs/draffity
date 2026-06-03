@@ -1,11 +1,11 @@
--- Draffity schema v3 — document status and tags.
+﻿-- Draffity schema v3 â€” document status and tags.
 --
 -- `status` lets writers flag chapters/scenes through the writing pipeline
--- (Draft → Revised → Final, plus Trashed as a soft delete). Defaults to
+-- (Draft â†’ Revised â†’ Final, plus Trashed as a soft delete). Defaults to
 -- 'draft' so existing rows keep working without backfill.
 --
--- `document_tags` is a small adjacency table — many tags per document,
--- many documents per tag — with a covering index for fast tag filtering.
+-- `document_tags` is a small adjacency table â€” many tags per document,
+-- many documents per tag â€” with a covering index for fast tag filtering.
 
 ALTER TABLE documents
   ADD COLUMN status TEXT NOT NULL DEFAULT 'draft'

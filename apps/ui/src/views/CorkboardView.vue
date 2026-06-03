@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Tag from 'primevue/tag';
@@ -17,7 +17,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-// Render documents in binder order (parent_id, then position) — same source
+// Render documents in binder order (parent_id, then position) â€” same source
 // of truth as Binder so card order matches the tree the user expects.
 const ordered = computed(() => {
   return [...props.documents].sort((a, b) => {

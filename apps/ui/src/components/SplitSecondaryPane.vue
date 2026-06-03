@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Select from 'primevue/select';
@@ -51,7 +51,7 @@ const editorDoc = useEditorAutoSave({
 });
 const editorContent = editorDoc.content;
 const editorContentJson = editorDoc.contentJson;
-/** When locked, the pane pins its current doc — the picker/bookmarks are
+/** When locked, the pane pins its current doc â€” the picker/bookmarks are
  *  disabled so it can't be swapped by accident (K-10). */
 const locked = ref(false);
 

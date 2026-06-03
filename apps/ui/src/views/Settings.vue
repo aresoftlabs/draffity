@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SelectButton from 'primevue/selectbutton';
@@ -37,7 +37,7 @@ const themeOptions = computed(() => [
 ]);
 
 const localeOptions = [
-  { label: 'Español', value: 'es' },
+  { label: 'EspaÃ±ol', value: 'es' },
   { label: 'English', value: 'en' },
 ];
 

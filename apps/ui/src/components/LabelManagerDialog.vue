@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
@@ -18,7 +18,7 @@ const { t } = useI18n();
 const { run: ipcRun } = useIpcError();
 const labelStore = useLabelStore();
 
-/** Curated palette — a fixed set keeps labels visually coherent and sidesteps
+/** Curated palette â€” a fixed set keeps labels visually coherent and sidesteps
  *  free-form color-picker contrast pitfalls. */
 const PALETTE = [
   '#ef4444',

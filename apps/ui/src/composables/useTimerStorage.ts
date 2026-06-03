@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Reads / writes integer-minute timer settings from `localStorage` under
  * the `draffity.timer.*` namespace. Tolerant: missing keys, non-numeric
  * values and zero/negative numbers all fall back to the caller's default.

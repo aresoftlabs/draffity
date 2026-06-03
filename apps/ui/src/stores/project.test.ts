@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -29,7 +29,7 @@ describe('useProjectStore', () => {
   it('loadAll populates projects and active id', async () => {
     const a = makeProject({ id: 'a', status: 'active' });
     const b = makeProject({ id: 'b', status: 'archived' });
-    // list_projects → [a, b], get_active_project → a
+    // list_projects â†’ [a, b], get_active_project â†’ a
     invokeMock.mockResolvedValueOnce([a, b]);
     invokeMock.mockResolvedValueOnce(a);
 
@@ -73,9 +73,9 @@ describe('useProjectStore', () => {
 
   it('create returns the project and reloads', async () => {
     const newProject = makeProject({ id: 'new', title: 'X' });
-    // create_project → newProject
+    // create_project â†’ newProject
     invokeMock.mockResolvedValueOnce(newProject);
-    // loadAll() → list + active
+    // loadAll() â†’ list + active
     invokeMock.mockResolvedValueOnce([newProject]);
     invokeMock.mockResolvedValueOnce(newProject);
 

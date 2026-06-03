@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Tag from 'primevue/tag';
@@ -58,7 +58,7 @@ function iconForDocType(type: string) {
 
 <template>
   <div class="flex flex-col gap-3 min-h-[20rem]">
-    <p v-if="loading" class="text-sm opacity-60">…</p>
+    <p v-if="loading" class="text-sm opacity-60">â€¦</p>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <button
         v-for="tpl in templates"

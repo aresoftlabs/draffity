@@ -38,7 +38,7 @@ Adoptar **Tauri 2** como shell desktop con backend en Rust y frontend Vue 3 + Vi
 
 ### Neutras
 
-- Mantiene la puerta abierta a sidecars (`tauri-plugin-shell`) para integrar `whisper.cpp` en premium sin pelear con el runtime principal.
+- Mantiene la puerta abierta a sidecars (`tauri-plugin-shell`) para integrar `whisper.cpp` sin pelear con el runtime principal.
 - Permite emitir tipos compartidos Rust↔TS vía `specta` (planificado para Sprint 5 v2).
 
 ## Alternativas consideradas

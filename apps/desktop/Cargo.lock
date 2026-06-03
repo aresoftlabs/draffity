@@ -1014,6 +1014,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "draffity-desktop"
+version = "0.12.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "biblatex",
+ "chrono",
+ "docx-rs",
+ "ed25519-dalek",
+ "ego-tree",
+ "epub-builder",
+ "html2md",
+ "keyring",
+ "pulldown-cmark",
+ "reqwest 0.12.28",
+ "roxmltree",
+ "rusqlite",
+ "scraper",
+ "serde",
+ "serde_json",
+ "sha2",
+ "specta",
+ "specta-serde",
+ "specta-typescript",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-shell",
+ "thiserror 1.0.69",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "ulid",
+ "zip 2.4.2",
+]
+
+[[package]]
 name = "dtoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2970,44 +3008,6 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
-
-[[package]]
-name = "draffity-desktop"
-version = "0.12.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "biblatex",
- "chrono",
- "docx-rs",
- "ed25519-dalek",
- "ego-tree",
- "epub-builder",
- "html2md",
- "keyring",
- "pulldown-cmark",
- "reqwest 0.12.28",
- "roxmltree",
- "rusqlite",
- "scraper",
- "serde",
- "serde_json",
- "sha2",
- "specta",
- "specta-serde",
- "specta-typescript",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-shell",
- "thiserror 1.0.69",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "ulid",
- "zip 2.4.2",
-]
 
 [[package]]
 name = "open"

@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { DocNode, DocumentInput, DocumentStatus } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
@@ -16,7 +16,7 @@ export const useDocumentStore = defineStore('document', () => {
     selectedId.value ? (documents.value.find((d) => d.id === selectedId.value) ?? null) : null,
   );
 
-  /** Build the parent → children map for tree views. */
+  /** Build the parent â†’ children map for tree views. */
   const tree = computed(() => {
     const byParent = new Map<string | null, DocNode[]>();
     for (const d of documents.value) {

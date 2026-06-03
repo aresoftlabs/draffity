@@ -1,9 +1,9 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+﻿import { Node, mergeAttributes } from '@tiptap/core';
 import { Plugin } from '@tiptap/pm/state';
 
 /**
  * Inline cross-reference to a codex entry. Stored as
- * `<span data-codex-ref="<id>">[[Name]]</span>` — the inner text travels
+ * `<span data-codex-ref="<id>">[[Name]]</span>` â€” the inner text travels
  * through every exporter (md/docx/epub) untouched, and the `data-codex-ref`
  * attribute lets the runtime resolve clicks back to the entry id. Renames
  * don't break refs because the id is the source of truth; the visible name

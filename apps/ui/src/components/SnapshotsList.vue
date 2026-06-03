@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'primevue/button';
@@ -11,7 +11,7 @@ import SnapshotDiffView from './SnapshotDiffView.vue';
 
 const props = defineProps<{
   documentId: string | null;
-  /** Current editor HTML — used by the diff view as the "after" side
+  /** Current editor HTML â€” used by the diff view as the "after" side
    *  when comparing a saved snapshot against the live document. */
   currentHtml?: string;
   readOnly?: boolean;
@@ -173,7 +173,7 @@ function onCompare(s: Snapshot) {
       v-model:visible="diffVisible"
       :before-label="
         diffSnapshot
-          ? `${diffSnapshot.label ?? t('snapshots.unlabeled')} · ${formatDate(diffSnapshot.createdAt)}`
+          ? `${diffSnapshot.label ?? t('snapshots.unlabeled')} Â· ${formatDate(diffSnapshot.createdAt)}`
           : ''
       "
       :after-label="t('diff.current')"

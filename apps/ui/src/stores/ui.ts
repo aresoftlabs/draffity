@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { setTheme as applyTheme, getStoredTheme, type ThemeMode } from '@/styles/theme';
 import { setLocale as applyLocale } from '@/locales';
@@ -56,7 +56,7 @@ export const useUiStore = defineStore('ui', () => {
   const inspectorCollapsed = ref(loadBool('inspectorCollapsed', false));
   const focusMode = ref(false);
   // Composition mode (K-08): distraction-free fullscreen writing surface.
-  // Session-only like focusMode — it's a transient mode, not a preference.
+  // Session-only like focusMode â€” it's a transient mode, not a preference.
   const compositionMode = ref(false);
   const typewriterMode = ref(loadBool('typewriterMode', false));
   // Linguistic Focus (J-06): highlight adverbs / passive voice / dialogue in
@@ -76,7 +76,7 @@ export const useUiStore = defineStore('ui', () => {
   // NewProjectWizard automatically. The dashboard clears it after acting.
   const pendingNewProject = ref(false);
 
-  // Writing session — words written since the current project was opened.
+  // Writing session â€” words written since the current project was opened.
   // `sessionStartTotal` is captured by ProjectView on load; the live count
   // comes from the document store. `sessionGoal` is persisted so it
   // survives restarts.
@@ -93,7 +93,7 @@ export const useUiStore = defineStore('ui', () => {
   const splitSecondaryIds = ref<Record<string, string | null>>(loadJson('splitSecondaryIds', {}));
 
   // Recently-opened docs in the secondary split pane, per project (K-10).
-  // Most-recent first, capped — powers the per-pane bookmark chips.
+  // Most-recent first, capped â€” powers the per-pane bookmark chips.
   const splitBookmarks = ref<Record<string, string[]>>(loadJson('splitBookmarks', {}));
 
   watch(binderCollapsed, (v) => saveBool('binderCollapsed', v));

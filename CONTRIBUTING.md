@@ -17,7 +17,7 @@
 2. **Sin pop-ups ni banners de venta.** Nunca.
 3. **No infra propia de IA.** La IA funciona vía BYOK: el usuario aporta su propia clave de OpenRouter. No se hostea ningún LLM.
 4. **Voz por binarios locales.** ASR (Whisper) y TTS (Piper) corren como sidecars en la máquina del usuario. Sin APIs de pago ni suscripciones de terceros.
-5. **Draffity es 100 % gratis.** No hay tier premium, licencias ni paywalls. Todas las features son accesibles para todos los usuarios. La única regla de negocio es: 1 proyecto activo + N archivados read-only (invariante de foco del escritor).
+5. **Draffity es 100 % gratis.** Todas las features son accesibles para todos los usuarios. La única regla de negocio es: 1 proyecto activo + N archivados read-only (invariante de foco del escritor).
 
 ## Estructura del código
 

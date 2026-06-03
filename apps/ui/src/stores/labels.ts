@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { Label, LabelInput } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
@@ -12,7 +12,7 @@ export const useLabelStore = defineStore('labels', () => {
   const labels = ref<Label[]>([]);
   const projectId = ref<string | null>(null);
 
-  /** id → Label lookup for chip rendering. */
+  /** id â†’ Label lookup for chip rendering. */
   const byId = computed(() => new Map(labels.value.map((l) => [l.id, l] as const)));
 
   async function loadFor(pid: string) {

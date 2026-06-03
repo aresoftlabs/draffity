@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
@@ -132,7 +132,7 @@ function localizedSummary(findings: ValidationFinding[]): string {
   if (counts.critical) parts.push(t('ai.validators.summary.critical', counts.critical));
   if (counts.warning) parts.push(t('ai.validators.summary.warning', counts.warning));
   if (counts.info) parts.push(t('ai.validators.summary.info', counts.info));
-  return parts.join(' · ');
+  return parts.join(' Â· ');
 }
 </script>
 
@@ -185,7 +185,7 @@ function localizedSummary(findings: ValidationFinding[]): string {
       <div v-else class="space-y-4 max-h-[50vh] overflow-auto">
         <section v-for="group in latest" :key="group.name">
           <h3 class="text-xs font-semibold uppercase tracking-wide opacity-70 mb-1">
-            {{ t(`ai.validators.${group.name}`) }} ·
+            {{ t(`ai.validators.${group.name}`) }} Â·
             <span class="font-normal normal-case opacity-80">{{
               localizedSummary(group.findings)
             }}</span>
@@ -205,10 +205,10 @@ function localizedSummary(findings: ValidationFinding[]): string {
                     v-if="f.excerpt"
                     class="mt-1 text-xs font-mono opacity-70 bg-surface-100 dark:bg-surface-800 rounded px-1.5 py-0.5 break-words"
                   >
-                    {{ `«${f.excerpt}»` }}
+                    {{ `Â«${f.excerpt}Â»` }}
                   </p>
                   <p v-if="f.suggestion" class="mt-1 text-xs italic opacity-80">
-                    {{ `→ ${f.suggestion}` }}
+                    {{ `â†’ ${f.suggestion}` }}
                   </p>
                 </div>
                 <Button

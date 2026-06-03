@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue';
 import { RouterView, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -17,7 +17,7 @@ const { t } = useI18n();
 const palette = useCommandPalette();
 const ui = useUiStore();
 
-// Atajo global ⌘K (la acción `commandPalette` ya existe en keybindings).
+// Atajo global âŒ˜K (la acciÃ³n `commandPalette` ya existe en keybindings).
 useShortcuts({ commandPalette: () => palette.toggle() });
 
 // Comandos globales: disponibles en cualquier pantalla.

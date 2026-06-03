@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -37,7 +37,7 @@ describe('countWords', () => {
 
   it('strips HTML tags and counts words', () => {
     expect(countWords('<p>Hola mundo</p>')).toBe(2);
-    expect(countWords('<h1>Capítulo 1</h1><p>Una frase con cinco palabras.</p>')).toBe(7);
+    expect(countWords('<h1>CapÃ­tulo 1</h1><p>Una frase con cinco palabras.</p>')).toBe(7);
   });
 
   it('treats nbsp and whitespace correctly', () => {
@@ -62,7 +62,7 @@ describe('useDocumentStore', () => {
     expect(store.selectedId).toBe('a');
   });
 
-  it('save flips state idle → saving → saved and updates the doc', async () => {
+  it('save flips state idle â†’ saving â†’ saved and updates the doc', async () => {
     const initial = makeDoc({ id: 'x', content: 'old' });
     invokeMock.mockResolvedValueOnce([initial]);
     const store = useDocumentStore();

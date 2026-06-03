@@ -1,7 +1,7 @@
-import { ref, type Ref } from 'vue';
+﻿import { ref, type Ref } from 'vue';
 
-/** Visibilidad módulo-compartida de la paleta ⌘K, para abrirla desde cualquier
- *  componente (atajo de teclado o botón) sin prop drilling. */
+/** Visibilidad mÃ³dulo-compartida de la paleta âŒ˜K, para abrirla desde cualquier
+ *  componente (atajo de teclado o botÃ³n) sin prop drilling. */
 const visible = ref(false);
 
 const RECENT_KEY = 'draffity.ui.recentCommands';
@@ -18,8 +18,8 @@ function loadRecent(): string[] {
   }
 }
 
-/** Ids de los últimos comandos ejecutados, más reciente primero. Persistido
- *  para alimentar la sección "Recientes" del estado vacío de la paleta. */
+/** Ids de los Ãºltimos comandos ejecutados, mÃ¡s reciente primero. Persistido
+ *  para alimentar la secciÃ³n "Recientes" del estado vacÃ­o de la paleta. */
 const recentIds = ref<string[]>(loadRecent());
 
 function pushRecent(id: string): void {
@@ -28,7 +28,7 @@ function pushRecent(id: string): void {
   try {
     localStorage.setItem(RECENT_KEY, JSON.stringify(recentIds.value));
   } catch {
-    // localStorage lleno o no disponible: la sección Recientes es best-effort.
+    // localStorage lleno o no disponible: la secciÃ³n Recientes es best-effort.
   }
 }
 

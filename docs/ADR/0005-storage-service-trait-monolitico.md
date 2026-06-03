@@ -43,8 +43,8 @@ en los tests de integración.
 
 - El trait sigue siendo grande: un mock manual completo es tedioso (mitigado porque
   los tests usan la impl real in-memory, no mocks).
-- Si más adelante un consumidor necesita solo lectura (p. ej. un servicio premium de
-  sync que no debe escribir), convendrá extraer al menos un `StorageReader`. Este ADR
+- Si más adelante un consumidor necesita solo lectura (p. ej. un servicio de sync
+  que no debe escribir), convendrá extraer al menos un `StorageReader`. Este ADR
   no lo prohíbe; lo difiere hasta que haya un consumidor que lo justifique.
 
 ## Disparadores de revisión

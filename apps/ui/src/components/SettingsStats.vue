@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import InputNumber from 'primevue/inputnumber';
@@ -10,7 +10,7 @@ import { useIpcError } from '@/composables/useIpcError';
 /**
  * Writing stats + daily goal section of Settings, extracted from the god-view
  * (AUD-28): streak counters, the daily word goal, and the last-30-days
- * sparkline. Self-contained — loads on mount.
+ * sparkline. Self-contained â€” loads on mount.
  */
 const { t } = useI18n();
 const { run } = useIpcError();
@@ -76,7 +76,7 @@ onMounted(async () => {
         <dd class="font-mono">{{ stats.lastWritingDate }}</dd>
       </div>
     </dl>
-    <p v-else class="text-xs opacity-60">…</p>
+    <p v-else class="text-xs opacity-60">â€¦</p>
 
     <div class="mt-4 flex items-center justify-between gap-3">
       <label for="set-daily-goal" class="text-sm opacity-80">
@@ -99,7 +99,7 @@ onMounted(async () => {
       <div class="flex items-baseline justify-between mb-2 text-xs">
         <span class="opacity-70">{{ t('settings.last30Days') }}</span>
         <span class="opacity-60">
-          {{ t('settings.totalWords', { count: totalWords30d }) }} ·
+          {{ t('settings.totalWords', { count: totalWords30d }) }} Â·
           {{ t('settings.activeDays', { count: activeDays30d }) }}
         </span>
       </div>

@@ -1,4 +1,4 @@
-export type ThemeMode = 'light' | 'dark' | 'high-contrast' | 'system';
+﻿export type ThemeMode = 'light' | 'dark' | 'high-contrast' | 'system';
 
 const STORAGE_KEY = 'draffity.theme';
 const DARK_CLASS = 'app-dark';
@@ -48,7 +48,7 @@ export function applyInitialTheme() {
   applyClasses(resolveClasses(mode));
 
   // Respond to OS theme changes when in 'system' mode. High-contrast
-  // ignores the system preference — the user opted in explicitly.
+  // ignores the system preference â€” the user opted in explicitly.
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (getStoredTheme() === 'system') {
       applyClasses(resolveClasses('system'));

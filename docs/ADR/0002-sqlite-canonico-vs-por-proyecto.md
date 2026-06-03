@@ -13,7 +13,7 @@ Restricciones que aparecieron en implementación:
 1. La regla "1 proyecto activo + N archivados read-only" (invariante del free) tiene que enforzarse de forma robusta. La defensa en profundidad usa un `UNIQUE INDEX idx_projects_one_active ON projects(status) WHERE status='active'`. Este índice **solo funciona si todos los proyectos viven en la misma tabla, en la misma DB**.
 2. Features futuras (búsqueda full-text cross-proyecto en Sprint 1 v2, codex compartible en Sprint 7 v2, stats agregadas) son sensiblemente más simples con una sola DB.
 3. Backup automático (Sprint 6 v2) es un único archivo, no N carpetas que coordinar.
-4. Premium multi-active se logra con un `DROP INDEX` en una migración — sin reorganizar ficheros en disco.
+4. Multi-active project se logra con un `DROP INDEX` en una migración — sin reorganizar ficheros en disco.
 
 ## Decisión
 
@@ -27,17 +27,17 @@ Adoptar **una sola DB canónica** en `<app_data_dir>/draffity.db` con todos los 
 - Backup, sync y restore son operaciones sobre un único archivo.
 - Búsqueda full-text cross-proyecto (FTS5) y stats agregadas son SQL normal.
 - Migraciones aplicadas una sola vez por arranque, no N veces.
-- Premium multi-active = migración aditiva `DROP INDEX idx_projects_one_active`. No requiere mover datos.
+- Multi-active project = migración aditiva `DROP INDEX idx_projects_one_active`. No requiere mover datos.
 
 ### Negativas / costos
 
 - Un proyecto corrupto en la DB podría arrastrar a todos. Mitigación: WAL + backup automático (Sprint 6 v2) + snapshots por documento ya implementados.
 - Tamaño del archivo crece sin límite explícito por proyecto. Un proyecto de 1M palabras puede ralentizar queries que no usen índices adecuados. Mitigación: índices en `documents(project_id, parent_id, position)` ya implementados; benchmark de FTS pendiente para Sprint 1 v2.
-- Compartir un proyecto individual entre dispositivos (sin sync premium) requiere export/import explícito, no copiar un fichero suelto.
+- Compartir un proyecto individual entre dispositivos (sin sync) requiere export/import explícito, no copiar un fichero suelto.
 
 ### Neutras
 
-- Cloud sync premium puede ser por-proyecto (sync incremental con diff) o por-DB. La decisión es independiente.
+- Cloud sync puede ser por-proyecto (sync incremental con diff) o por-DB. La decisión es independiente.
 
 ## Alternativas consideradas
 
@@ -58,4 +58,4 @@ Combina lo peor de los dos mundos: complejidad de DB múltiples + necesidad de m
 - Implementación: `apps/desktop/src/lib.rs:42-45`, `apps/desktop/src/services/storage.rs`
 - Índice partial UNIQUE: `apps/desktop/src/migrations/001_init.sql:25-27`
 - Test que verifica el enforcement a nivel SQL: `apps/desktop/src/services/storage.rs` (`unique_active_project_constraint_enforced_by_db`)
-- Plan premium multi-active: `docs/PREMIUM-INTEGRATION.md` sección "Multi-proyecto" (documento eliminado — Draffity es 100% gratuito desde v0.12; ver ADR-0006)
+- Plan multi-active project: sección "Multi-proyecto" del antiguo documento de integración (documento eliminado — Draffity es 100% gratuito; ver ADR-0006)

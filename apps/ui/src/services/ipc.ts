@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+﻿import { invoke } from '@tauri-apps/api/core';
 import type {
   BackupRecord,
   BibliographyImportSummary,
@@ -85,7 +85,7 @@ export interface AiDeltaEvent {
   delta: string;
 }
 
-/** A single AI validator finding (Épica G). */
+/** A single AI validator finding (Ã‰pica G). */
 export interface ValidationFinding {
   validator: string;
   severity: 'critical' | 'warning' | 'info';
@@ -115,7 +115,7 @@ export interface CoverageReport {
   covered: number;
 }
 
-/** Transcription result (Épica H). */
+/** Transcription result (Ã‰pica H). */
 export interface TranscriptSegment {
   text: string;
   startMs: number;
@@ -200,7 +200,7 @@ export const ipc = {
     response: string;
   }) => invoke<unknown>('ai_record_accepted', { input }),
 
-  // AI validators (Épica G)
+  // AI validators (Ã‰pica G)
   checkCodexCoverage: (projectId: string, documentId: string) =>
     invoke<CoverageReport>('check_codex_coverage', { projectId, documentId }),
   runValidators: (projectId: string, documentId: string, validators: string[]) =>
@@ -208,7 +208,7 @@ export const ipc = {
   listValidations: (documentId: string) =>
     invoke<AiValidation[]>('list_validations', { documentId }),
 
-  // Voice (Épica H)
+  // Voice (Ã‰pica H)
   getVoiceStatus: () => invoke<VoiceStatus>('get_voice_status'),
   listVoiceModels: () => invoke<VoiceModel[]>('list_voice_models'),
   downloadVoiceModel: (modelId: string) => invoke<void>('download_voice_model', { modelId }),
@@ -294,7 +294,7 @@ export const ipc = {
   }) => invoke<Template>('save_project_as_template', params),
   deleteUserTemplate: (id: string) => invoke<void>('delete_user_template', { id }),
 
-  // Collections (Épica I)
+  // Collections (Ã‰pica I)
   createCollection: (input: CollectionInput) => invoke<Collection>('create_collection', { input }),
   listCollections: (projectId: string) => invoke<Collection[]>('list_collections', { projectId }),
   renameCollection: (id: string, name: string) =>
@@ -306,7 +306,7 @@ export const ipc = {
     invoke<void>('set_collection_members', { collectionId, orderedIds }),
   resolveCollection: (id: string) => invoke<DocNode[]>('resolve_collection', { id }),
 
-  // Labels (Épica I — I-05/I-06)
+  // Labels (Ã‰pica I â€” I-05/I-06)
   createLabel: (input: LabelInput) => invoke<Label>('create_label', { input }),
   listLabels: (projectId: string) => invoke<Label[]>('list_labels', { projectId }),
   updateLabel: (id: string, name: string, color: string) =>
@@ -315,7 +315,7 @@ export const ipc = {
   setDocumentLabels: (documentId: string, labelIds: string[]) =>
     invoke<DocNode>('set_document_labels', { documentId, labelIds }),
 
-  // Custom metadata fields (Épica I — I-08/I-09)
+  // Custom metadata fields (Ã‰pica I â€” I-08/I-09)
   createCustomField: (input: CustomFieldInput) =>
     invoke<CustomField>('create_custom_field', { input }),
   listCustomFields: (projectId: string) =>
@@ -326,10 +326,10 @@ export const ipc = {
   setDocumentMetadata: (documentId: string, fieldId: string, value: string | null) =>
     invoke<DocNode>('set_document_metadata', { documentId, fieldId, value }),
 
-  // Research folder (Épica I — I-10)
+  // Research folder (Ã‰pica I â€” I-10)
   setDocumentResearch: (id: string, isResearch: boolean) =>
     invoke<DocNode>('set_document_research', { id, isResearch }),
-  // Front/back matter (Épica K — K-03)
+  // Front/back matter (Ã‰pica K â€” K-03)
   setDocumentMatter: (id: string, isFront: boolean, isBack: boolean) =>
     invoke<DocNode>('set_document_matter', { id, isFront, isBack }),
 

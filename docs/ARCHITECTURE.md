@@ -103,8 +103,8 @@ Las decisiones arquitectónicas importantes se documentan en [`docs/ADR/`](./ADR
 
 - [ADR 0001 — Tauri 2 sobre Electron](./ADR/0001-tauri-sobre-electron.md)
 - [ADR 0002 — SQLite canónica única vs por proyecto](./ADR/0002-sqlite-canonico-vs-por-proyecto.md)
-- [ADR 0003 — Diseño de servicios vía traits](./ADR/0003-premium-aditivo-via-traits.md)
-- [ADR 0006 — Draffity 100 % gratis sin premium](./ADR/0006-draffity-100-gratis-sin-premium.md)
+- [ADR 0003 — Diseño de servicios vía traits](./ADR/0003-service-traits-pattern.md)
+- [ADR 0006 — Draffity 100 % gratis](./ADR/0006-draffity-100-gratis.md)
 
 ## Decisiones explícitas (alcance del MVP)
 

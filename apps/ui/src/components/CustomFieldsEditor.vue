@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import DatePicker from 'primevue/datepicker';
@@ -23,14 +23,14 @@ function commit(fieldId: string, raw: string | null) {
   emit('change', fieldId, value);
 }
 
-/** `yyyy-mm-dd` string → Date for the picker model (local midnight). */
+/** `yyyy-mm-dd` string â†’ Date for the picker model (local midnight). */
 function toDate(v: string | undefined): Date | null {
   if (!v) return null;
   const d = new Date(`${v}T00:00:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Date → `yyyy-mm-dd` for storage (locale-independent). */
+/** Date â†’ `yyyy-mm-dd` for storage (locale-independent). */
 function fromDate(d: Date | null): string | null {
   if (!d) return null;
   const y = d.getFullYear();

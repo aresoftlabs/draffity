@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { Project, ProjectInput } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';

@@ -1,9 +1,9 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+﻿import { Node, mergeAttributes } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 /**
  * Inline footnote node. The body text lives inline as a node attribute
- * (`data-footnote-content`) so the serialised HTML is self-contained — no
+ * (`data-footnote-content`) so the serialised HTML is self-contained â€” no
  * separate footnotes table to keep in sync. The visible glyph in the
  * editor is a dagger; numbering happens at export time based on document
  * order. Clicking a footnote dispatches `draffity:open-footnote` on
@@ -55,11 +55,11 @@ export const Footnote = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['sup', mergeAttributes(HTMLAttributes, { class: 'footnote-ref' }), '†'];
+    return ['sup', mergeAttributes(HTMLAttributes, { class: 'footnote-ref' }), 'â€ '];
   },
 
   renderText() {
-    return '†';
+    return 'â€ ';
   },
 
   addCommands() {

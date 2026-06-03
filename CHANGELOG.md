@@ -12,10 +12,10 @@ y voz local. Aún sin release versionada.
 
 ### Changed — Modelo 100% gratuito (2026-06-02)
 
-- Draffity es ahora **100% gratuito**: se eliminó el modelo premium/suscripción.
-  Todas las features están disponibles sin condición. La IA sigue usando tu
-  propia API key (BYOK) y la voz usa modelos locales que instalás vos.
-  Consultar `docs/ADR/0006-draffity-100-gratis-sin-premium.md` para el
+- Draffity es **100% gratuito**: todas las features están disponibles sin
+  condición. La IA usa tu propia API key (BYOK) y la voz corre con modelos
+  locales que instalás vos. Sin tiers, sin suscripciones, sin gates de funcionalidad.
+  Consultar `docs/ADR/0006-draffity-100-gratis.md` para el
   razonamiento completo.
 
 ### Fixed / Changed — Remediación de auditoría (`docs/AUDITORIA-2026-05-30.md`)
@@ -45,7 +45,7 @@ resumen por sprint:
   compile passes de export); tunables de red consolidados; manejo IPC revisado;
   ADR-0004/0005 (dispatch por `match`; `StorageService` monolítico). El god-view
   `Settings.vue` pasó de 1215L a 496L extrayendo 5 secciones a subcomponentes
-  (`SettingsBackups/AI/Voice/Premium/Stats`), cada una con smoke test.
+  (`SettingsBackups/AI/Voice/Stats`), cada una con smoke test.
   [AUD-19, 21..27, 33..36]
 
 ### Added — Épica L: rediseño visual y de usabilidad (fases 1–6)
@@ -75,11 +75,11 @@ identidad propia, sin perder funcionalidad (spec/planes en
   (`projectCover`) + branding "Tus Drafts" / "+ Nuevo Draft" + microcopy.
 - **Header del editor consolidado** (fase 3c): toggles de vista visibles
   (foco/composición/split) + menú de proyecto "⋯" con las acciones (exportar,
-  bibliografía, plantilla, validar, notas de voz), gating premium preservado.
+  bibliografía, plantilla, validar, notas de voz).
 - **Configuración en 10 secciones** (fase 4): `Settings` reorganizado a nav
   lateral (Apariencia · Editor · Idioma · Audio y voz · IA y modelos · Atajos ·
-  Objetivos y sesión · Copias y datos · Plan/Premium · Acerca de) reusando los
-  controles existentes; toda la lógica async (IA/voz/premium/backups) intacta.
+  Objetivos y sesión · Copias y datos · Plan · Acerca de) reusando los
+  controles existentes; toda la lógica async (IA/voz/backups) intacta.
 - **Audio en contexto** (fase 5): controles de Leer en voz alta y Dictado en la
   barra de estado, gateados por capability, con estado activo visible.
 - **QA y limpieza** (fase 6): verificado que toda la funcionalidad del mapa
@@ -108,22 +108,21 @@ Round de usabilidad sobre el rediseño
 - **Paleta ⌘K estilo Spotlight**: input grande, sección "Recientes"
   persistida, y atajo de teclado real (configurable) por fila.
 
-### Added — Épica E: foundations premium (E-01..E-10)
+### Added — Épica E: foundations para IA y voz (E-01..E-10)
 
 - **Secrets en keyring del SO** (E-01): trait `SecretStorage` +
   `KeyringSecretStorage` (Windows Credential Manager / macOS Keychain /
   Linux Secret Service) + `InMemorySecretStorage` para tests. Las API keys
-  BYOK y la licencia nunca tocan la tabla `settings` en texto plano.
-- **Tier hot-swap** (E-06, cierra el arrastre S5-10): `PremiumTier` +
-  `MutableTier` (con `set_tier` en el trait) → activar premium cambia las
-  capabilities en vivo, sin reiniciar, a través del único `Arc<dyn TierService>`
-  compartido.
-- **Licencia premium offline** (E-07): `LicenseValidator` + `Ed25519Validator`
+  BYOK nunca tocan la tabla `settings` en texto plano.
+- **Capabilities hot-swap** (E-06, cierra el arrastre S5-10): `MutableTier`
+  (con `set_tier` en el trait) que cambia las capabilities en vivo, sin
+  reiniciar, a través del único `Arc<dyn TierService>` compartido.
+- **Licencia offline** (E-07): `LicenseValidator` + `Ed25519Validator`
   (firma asimétrica; sólo la clave pública viaja en la app) +
   `DisabledLicenseValidator` para builds OSS sin clave. Comandos
-  `activate_premium` / `deactivate_premium` / `get_premium_status` + restore
+  `activate_license` / `deactivate_license` / `get_license_status` + restore
   al arranque desde el keyring. Pubkey por env `DRAFFITY_LICENSE_PUBKEY`.
-- **Contratos premium-ready** (E-03/E-04): `AIService` con `stream_complete`
+- **Contratos de servicio** (E-03/E-04): `AIService` con `stream_complete`
   por callback sink (object-safe, sin runtime async); `ASRService` con
   `Transcript` + streaming; nuevo `TTSService` + `NoOpTTS`.
 - **Capabilities granulares** (E-05): `ai_inline`, `ai_validators`,
@@ -131,10 +130,10 @@ Round de usabilidad sobre el rediseño
 - **Sidecar infra** (E-02): helper `run_sidecar` sobre `tauri-plugin-shell`
   (binarios los provee la Épica H).
 - **Event bus tipado** (E-09): enum `AppEvent` mapeando a las consts estables.
-- **Telemetría local-only** (E-10): appender `premium-events.log` filtrado por
+- **Telemetría local-only** (E-10): appender `events.log` filtrado por
   target `ai_events`/`voice_events`. Cero red.
-- **UI premium** (E-08): activación de licencia + secciones IA/Voz en Settings,
-  gateadas por capability (sin leakage en free).
+- **Secciones IA/Voz en Settings** (E-08): activación de licencia +
+  configuración de IA y Voz, gateadas por capability.
 
 ### Added — Épica F: editor IA inline con BYOK OpenRouter (F-01..F-13)
 
@@ -280,9 +279,9 @@ Round de usabilidad sobre el rediseño
 
 - **Pool de conexiones SQLite** (S5-08+09 → E-01). Contención
   hipotética con un único usuario; sin benchmark que muestre cuello,
-  es churn. Cuando aparezca storage premium o sync remoto.
+  es churn. Cuando aparezca storage en la nube o sync remoto.
 - **Hot-swap de tier** (S5-10, P1 → E-02). Sólo gana valor con un
-  tier premium real al que swapear.
+  tier real al que swapear.
 
 ## [0.12.0-beta] — 2026-05-28
 
@@ -376,7 +375,7 @@ necesidades de accesibilidad y privacidad explícitas.
 Sprint C cerrado al 100% (5 historias). Cierra el ciclo de export
 con import bidireccional, suma diff visual entre snapshots y termina
 el formato PDF pendiente desde Sprint 1. Toda nueva entrada se
-apoya en el patrón premium-ready (trait + impl + NoOp) consolidado
+apoya en el patrón (trait + impl + NoOp) consolidado
 en Sprints A/B.
 
 ### Added — Markdown import (C-01, S4-06)
@@ -384,7 +383,7 @@ en Sprints A/B.
 - **Nuevo trait `ImportService`** + `LocalImporter` (dispatch por
   formato) + `LocalMarkdownImporter` (struct enfocado, útil para
   callers/tests que sólo necesitan Markdown). Sigue el patrón
-  premium-ready: una futura `CloudImporterService` implementa la
+  una futura `CloudImporterService` implementa la
   misma surface.
 - **Parser** con `pulldown-cmark` v0.12: YAML frontmatter mínimo
   (`title:` se usa como project title cuando está presente), split
@@ -481,7 +480,7 @@ Sprint B cerrado al 100% (5 historias). Primer sprint del backlog v3
 con foco en **features de editor** acumuladas como arrastres de
 Sprints 2-6 originales: imágenes inline, fuentes personalizadas,
 notas al pie, gráfico de hábito de escritura y editor partido. Toda
-nueva funcionalidad se asienta sobre el patrón premium-ready (trait +
+nueva funcionalidad se asienta sobre el patrón (trait +
 impl) consolidado en Sprint A.
 
 ### Added — Imágenes inline (B-01, S4-02)
@@ -598,7 +597,7 @@ epub:type="footnote">` con back-link `↩` por nota. **DOCX**:
 Sprint A cerrado al 100% (10 historias). Primer sprint del backlog v3
 con foco interno: deuda técnica acumulada en archivos sobre límite del
 CLAUDE.md + accesibilidad base en componentes custom + patrón
-premium-ready aplicado al project manager. No hay features nuevas
+aplicado al project manager. No hay features nuevas
 visibles al usuario; el output es un codebase más mantenible y
 navegable con teclado / lector de pantalla, listo para sumar features
 en Sprints B/C sin disparar la deuda.
@@ -640,11 +639,11 @@ en Sprints B/C sin disparar la deuda.
   cubren empty query, case-sensitive/insensitive, multi-paragraph y
   no-overlap en consecutivos.
 - **`ProjectManager` ahora es `trait ProjectManagerService` +
-  `LocalProjectManager` impl** (A-10): aplica el patrón premium-ready
+  `LocalProjectManager` impl** (A-10): aplica el patrón
   del §2 del CLAUDE.md al manager, que era un struct concreto sin
   interfaz. `AppState.project_manager` pasa a
   `Arc<dyn ProjectManagerService>`; los commands no cambian. Un
-  futuro `CloudProjectManager` (sync con backend premium) se enchufa
+  futuro `CloudProjectManager` (sync con backend remoto) se enchufa
   sin tocar nada del wiring actual.
 
 ### Added — Accesibilidad
@@ -689,7 +688,7 @@ Verificado que PrimeVue 4 da por default:
 ## [0.8.0-beta] — 2026-05-28
 
 Sprint 7 cerrado al 100%: codex (worldbuilding/personajes) llega en
-free y diferencia a Draffity de la competencia. La app ahora suma un
+free. La app ahora suma un
 catálogo de personajes/lugares/objetos/notas por proyecto, con
 cross-references `[[Nombre]]` desde el editor que sobreviven renombrados
 (la resolución es por id, no por nombre) y un apéndice opcional en el
@@ -713,7 +712,7 @@ export.
 - **Decisión arquitectónica**: codex vive en `StorageService` igual
   que citations, en lugar del trait separado que pedía el backlog. La
   justificación es evitar duplicar conexiones SQLite por puro
-  adapter; cuando aparezca un `CodexService` premium (auto-detección
+  adapter; cuando aparezca un `CodexService` avanzado (auto-detección
   con IA, sync remoto) se extrae el trait sin tocar consumidoras.
 - **Vista Codex como cuarto modo del project view toggle** (S7-05,
   S7-06): `ProjectViewMode` suma `'codex'` al lado de
@@ -784,8 +783,8 @@ en "Deferred".
 ### Added — Sprint 6
 
 - **Backup automático diario** (S6-04, S6-05): nuevo
-  `BackupService` trait + `LocalBackupService` (free) + `NoOpBackup`
-  (premium-ready para `CloudBackupService` futuro). Copia
+  `BackupService` trait + `LocalBackupService` + `NoOpBackup`
+  (para `CloudBackupService` futuro). Copia
   `<app_data>/draffity.db` a `<app_data>/backups/` con nombre
   `YYYY-MM-DD-HHMMSS-{daily,monthly,manual}.db`. Política de
   rotación: 7 dailies + último de cada uno de los últimos 6
@@ -838,7 +837,7 @@ en "Deferred".
 - `ServiceBundle` y `AppState` ahora cargan `backup` y
   `user_templates` (este último separado del `templates` trait
   para que el IPC pueda escribir sin downcasts).
-- Patrón premium-ready aplicado a backup: `BackupService` trait
+- Patrón aplicado a backup: `BackupService` trait
   más `NoOpBackup` stub. `CloudBackupService` futuro implementa el
   mismo trait sin tocar `lib.rs::setup`.
 
@@ -918,9 +917,9 @@ queda fuera del release.
 - Migración 007 aditiva: tabla `citations` + índice por
   `project_id`. Backwards-compatible — proyectos previos siguen
   funcionando sin entries.
-- Patrón premium-ready aplicado a la bibliografía:
-  `BibliographyService` trait + `LocalBibliographyService` (free).
-  Premium puede sumar `RemoteBibliographyService` (Zotero, etc.)
+- Patrón aplicado a la bibliografía:
+  `BibliographyService` trait + `LocalBibliographyService`.
+  El futuro `RemoteBibliographyService` (Zotero, etc.) se suma
   sin tocar core.
 - `ServiceFactory` extendido con `bibliography` — sigue el patrón
   de `LocalExporter` y queda listo para hot-swap por tier cuando
@@ -1126,7 +1125,7 @@ tag)` con PK compuesta + cascade delete. Subquery
 ## [0.2.0-beta] — 2026-05-27
 
 Cierre del Sprint 1: deuda del alpha + base sólida para los sprints
-de productividad. Premium-aditivo intocado.
+de productividad.
 
 ### Added — Sprint 0 (architecture guardrails)
 
@@ -1134,7 +1133,7 @@ de productividad. Premium-aditivo intocado.
   patrones canónicos, antipatrones y reglas Rust/Vue específicas.
 - `docs/ADR/` con README + template MADR-ligero + 3 ADRs retroactivos
   (Tauri sobre Electron, SQLite canónica única vs por proyecto,
-  premium aditivo vía traits).
+  aditivo vía traits).
 - Patrones canónicos documentados en `docs/ARCHITECTURE.md` con
   referencias al código que los materializa.
 - `vue/no-bare-strings-in-template` como error en ESLint: cualquier
@@ -1205,7 +1204,7 @@ de productividad. Premium-aditivo intocado.
 
 ## [0.1.0-alpha] — 2026-05-08
 
-First public alpha. Free MVP, premium-ready architecture.
+First public alpha. Free MVP.
 
 ### Added — Foundations
 
@@ -1221,7 +1220,7 @@ First public alpha. Free MVP, premium-ready architecture.
 - `StorageService` trait + `LocalStorageService` (rusqlite, WAL, foreign keys ON).
 - `TierService` + `FreeTier` driving `capabilities.rs` (single source of truth for feature gates).
 - `ProjectManager` orchestrating the active/archive lifecycle with capability-aware behaviour.
-- Premium-ready stubs: `AIService`, `CloudSyncService`, `ASRService`, `ExportService`.
+- Stubs: `AIService`, `CloudSyncService`, `ASRService`, `ExportService`.
 - Atomic project + template instantiation (`create_project_atomic`) inside a single SQLite transaction.
 
 ### Added — Editor & Project UI
@@ -1261,24 +1260,23 @@ First public alpha. Free MVP, premium-ready architecture.
 - `release.yml` workflow with `tauri-action` for tag-driven MSI/AppImage releases.
 - `docs/USER-GUIDE.md` (ES) and `docs/RELEASE-CHECKLIST.md`.
 
-### Architecture invariants
+### Architecture invariants (legacy, refer to ADR-0006)
 
-- **Premium is additive.** Adding premium implementations of any service trait must not modify domain, commands, or existing service code.
-- **No premium leakage in UI.** No upsell prompts, badges or gates referencing premium in the MVP.
-- **No proprietary AI infra.** AI integration uses BYOK (planned for premium); no LLM is hosted by us.
+- **Services are additive.** Adding new implementations of any service trait must not modify domain, commands, or existing service code.
+- **No proprietary AI infra.** AI integration uses BYOK; no LLM is hosted by us.
 
 ### Tests
 
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/OWNER/draffity/compare/v0.9.0-beta...HEAD
-[0.9.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.9.0-beta
-[0.8.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.8.0-beta
-[0.7.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.7.0-beta
-[0.6.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.6.0-beta
-[0.5.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.5.0-beta
-[0.4.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.4.0-beta
-[0.3.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.3.0-beta
-[0.2.0-beta]: https://github.com/OWNER/draffity/releases/tag/v0.2.0-beta
-[0.1.0-alpha]: https://github.com/OWNER/draffity/releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/arezouski/draffity/compare/v0.9.0-beta...HEAD
+[0.9.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.9.0-beta
+[0.8.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.8.0-beta
+[0.7.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.7.0-beta
+[0.6.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.6.0-beta
+[0.5.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.5.0-beta
+[0.4.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.4.0-beta
+[0.3.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.3.0-beta
+[0.2.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.2.0-beta
+[0.1.0-alpha]: https://github.com/arezouski/draffity/releases/tag/v0.1.0-alpha

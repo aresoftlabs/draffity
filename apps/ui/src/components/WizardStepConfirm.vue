@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import type { Template } from '@draffity/shared-types';
 
@@ -32,7 +32,7 @@ const { t } = useI18n();
         class="flex justify-between gap-2"
       >
         <dt class="opacity-60">{{ f.label }}</dt>
-        <dd>{{ values[f.key] || '—' }}</dd>
+        <dd>{{ values[f.key] || 'â€”' }}</dd>
       </div>
     </dl>
 

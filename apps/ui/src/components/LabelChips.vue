@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import type { Label } from '@draffity/shared-types';
 import { useLabelStore } from '@/stores/labels';

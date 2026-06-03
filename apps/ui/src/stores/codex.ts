@@ -1,10 +1,10 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { CodexEntry, CodexInput, CodexKind, CodexUpdate } from '@draffity/shared-types';
 import { ipc } from '@/services/ipc';
 
 /** Per-project codex cache. Re-fetches whenever `loadFor` is called with a
- *  different project id — same shape as the citations store. */
+ *  different project id â€” same shape as the citations store. */
 export const useCodexStore = defineStore('codex', () => {
   const projectId = ref<string | null>(null);
   const entries = ref<CodexEntry[]>([]);
