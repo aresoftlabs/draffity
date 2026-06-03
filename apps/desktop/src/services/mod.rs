@@ -14,6 +14,7 @@ pub mod importer;
 pub mod media;
 pub mod memory;
 pub mod project_manager;
+pub mod resources;
 mod retention_policy;
 pub mod secrets;
 pub mod sidecar;
@@ -49,6 +50,7 @@ pub use importer::{ImportFormat, ImportNode, ImportService, ImportTree, LocalImp
 pub use media::{LocalMediaService, MediaService, NoOpMedia};
 pub use memory::{LexicalProjectMemory, MemoryContext, MemoryRequest, ProjectMemoryService};
 pub use project_manager::{LocalProjectManager, ProjectManagerService};
+pub use resources::DraffityHome;
 pub use secrets::{InMemorySecretStorage, KeyringSecretStorage, SecretStorage};
 pub use storage::{CitationUpsert, LocalStorageService, StorageService};
 pub use templates::{BuiltInTemplates, LayeredTemplatesService, TemplatesService};

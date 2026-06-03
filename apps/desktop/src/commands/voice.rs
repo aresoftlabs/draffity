@@ -4,6 +4,8 @@
 //!
 //! The actual transcription command lands with the dictation UI (slice 2);
 //! here we manage the assets the ASR depends on.
+//!
+//! All path resolution goes through `state.resources` (DraffityHome).
 
 use std::path::PathBuf;
 
@@ -13,10 +15,10 @@ use crate::domain::{now_ms, MediaAsset};
 use crate::error::AppError;
 use crate::services::tts::SynthesizedAudio;
 use crate::services::voice::{
-    bin_path, download_and_extract_binary, download_to_file, installed_models, model_by_id,
-    model_path, model_url, piper_bin_path, piper_voices, voice_by_id, voice_config_filename,
-    voice_dir, voice_file_path, whisper_models,
+    download_and_extract_binary, download_to_file, model_by_id, model_url, piper_voices,
+    voice_by_id, voice_config_filename, whisper_models,
 };
+use crate::services::DraffityHome;
 use crate::services::Transcript;
 use crate::state::AppState;
 
@@ -65,24 +67,34 @@ struct DownloadProgress {
 
 #[tauri::command]
 pub fn get_voice_status(state: State<'_, AppState>) -> VoiceStatus {
-    let dir = &state.app_data_dir;
     VoiceStatus {
         dictation_available: state.asr.available(),
-        binary_installed: bin_path(dir).exists(),
-        installed_models: installed_models(dir),
+        binary_installed: state.resources.bin_dir().exists(),
+        installed_models: installed_models_on_disk(&state.resources),
         tts_available: state.tts.available(),
-        piper_installed: piper_bin_path(dir).exists(),
+        piper_installed: state.resources.piper_bin_path().exists(),
     }
+}
+
+/// List filenames of installed (present on disk) whisper models, in registry order.
+fn installed_models_on_disk(home: &DraffityHome) -> Vec<String> {
+    whisper_models()
+        .iter()
+        .filter(|m| home.model_path(m.filename).exists())
+        .map(|m| m.filename.to_string())
+        .collect()
 }
 
 #[tauri::command]
 pub fn list_voice_voices(state: State<'_, AppState>) -> Vec<VoiceVoiceDto> {
-    let dir = &state.app_data_dir;
     piper_voices()
         .iter()
         .map(|v| {
-            let installed = voice_file_path(dir, v.onnx_filename).exists()
-                && voice_file_path(dir, &voice_config_filename(v)).exists();
+            let installed = state.resources.voice_file_path(v.onnx_filename).exists()
+                && state
+                    .resources
+                    .voice_file_path(&voice_config_filename(v))
+                    .exists();
             VoiceVoiceDto {
                 id: v.id.to_string(),
                 name: v.name.to_string(),
@@ -97,7 +109,6 @@ pub fn list_voice_voices(state: State<'_, AppState>) -> Vec<VoiceVoiceDto> {
 
 #[tauri::command]
 pub fn list_voice_models(state: State<'_, AppState>) -> Vec<VoiceModelDto> {
-    let dir = &state.app_data_dir;
     whisper_models()
         .iter()
         .map(|m| VoiceModelDto {
@@ -105,7 +116,7 @@ pub fn list_voice_models(state: State<'_, AppState>) -> Vec<VoiceModelDto> {
             filename: m.filename.to_string(),
             size_mb: m.size_mb,
             recommended: m.recommended,
-            installed: model_path(dir, m.filename).exists(),
+            installed: state.resources.model_path(m.filename).exists(),
         })
         .collect()
 }
@@ -120,7 +131,7 @@ pub async fn download_voice_model(
     let model = model_by_id(&model_id)
         .ok_or_else(|| AppError::NotFound(format!("voice model {model_id}")))?;
     let url = model_url(model);
-    let dest = model_path(&state.app_data_dir, model.filename);
+    let dest = state.resources.model_path(model.filename);
     let sha = model.sha256;
     let app2 = app.clone();
     let id = model_id.clone();
@@ -155,10 +166,10 @@ pub async fn download_voice_binary(
     }
     let app2 = app.clone();
     let id = binary_id.clone();
-    let dir = state.app_data_dir.clone();
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
 
     tauri::async_runtime::spawn_blocking(move || {
-        download_and_extract_binary(&id, &dir, |downloaded, total| {
+        download_and_extract_binary(&id, &home, |downloaded, total| {
             let _ = app2.emit(
                 "voice.download.progress",
                 DownloadProgress {
@@ -177,7 +188,7 @@ pub async fn download_voice_binary(
 pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdResult<()> {
     let model = model_by_id(&model_id)
         .ok_or_else(|| AppError::NotFound(format!("voice model {model_id}")))?;
-    let path = model_path(&state.app_data_dir, model.filename);
+    let path = state.resources.model_path(model.filename);
     if path.exists() {
         std::fs::remove_file(&path)?;
     }
@@ -194,7 +205,7 @@ pub async fn transcribe_audio(state: State<'_, AppState>, wav: Vec<u8>) -> CmdRe
             "el dictado no está disponible (instalá el binario y un modelo de voz)".into(),
         ));
     }
-    let tmp_dir = voice_dir(&state.app_data_dir).join("tmp");
+    let tmp_dir = state.resources.tmp_dir();
     std::fs::create_dir_all(&tmp_dir)?;
     let path = tmp_dir.join(format!("rec{}.wav", now_ms()));
     std::fs::write(&path, &wav)?;
@@ -216,7 +227,7 @@ pub fn import_voice_binary(state: State<'_, AppState>, source_path: String) -> C
     if !src.is_file() {
         return Err(AppError::NotFound(format!("binary {source_path}")));
     }
-    let dest = bin_path(&state.app_data_dir);
+    let dest = state.resources.bin_dir();
     if let Some(parent) = dest.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -231,7 +242,7 @@ pub fn import_piper_binary(state: State<'_, AppState>, source_path: String) -> C
     if !src.is_file() {
         return Err(AppError::NotFound(format!("binary {source_path}")));
     }
-    let dest = piper_bin_path(&state.app_data_dir);
+    let dest = state.resources.piper_bin_path();
     if let Some(parent) = dest.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -251,8 +262,10 @@ pub async fn download_voice_voice(
         voice_by_id(&voice_id).ok_or_else(|| AppError::NotFound(format!("voice {voice_id}")))?;
     let onnx_url = voice.onnx_url.to_string();
     let config_url = format!("{}.json", voice.onnx_url);
-    let onnx_dest = voice_file_path(&state.app_data_dir, voice.onnx_filename);
-    let config_dest = voice_file_path(&state.app_data_dir, &voice_config_filename(voice));
+    let onnx_dest = state.resources.voice_file_path(voice.onnx_filename);
+    let config_dest = state
+        .resources
+        .voice_file_path(&voice_config_filename(voice));
     let app2 = app.clone();
     let id = voice_id.clone();
 
@@ -289,9 +302,10 @@ pub async fn synthesize_speech(
         ));
     }
     let tts = state.tts.clone();
-    tauri::async_runtime::spawn_blocking(move || tts.synthesize(&text, &voice_id))
+    let result = tauri::async_runtime::spawn_blocking(move || tts.synthesize(&text, &voice_id))
         .await
-        .map_err(|e| AppError::Unexpected(format!("tarea de síntesis: {e}")))?
+        .map_err(|e| AppError::Unexpected(format!("tarea de síntesis: {e}")))?;
+    result
 }
 
 /// Test-synthesize: render `text` with `voice_id` and write the PCM16 output
@@ -313,12 +327,14 @@ pub async fn test_synthesize(
         ));
     }
     let tts = state.tts.clone();
-    let audio = tauri::async_runtime::spawn_blocking(move || tts.synthesize(&text, &voice_id))
-        .await
-        .map_err(|e| AppError::Unexpected(format!("tarea de síntesis: {e}")))??;
+    let audio_result =
+        tauri::async_runtime::spawn_blocking(move || tts.synthesize(&text, &voice_id))
+            .await
+            .map_err(|e| AppError::Unexpected(format!("tarea de síntesis: {e}")))?;
+    let audio = audio_result?;
 
     // Write a WAV file to a temp dir under voice/.
-    let tmp = voice_dir(&state.app_data_dir).join("tmp");
+    let tmp = state.resources.tmp_dir();
     std::fs::create_dir_all(&tmp)?;
     let path = tmp.join(format!("test_synth_{}.wav", now_ms()));
     let bytes = encode_wav_pcm16(&audio.samples_pcm16, audio.sample_rate);
@@ -371,9 +387,17 @@ pub async fn save_voice_note(
 
     let mut text: Option<String> = None;
     if transcribe && state.asr.available() {
+        // `asset.path_relative` is stored as `media/<project>/<hash>.<ext>`;
+        // resolve it relative to the media root.
         let path = state
-            .app_data_dir
-            .join(&asset.path_relative)
+            .resources
+            .media_dir()
+            .join(
+                asset
+                    .path_relative
+                    .strip_prefix("media/")
+                    .unwrap_or(&asset.path_relative),
+            )
             .to_string_lossy()
             .into_owned();
         let asr = state.asr.clone();
@@ -423,12 +447,11 @@ pub struct DiskUsageEntry {
 /// Get disk usage for installed models and voices.
 #[tauri::command]
 pub fn get_disk_usage(state: State<'_, AppState>) -> Vec<DiskUsageEntry> {
-    let dir = &state.app_data_dir;
     let mut entries = Vec::new();
 
     // Piper voices
     for v in piper_voices() {
-        let p = voice_file_path(dir, v.onnx_filename);
+        let p = state.resources.voice_file_path(v.onnx_filename);
         if p.exists() {
             if let Ok(meta) = std::fs::metadata(&p) {
                 entries.push(DiskUsageEntry {
@@ -441,7 +464,7 @@ pub fn get_disk_usage(state: State<'_, AppState>) -> Vec<DiskUsageEntry> {
 
     // Whisper models
     for m in whisper_models() {
-        let p = model_path(dir, m.filename);
+        let p = state.resources.model_path(m.filename);
         if p.exists() {
             if let Ok(meta) = std::fs::metadata(&p) {
                 entries.push(DiskUsageEntry {
@@ -504,12 +527,14 @@ pub fn group_available_models<'v>(
 
 #[tauri::command]
 pub fn list_available_models(state: State<'_, AppState>) -> Vec<LanguageGroup> {
-    let dir = &state.app_data_dir;
     let voices = piper_voices().iter().map(|v| {
-        let installed = voice_file_path(dir, v.onnx_filename).exists()
-            && voice_file_path(dir, &voice_config_filename(v)).exists();
+        let installed = state.resources.voice_file_path(v.onnx_filename).exists()
+            && state
+                .resources
+                .voice_file_path(&voice_config_filename(v))
+                .exists();
         let bytes = if installed {
-            std::fs::metadata(voice_file_path(dir, v.onnx_filename))
+            std::fs::metadata(state.resources.voice_file_path(v.onnx_filename))
                 .map(|m| m.len())
                 .unwrap_or(0)
         } else {
@@ -518,7 +543,7 @@ pub fn list_available_models(state: State<'_, AppState>) -> Vec<LanguageGroup> {
         (v, installed, bytes)
     });
     let models = whisper_models().iter().map(|m| {
-        let p = model_path(dir, m.filename);
+        let p = state.resources.model_path(m.filename);
         let installed = p.exists();
         let bytes = if installed {
             std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0)

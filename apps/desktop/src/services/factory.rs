@@ -7,19 +7,19 @@
 //! because the `WorkerGuard` must outlive the whole app and the factory is
 //! also useful in tests where logging is irrelevant.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::error::AppResult;
 use crate::services::{
     AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
-    BuiltInTemplates, ByokAIService, CrashReporterService, ExportService, ImportService,
-    KeyringSecretStorage, LayeredTemplatesService, LexicalProjectMemory, LocalBackupService,
-    LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
-    LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, NoOpCrashReporter,
-    OpenRouterValidators, PiperTTSService, ProjectManagerService, ProjectMemoryService,
-    SecretStorage, StorageService, TTSService, TemplatesService, UserTemplatesLoader,
-    WhisperLocalASR,
+    BuiltInTemplates, ByokAIService, CrashReporterService, DraffityHome, ExportService,
+    ImportService, KeyringSecretStorage, LayeredTemplatesService, LexicalProjectMemory,
+    LocalBackupService, LocalBibliographyService, LocalExporter, LocalFileCrashReporter,
+    LocalImporter, LocalMediaService, LocalProjectManager, LocalStorageService, MediaService,
+    NoOpCrashReporter, OpenRouterValidators, PiperTTSService, ProjectManagerService,
+    ProjectMemoryService, SecretStorage, StorageService, TTSService, TemplatesService,
+    UserTemplatesLoader, WhisperLocalASR,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
@@ -41,8 +41,6 @@ pub struct ServiceBundle {
     pub media: Arc<dyn MediaService>,
     pub crash_reporter: Arc<dyn CrashReporterService>,
     pub secrets: Arc<dyn SecretStorage>,
-    /// App data dir — voice commands resolve binary/model paths from it.
-    pub app_data_dir: PathBuf,
 }
 
 /// Builds `ServiceBundle` from a storage location. Idempotent w.r.t.
@@ -50,19 +48,16 @@ pub struct ServiceBundle {
 pub struct ServiceFactory;
 
 impl ServiceFactory {
-    pub fn build(app_data_dir: &Path) -> AppResult<ServiceBundle> {
-        let storage = Self::build_storage(app_data_dir)?;
-        let user_templates = Arc::new(UserTemplatesLoader::new(
-            app_data_dir.join("templates").join("user"),
-        ));
+    pub fn build(resources: &DraffityHome) -> AppResult<ServiceBundle> {
+        let storage = Self::build_storage(resources.db_path())?;
+        let user_templates = Arc::new(UserTemplatesLoader::new(resources.templates_dir()));
         let templates: Arc<dyn TemplatesService> = Self::build_templates(user_templates.clone())?;
         let project_manager: Arc<dyn ProjectManagerService> =
             Arc::new(LocalProjectManager::new(storage.clone(), templates.clone()));
 
         let media: Arc<dyn MediaService> =
-            Arc::new(LocalMediaService::new(storage.clone(), app_data_dir));
-        let crash_reporter: Arc<dyn CrashReporterService> =
-            Self::build_crash_reporter(app_data_dir);
+            Arc::new(LocalMediaService::new(storage.clone(), resources));
+        let crash_reporter: Arc<dyn CrashReporterService> = Self::build_crash_reporter(resources);
 
         // Secrets feed the BYOK AI service; both share the keyring. AI is gated
         // at call time by the stored key (see ByokAIService).
@@ -73,9 +68,9 @@ impl ServiceFactory {
         let validators: Arc<dyn AIValidatorService> =
             Arc::new(OpenRouterValidators::new(ai.clone()));
         // Local Whisper ASR. Available when the binary + a model are installed.
-        let asr: Arc<dyn ASRService> = Arc::new(WhisperLocalASR::new(app_data_dir.to_path_buf()));
+        let asr: Arc<dyn ASRService> = Arc::new(WhisperLocalASR::new(resources));
         // Local Piper TTS. Available when the binary + a voice are installed.
-        let tts: Arc<dyn TTSService> = Arc::new(PiperTTSService::new(app_data_dir.to_path_buf()));
+        let tts: Arc<dyn TTSService> = Arc::new(PiperTTSService::new(resources));
 
         Ok(ServiceBundle {
             storage,
@@ -90,35 +85,33 @@ impl ServiceFactory {
             exporter: Arc::new(LocalExporter),
             importer: Arc::new(LocalImporter),
             bibliography: Arc::new(LocalBibliographyService),
-            backup: Self::build_backup(app_data_dir),
+            backup: Self::build_backup(resources),
             media,
             crash_reporter,
             secrets,
-            app_data_dir: app_data_dir.to_path_buf(),
         })
     }
 
     /// Pick a crash reporter impl. When `DRAFFITY_SENTRY_DSN` is empty
     /// or absent (the default for OSS builds) we wire a local-file
-    /// stub: it queues reports under `<app_data>/crash-reports/` so the
+    /// stub: it queues reports under `<root>/crash-reports/` so the
     /// pipeline is exercised end-to-end without a remote dependency.
     /// A real Sentry-backed impl plugs in here.
-    fn build_crash_reporter(app_data_dir: &Path) -> Arc<dyn CrashReporterService> {
+    fn build_crash_reporter(resources: &DraffityHome) -> Arc<dyn CrashReporterService> {
         match std::env::var("DRAFFITY_SENTRY_DSN") {
             Ok(dsn) if !dsn.trim().is_empty() => {
                 // TODO: swap in a real Sentry uploader when infra lands.
-                Arc::new(LocalFileCrashReporter::new(
-                    app_data_dir.join("crash-reports"),
-                ))
+                Arc::new(LocalFileCrashReporter::new(resources.crash_reports_dir()))
             }
             _ => Arc::new(NoOpCrashReporter),
         }
     }
 
-    fn build_backup(app_data_dir: &Path) -> Arc<dyn BackupService> {
-        let db_path = app_data_dir.join("draffity.db");
-        let backup_dir = app_data_dir.join("backups");
-        Arc::new(LocalBackupService::new(db_path, backup_dir))
+    fn build_backup(resources: &DraffityHome) -> Arc<dyn BackupService> {
+        Arc::new(LocalBackupService::new(
+            resources.db_path(),
+            resources.backups_dir(),
+        ))
     }
 
     fn build_templates(user: Arc<UserTemplatesLoader>) -> AppResult<Arc<dyn TemplatesService>> {
@@ -132,8 +125,7 @@ impl ServiceFactory {
         )))
     }
 
-    fn build_storage(app_data_dir: &Path) -> AppResult<Arc<dyn StorageService>> {
-        let db_path = app_data_dir.join("draffity.db");
+    fn build_storage(db_path: PathBuf) -> AppResult<Arc<dyn StorageService>> {
         tracing::info!(path = %db_path.display(), "opening canonical database");
         let storage = LocalStorageService::open(&db_path)?;
         storage.migrate()?;
@@ -148,20 +140,23 @@ mod tests {
     #[test]
     fn build_in_tempdir_wires_services() {
         let dir = tempdir();
-        let bundle = ServiceFactory::build(&dir).expect("build bundle");
+        let home = DraffityHome::with_root(dir.join("draffity-home"));
+        let bundle = ServiceFactory::build(&home).expect("build bundle");
         assert!(bundle.templates.get("novela-tres-actos").is_some());
         // Migrations applied: listing projects on a fresh DB returns empty.
         assert_eq!(bundle.storage.list_projects().expect("list").len(), 0);
         // Voice/AI are unavailable without installed resources (no tier gate).
         assert!(!bundle.asr.available());
         assert!(!bundle.tts.available());
+        // ServiceBundle no longer carries app_data_dir
     }
 
     #[test]
     fn build_is_idempotent_on_same_dir() {
         let dir = tempdir();
-        ServiceFactory::build(&dir).expect("first build");
-        ServiceFactory::build(&dir).expect("second build");
+        let home = DraffityHome::with_root(dir.join("draffity-home"));
+        ServiceFactory::build(&home).expect("first build");
+        ServiceFactory::build(&home).expect("second build");
     }
 
     fn tempdir() -> std::path::PathBuf {

@@ -7,7 +7,7 @@
 //! implement the same surface against an S3 backend without touching commands
 //! or the editor.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
@@ -15,6 +15,7 @@ use sha2::{Digest, Sha256};
 use crate::domain::{extension_for_mime, MediaAsset};
 use crate::error::{AppError, AppResult};
 use crate::services::storage::StorageService;
+use crate::services::DraffityHome;
 
 pub trait MediaService: Send + Sync {
     /// Persist `bytes` for `project_id`. Returns the registry row (existing
@@ -49,8 +50,8 @@ pub struct LocalMediaService {
 }
 
 impl LocalMediaService {
-    pub fn new(storage: Arc<dyn StorageService>, app_data_dir: &Path) -> Self {
-        let root = app_data_dir.join("media");
+    pub fn new(storage: Arc<dyn StorageService>, resources: &DraffityHome) -> Self {
+        let root = resources.media_dir();
         Self { storage, root }
     }
 
@@ -155,7 +156,8 @@ mod tests {
                 metadata: None,
             })
             .unwrap();
-        let svc = LocalMediaService::new(storage_arc.clone(), &dir);
+        let resources = DraffityHome::with_root(dir.clone());
+        let svc = LocalMediaService::new(storage_arc.clone(), &resources);
         (storage_arc, svc, project.id, dir)
     }
 

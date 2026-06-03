@@ -219,6 +219,10 @@ export const ipc = {
   setCrashReportingEnabled: (enabled: boolean) =>
     invoke<void>('set_crash_reporting_enabled', { enabled }),
 
+  // Resources (draffity home path)
+  getResourcesPath: () => invoke<string>('get_resources_path'),
+  setResourcesPath: (path: string) => invoke<void>('set_resources_path', { path }),
+
   // AI (BYOK)
   getAiStatus: () => invoke<AiStatus>('get_ai_status'),
   setOpenrouterKey: (key: string) => invoke<AiStatus>('set_openrouter_key', { key }),

@@ -70,3 +70,31 @@ pub fn set_crash_reporting_enabled(state: State<'_, AppState>, enabled: bool) ->
         .set_setting("crash_reporting.enabled", if enabled { "1" } else { "0" })?;
     Ok(())
 }
+
+/// Returns the current resources root path.
+#[tauri::command]
+pub fn get_resources_path(state: State<'_, AppState>) -> String {
+    state.resources.root().to_string_lossy().into_owned()
+}
+
+/// Set a custom resources path. Persists to config.json — applies on next restart.
+#[tauri::command]
+pub fn set_resources_path(state: State<'_, AppState>, path: String) -> CmdResult<()> {
+    let p = std::path::PathBuf::from(&path);
+    if let Some(parent) = p.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| AppError::Unexpected(format!("no se pudo crear el directorio: {e}")))?;
+    }
+    let marker = p.join(".draffity-write-test");
+    std::fs::write(&marker, b"")
+        .map_err(|e| AppError::Unexpected(format!("sin permiso de escritura en {path}: {e}")))?;
+    let _ = std::fs::remove_file(&marker);
+
+    // Persist to config.json at the default home location
+    let config_path = state.resources.config_path();
+    let config = serde_json::json!({ "root": path });
+    std::fs::write(&config_path, serde_json::to_string_pretty(&config)?)
+        .map_err(|e| AppError::Unexpected(format!("no se pudo guardar la configuración: {e}")))?;
+    tracing::info!(?path, config = %config_path.display(), "resources path changed — restart to apply");
+    Ok(())
+}

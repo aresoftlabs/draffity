@@ -1,13 +1,11 @@
 //! Local voice runtime (Épica H). The whisper.cpp binary + ggml models live
-//! under `<app_data>/voice/`, downloaded opt-in (nothing ships in the
+//! under `<draffity-home>/voice/`, downloaded opt-in (nothing ships in the
 //! installer — see backlog-v4 decision #1). We run the binary directly via
 //! `std::process` (not Tauri's `externalBin`, which would require bundling and
 //! break `tauri build` when the files are absent).
 //!
 //! Everything here degrades gracefully: with no binary/model installed,
 //! `WhisperLocalASR::available()` is `false` and the UI offers nothing.
-
-use std::path::{Path, PathBuf};
 
 pub mod download;
 pub mod piper;
@@ -22,71 +20,18 @@ pub use registry::{
 };
 pub use whisper::{autopunctuate, parse_whisper_json, WhisperLocalASR};
 
-/// Root of the voice runtime under the app data dir.
-pub fn voice_dir(app_data: &Path) -> PathBuf {
-    app_data.join("voice")
-}
-
-/// Platform binary name (the user-provided / downloaded whisper.cpp CLI).
-fn binary_name() -> &'static str {
-    if cfg!(windows) {
-        "whisper.exe"
-    } else {
-        "whisper"
-    }
-}
-
-pub fn bin_path(app_data: &Path) -> PathBuf {
-    voice_dir(app_data).join("bin").join(binary_name())
-}
-
-pub fn models_dir(app_data: &Path) -> PathBuf {
-    voice_dir(app_data).join("models")
-}
-
-pub fn model_path(app_data: &Path, filename: &str) -> PathBuf {
-    models_dir(app_data).join(filename)
-}
-
-fn piper_binary_name() -> &'static str {
-    if cfg!(windows) {
-        "piper.exe"
-    } else {
-        "piper"
-    }
-}
-
-pub fn piper_bin_path(app_data: &Path) -> PathBuf {
-    voice_dir(app_data).join("bin").join(piper_binary_name())
-}
-
-pub fn voices_dir(app_data: &Path) -> PathBuf {
-    voice_dir(app_data).join("voices")
-}
-
-pub fn voice_file_path(app_data: &Path, filename: &str) -> PathBuf {
-    voices_dir(app_data).join(filename)
-}
-
-/// Filenames of installed (present on disk) whisper models, in registry order.
-pub fn installed_models(app_data: &Path) -> Vec<String> {
-    whisper_models()
-        .iter()
-        .filter(|m| model_path(app_data, m.filename).exists())
-        .map(|m| m.filename.to_string())
-        .collect()
-}
-
 // ---------------------------------------------------------------------------
 // Binary extraction — download an archive and find the executable inside.
 // ---------------------------------------------------------------------------
+
+use crate::services::DraffityHome;
 
 /// Download a binary archive and extract the executable to the target path.
 /// The archive URL is looked up from the binary registry by id.
 /// Emits progress via the provided callback.
 pub fn download_and_extract_binary(
     binary_id: &str,
-    app_data: &Path,
+    home: &DraffityHome,
     on_progress: impl FnMut(u64, Option<u64>),
 ) -> crate::error::AppResult<()> {
     use crate::error::AppError;
@@ -103,9 +48,9 @@ pub fn download_and_extract_binary(
 
     // Determine target path for the binary.
     let target = if binary_id == "piper" {
-        piper_bin_path(app_data)
+        home.piper_bin_path()
     } else {
-        bin_path(app_data)
+        home.bin_dir()
     };
 
     if let Some(parent) = target.parent() {
@@ -113,7 +58,7 @@ pub fn download_and_extract_binary(
     }
 
     // Download archive to a temp file.
-    let tmp_dir = voice_dir(app_data).join("tmp");
+    let tmp_dir = home.tmp_dir();
     std::fs::create_dir_all(&tmp_dir)?;
     let archive_path = tmp_dir.join(format!("{binary_id}_archive"));
 
@@ -140,7 +85,7 @@ pub fn download_and_extract_binary(
 fn extract_binary_impl(
     archive_bytes: &[u8],
     format: &str,
-    target: &Path,
+    target: &std::path::Path,
     binary_id: &str,
 ) -> crate::error::AppResult<()> {
     use crate::error::AppError;

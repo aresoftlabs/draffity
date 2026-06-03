@@ -12,7 +12,7 @@ pub use error::{AppError, AppResult};
 
 use tauri::Manager;
 
-use crate::services::ServiceFactory;
+use crate::services::{DraffityHome, ServiceFactory};
 use crate::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -28,9 +28,18 @@ pub fn run() {
                 .expect("failed to resolve app data dir");
             std::fs::create_dir_all(&app_data_dir)?;
 
+            // Build the canonical DraffityHome (defaults to ~/.draffity/).
+            let home = DraffityHome::new();
+            home.ensure_dirs()?;
+
+            // One-time migration from old Tauri app_data_dir to ~/.draffity/.
+            if let Err(e) = home.run_migration(&app_data_dir) {
+                tracing::warn!(error = %e, "migration from old app_data_dir failed");
+            }
+
             // Log guard must outlive the app — hand it to AppState.
-            let log_guard = logging::init(&app_data_dir.join("logs"));
-            let bundle = ServiceFactory::build(&app_data_dir)?;
+            let log_guard = logging::init(&home.logs_dir());
+            let bundle = ServiceFactory::build(&home)?;
             // Daily backup + prune. Idempotent — calling again today is a
             // no-op. Failures are logged, not fatal: a missed backup must
             // never prevent the app from launching.
@@ -44,7 +53,7 @@ pub fn run() {
                 let enabled = matches!(value.as_str(), "1" | "true" | "on");
                 bundle.crash_reporter.set_enabled(enabled);
             }
-            app.manage(AppState::from_bundle(bundle, log_guard));
+            app.manage(AppState::from_bundle(bundle, home, log_guard));
 
             Ok(())
         })
@@ -176,6 +185,9 @@ pub fn run() {
             commands::get_media_asset,
             commands::list_project_media,
             commands::delete_media,
+            // resources
+            commands::get_resources_path,
+            commands::set_resources_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

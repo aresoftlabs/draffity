@@ -7,50 +7,51 @@
 //! verified manually with a real Piper binary.
 
 use std::io::Write;
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use crate::domain::now_ms;
 use crate::error::{AppError, AppResult};
 use crate::services::tts::{SynthesizedAudio, TTSService, Voice};
+use crate::services::DraffityHome;
 
 use super::registry::{piper_voices, recommended_voice, voice_by_id};
-use super::{piper_bin_path, voice_dir, voice_file_path};
 
 pub struct PiperTTSService {
-    app_data: PathBuf,
+    home: DraffityHome,
 }
 
 impl PiperTTSService {
-    pub fn new(app_data: PathBuf) -> Self {
-        Self { app_data }
+    pub fn new(home: &DraffityHome) -> Self {
+        Self {
+            home: DraffityHome::with_root(home.root().to_path_buf()),
+        }
     }
 
     fn voice_installed(&self, onnx_filename: &str) -> bool {
-        let onnx = voice_file_path(&self.app_data, onnx_filename);
-        let cfg = voice_file_path(&self.app_data, &format!("{onnx_filename}.json"));
+        let onnx = self.home.voice_file_path(onnx_filename);
+        let cfg = self.home.voice_file_path(&format!("{onnx_filename}.json"));
         onnx.exists() && cfg.exists()
     }
 
     /// Resolve the ONNX path to use: the requested voice if installed, else the
     /// recommended one, else the first installed voice.
-    fn select_voice(&self, voice_id: &str) -> Option<PathBuf> {
+    fn select_voice(&self, voice_id: &str) -> Option<std::path::PathBuf> {
         if !voice_id.is_empty() {
             if let Some(v) = voice_by_id(voice_id) {
                 if self.voice_installed(v.onnx_filename) {
-                    return Some(voice_file_path(&self.app_data, v.onnx_filename));
+                    return Some(self.home.voice_file_path(v.onnx_filename));
                 }
             }
         }
         if let Some(rec) = recommended_voice() {
             if self.voice_installed(rec.onnx_filename) {
-                return Some(voice_file_path(&self.app_data, rec.onnx_filename));
+                return Some(self.home.voice_file_path(rec.onnx_filename));
             }
         }
         piper_voices()
             .iter()
             .find(|v| self.voice_installed(v.onnx_filename))
-            .map(|v| voice_file_path(&self.app_data, v.onnx_filename))
+            .map(|v| self.home.voice_file_path(v.onnx_filename))
     }
 
     fn any_voice_installed(&self) -> bool {
@@ -62,7 +63,7 @@ impl PiperTTSService {
 
 impl TTSService for PiperTTSService {
     fn available(&self) -> bool {
-        piper_bin_path(&self.app_data).exists() && self.any_voice_installed()
+        self.home.piper_bin_path().exists() && self.any_voice_installed()
     }
 
     fn voices(&self) -> Vec<Voice> {
@@ -78,7 +79,7 @@ impl TTSService for PiperTTSService {
     }
 
     fn synthesize(&self, text: &str, voice_id: &str) -> AppResult<SynthesizedAudio> {
-        let bin = piper_bin_path(&self.app_data);
+        let bin = self.home.piper_bin_path();
         if !bin.exists() {
             return Err(AppError::Unsupported(
                 "el binario de Piper no está instalado".into(),
@@ -88,7 +89,7 @@ impl TTSService for PiperTTSService {
             .select_voice(voice_id)
             .ok_or_else(|| AppError::Unsupported("no hay voz TTS instalada".into()))?;
 
-        let tmp_dir = voice_dir(&self.app_data).join("tmp");
+        let tmp_dir = self.home.tmp_dir();
         std::fs::create_dir_all(&tmp_dir)?;
         let tmp = tmp_dir.join(format!("tts{}.wav", now_ms()));
 

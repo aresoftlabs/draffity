@@ -6,7 +6,6 @@
 //! The pure parts — JSON parsing and autopunctuation — are unit-tested; the
 //! actual spawn is exercised manually with a real binary present.
 
-use std::path::PathBuf;
 use std::process::Command;
 
 use serde::Deserialize;
@@ -14,29 +13,31 @@ use serde::Deserialize;
 use crate::domain::now_ms;
 use crate::error::{AppError, AppResult};
 use crate::services::asr::{ASRService, Transcript, TranscriptSegment};
+use crate::services::DraffityHome;
 
 use super::registry::recommended_model;
-use super::{bin_path, model_path, models_dir, voice_dir};
 
 pub struct WhisperLocalASR {
-    app_data: PathBuf,
+    home: DraffityHome,
 }
 
 impl WhisperLocalASR {
-    pub fn new(app_data: PathBuf) -> Self {
-        Self { app_data }
+    pub fn new(home: &DraffityHome) -> Self {
+        Self {
+            home: DraffityHome::with_root(home.root().to_path_buf()),
+        }
     }
 
     /// Pick a model: the recommended one if installed, else the first `.bin`
     /// found in the models dir.
-    fn select_model(&self) -> Option<PathBuf> {
+    fn select_model(&self) -> Option<std::path::PathBuf> {
         if let Some(rec) = recommended_model() {
-            let p = model_path(&self.app_data, rec.filename);
+            let p = self.home.model_path(rec.filename);
             if p.exists() {
                 return Some(p);
             }
         }
-        std::fs::read_dir(models_dir(&self.app_data))
+        std::fs::read_dir(self.home.models_dir())
             .ok()?
             .flatten()
             .map(|e| e.path())
@@ -46,11 +47,11 @@ impl WhisperLocalASR {
 
 impl ASRService for WhisperLocalASR {
     fn available(&self) -> bool {
-        bin_path(&self.app_data).exists() && self.select_model().is_some()
+        self.home.bin_dir().exists() && self.select_model().is_some()
     }
 
     fn transcribe_file(&self, path: &str) -> AppResult<Transcript> {
-        let bin = bin_path(&self.app_data);
+        let bin = self.home.bin_dir();
         if !bin.exists() {
             return Err(AppError::Unsupported(
                 "el binario de Whisper no está instalado".into(),
@@ -61,7 +62,7 @@ impl ASRService for WhisperLocalASR {
             .ok_or_else(|| AppError::Unsupported("no hay modelo de voz instalado".into()))?;
 
         // Unique output base under voice/tmp; whisper writes `<base>.json`.
-        let tmp_dir = voice_dir(&self.app_data).join("tmp");
+        let tmp_dir = self.home.tmp_dir();
         std::fs::create_dir_all(&tmp_dir)?;
         let base = tmp_dir.join(format!("t{}", now_ms()));
 

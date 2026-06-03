@@ -3,16 +3,15 @@
 //! IPC commands via `State<AppState>`.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::logging::LogGuards;
 use crate::services::{
     AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
-    CrashReporterService, ExportService, ImportService, MediaService, ProjectManagerService,
-    ProjectMemoryService, SecretStorage, ServiceBundle, StorageService, TTSService,
-    TemplatesService, UserTemplatesLoader,
+    CrashReporterService, DraffityHome, ExportService, ImportService, MediaService,
+    ProjectManagerService, ProjectMemoryService, SecretStorage, ServiceBundle, StorageService,
+    TTSService, TemplatesService, UserTemplatesLoader,
 };
 
 /// Per-request cancellation flags for in-flight AI streams (F-06). The
@@ -76,8 +75,8 @@ pub struct AppState {
     pub secrets: Arc<dyn SecretStorage>,
     /// In-flight AI stream cancellation flags (F-06).
     pub ai_cancel: Arc<AiCancelRegistry>,
-    /// App data dir — voice commands resolve binary/model paths (H).
-    pub app_data_dir: PathBuf,
+    /// Resources root (DraffityHome) — all path resolution goes through this.
+    pub resources: DraffityHome,
     /// Keeps the non-blocking log writers alive for the whole app lifecycle.
     /// Dropping these guards flushes any pending log lines.
     #[allow(dead_code)]
@@ -85,7 +84,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn from_bundle(bundle: ServiceBundle, log_guards: LogGuards) -> Self {
+    pub fn from_bundle(
+        bundle: ServiceBundle,
+        resources: DraffityHome,
+        log_guards: LogGuards,
+    ) -> Self {
         Self {
             storage: bundle.storage,
             project_manager: bundle.project_manager,
@@ -104,7 +107,7 @@ impl AppState {
             crash_reporter: bundle.crash_reporter,
             secrets: bundle.secrets,
             ai_cancel: Arc::new(AiCancelRegistry::default()),
-            app_data_dir: bundle.app_data_dir,
+            resources,
             _log_guards: log_guards,
         }
     }
