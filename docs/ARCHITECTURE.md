@@ -71,7 +71,7 @@ La UI se suscribe con `listen()`. Servicios de fondo (IA, ASR, TTS) pueden suscr
 
 ## Patrones canónicos
 
-Estos cinco patrones aparecen repetidos en el código y son **el lenguaje arquitectónico del proyecto**. Toda feature nueva debe encajar en alguno o justificar explícitamente por qué inventa uno nuevo.
+Estos cuatro patrones aparecen repetidos en el código y son **el lenguaje arquitectónico del proyecto**. Toda feature nueva debe encajar en alguno o justificar explícitamente por qué inventa uno nuevo.
 
 ### 1. Trait + impl local
 
@@ -79,9 +79,9 @@ Cualquier capa intercambiable se define como `trait` con impl local y `NoOp` en 
 
 **Ejemplos en el código**: [`AIService`](../apps/desktop/src/services/ai.rs), [`ASRService`](../apps/desktop/src/services/asr.rs), [`TTSService`](../apps/desktop/src/services/tts.rs).
 
-### 2. Strategy (export, futuro: import)
+### 2. Strategy (export, import)
 
-Cada formato es struct independiente que implementa una operación común. El orquestador despacha por `HashMap<Format, Box<dyn Strategy>>`, **no** por `match format { ... }` inline.
+Cada formato vive en su propio módulo con una operación común (`render`/`parse`). El conjunto de formatos es **cerrado** (un `enum` exhaustivo: `ExportFormat`, `ImportFormat`), por lo que el orquestador despacha con `match format { ... }` a la función del módulo correspondiente — exhaustividad verificada en compile-time, sin dispatch dinámico. El patrón `HashMap<Format, Box<dyn Strategy>>` queda reservado para un eventual set abierto/extensible (plugins de terceros, registro en runtime). Ver [ADR-0004](./ADR/0004-dispatch-por-match-para-formatos-cerrados.md).
 
 **Ejemplos**: [`exporter/markdown.rs`](../apps/desktop/src/services/exporter/markdown.rs), [`exporter/docx.rs`](../apps/desktop/src/services/exporter/docx.rs), [`exporter/epub.rs`](../apps/desktop/src/services/exporter/epub.rs), orquestados desde [`exporter/mod.rs`](../apps/desktop/src/services/exporter/mod.rs).
 
