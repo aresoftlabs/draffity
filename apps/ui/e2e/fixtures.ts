@@ -8,7 +8,7 @@ import { test as base, type Page } from '@playwright/test';
  *
  * Tests register the commands they care about via `mockIpc.handle(name, fn)`;
  * unhandled commands resolve to a sensible default (empty list / null) so
- * the UI doesn't crash on incidental calls (capability_enabled, etc.).
+ * the UI doesn't crash on incidental calls.
  */
 export interface IpcMock {
   handle: (name: string, fn: (args?: unknown) => unknown) => Promise<void>;
@@ -21,7 +21,6 @@ export const test = base.extend<{ mockIpc: IpcMock }>({
 
       // Default no-op behaviours for incidental calls.
       handlers['ping'] = () => 'pong (mock)';
-      handlers['capability_enabled'] = () => false;
       handlers['list_projects'] = () => [];
       handlers['get_active_project'] = () => null;
       handlers['get_writing_stats'] = () => ({

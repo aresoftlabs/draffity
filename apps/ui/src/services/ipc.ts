@@ -49,11 +49,11 @@ export interface CollectionInput {
   query?: CollectionQuery | null;
 }
 
-/** BYOK AI status reported by the backend (F-01). */
+/** BYOK AI status reported by the backend. */
 export interface AiStatus {
-  /** AI usable now: premium active AND a key stored. */
+  /** AI usable now: a key is stored. */
   available: boolean;
-  /** A key is stored (independent of tier). */
+  /** A key is stored. */
   hasKey: boolean;
 }
 
@@ -167,19 +167,6 @@ export interface VoiceDownloadProgress {
   total: number | null;
 }
 
-/** Premium activation status reported by the backend (E-07). */
-export interface PremiumStatus {
-  /** `'free'` or `'premium'`. */
-  tier: string;
-  /** Convenience flag: `tier === 'premium'`. */
-  active: boolean;
-  /** Whether this build can validate licenses (has a public key baked in).
-   * When false the UI hides the activation field. */
-  licensingConfigured: boolean;
-  /** Holder string from the validated license, when just activated. */
-  holder: string | null;
-}
-
 /**
  * Thin typed wrapper over Tauri IPC commands.
  * Keep this file as the single boundary between Vue and Rust.
@@ -187,7 +174,6 @@ export interface PremiumStatus {
 export const ipc = {
   // System
   ping: () => invoke<string>('ping'),
-  capabilityEnabled: (name: string) => invoke<boolean>('capability_enabled', { name }),
   getSetting: (key: string) => invoke<string | null>('get_setting', { key }),
   setSetting: (key: string, value: string) => invoke<void>('set_setting', { key, value }),
   getWritingStats: () => invoke<WritingStats>('get_writing_stats'),
@@ -199,11 +185,6 @@ export const ipc = {
     invoke<{ active: boolean; enabled: boolean }>('get_crash_reporting_status'),
   setCrashReportingEnabled: (enabled: boolean) =>
     invoke<void>('set_crash_reporting_enabled', { enabled }),
-
-  // Premium / license
-  getPremiumStatus: () => invoke<PremiumStatus>('get_premium_status'),
-  activatePremium: (key: string) => invoke<PremiumStatus>('activate_premium', { key }),
-  deactivatePremium: () => invoke<PremiumStatus>('deactivate_premium'),
 
   // AI (BYOK)
   getAiStatus: () => invoke<AiStatus>('get_ai_status'),
