@@ -25,7 +25,6 @@ test.describe('Dashboard', () => {
         description: 'For tests',
         kind: 'generic',
         locale: 'es',
-        tier: 'free',
         structure: [{ title: 'Capítulo 1', docType: 'chapter' }],
         metadataFields: [],
       },

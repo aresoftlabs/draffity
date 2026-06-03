@@ -85,7 +85,6 @@ export interface Snapshot {
 // Templates (schema v1)
 
 export type TemplateKind = 'novel' | 'paper' | 'manga' | 'screenplay' | 'generic';
-export type TemplateTier = 'free' | 'premium';
 export type FieldType = 'string' | 'text' | 'number' | 'date';
 
 export interface MetadataField {
@@ -110,7 +109,6 @@ export interface Template {
   description?: string;
   kind: TemplateKind;
   locale: string;
-  tier: TemplateTier;
   structure: TemplateNode[];
   metadataFields: MetadataField[];
 }
