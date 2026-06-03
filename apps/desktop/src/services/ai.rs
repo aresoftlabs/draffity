@@ -96,7 +96,7 @@ pub trait AIService: Send + Sync {
     /// the assembled response (with usage) is returned at the end.
     ///
     /// The default delegates to [`complete`] and feeds the whole text to the
-    /// sink in one shot, so a premium impl can implement either method.
+    /// sink in one shot, so an alternative impl can implement either method.
     fn stream_complete(
         &self,
         req: CompletionRequest,

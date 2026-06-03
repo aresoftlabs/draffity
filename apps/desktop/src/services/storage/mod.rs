@@ -1,6 +1,6 @@
-//! Storage abstraction. The free MVP ships only `LocalStorageService`
-//! (single SQLite file holding all projects). Premium can add a
-//! `CloudSyncStorageService` that wraps this one without changing the trait.
+//! Storage abstraction. Ships `LocalStorageService` (single SQLite file
+//! holding all projects). A future `CloudSyncStorageService` could wrap this
+//! one without changing the trait.
 //!
 //! The trait impl is intentionally thin: it locks the connection and
 //! delegates to per-topic submodules (`projects`, `documents`, `snapshots`,
