@@ -1,6 +1,6 @@
 //! `PiperTTSService` (H-06): runs the local Piper CLI to synthesize a sentence
 //! to a WAV file, parsed into PCM16 + sample rate for the Web Audio player.
-//! Gated by tier (`voice_tts`) + the binary and a voice being installed.
+//! Gated by the binary and a voice being installed.
 //!
 //! Same shape as `WhisperLocalASR`: the engine is swappable behind the
 //! `TTSService` trait. The WAV parser is pure + unit-tested; the spawn is
@@ -9,11 +9,9 @@
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::Arc;
 
 use crate::domain::now_ms;
 use crate::error::{AppError, AppResult};
-use crate::services::tier::TierService;
 use crate::services::tts::{SynthesizedAudio, TTSService, Voice};
 
 use super::registry::{piper_voices, recommended_voice, voice_by_id};
@@ -21,12 +19,11 @@ use super::{piper_bin_path, voice_dir, voice_file_path};
 
 pub struct PiperTTSService {
     app_data: PathBuf,
-    tier: Arc<dyn TierService>,
 }
 
 impl PiperTTSService {
-    pub fn new(app_data: PathBuf, tier: Arc<dyn TierService>) -> Self {
-        Self { app_data, tier }
+    pub fn new(app_data: PathBuf) -> Self {
+        Self { app_data }
     }
 
     fn voice_installed(&self, onnx_filename: &str) -> bool {
@@ -65,9 +62,7 @@ impl PiperTTSService {
 
 impl TTSService for PiperTTSService {
     fn available(&self) -> bool {
-        self.tier.is_enabled("voice_tts")
-            && piper_bin_path(&self.app_data).exists()
-            && self.any_voice_installed()
+        piper_bin_path(&self.app_data).exists() && self.any_voice_installed()
     }
 
     fn voices(&self) -> Vec<Voice> {
@@ -83,11 +78,6 @@ impl TTSService for PiperTTSService {
     }
 
     fn synthesize(&self, text: &str, voice_id: &str) -> AppResult<SynthesizedAudio> {
-        if !self.tier.is_enabled("voice_tts") {
-            return Err(AppError::Unsupported(
-                "la lectura en voz alta no está activa".into(),
-            ));
-        }
         let bin = piper_bin_path(&self.app_data);
         if !bin.exists() {
             return Err(AppError::Unsupported(

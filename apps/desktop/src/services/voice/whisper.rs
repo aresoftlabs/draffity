@@ -1,33 +1,30 @@
 //! `WhisperLocalASR` (H-03): runs the local whisper.cpp CLI on a 16 kHz mono
 //! WAV file and parses its JSON output into a `Transcript` with per-segment
-//! timing. Gated by tier (`voice_dictation`) + the binary and a model being
-//! installed; otherwise `available()` is false and calls error cleanly.
+//! timing. Gated by the binary and a model being installed; otherwise
+//! `available()` is false and calls error cleanly.
 //!
 //! The pure parts — JSON parsing and autopunctuation — are unit-tested; the
 //! actual spawn is exercised manually with a real binary present.
 
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::Arc;
 
 use serde::Deserialize;
 
 use crate::domain::now_ms;
 use crate::error::{AppError, AppResult};
 use crate::services::asr::{ASRService, Transcript, TranscriptSegment};
-use crate::services::tier::TierService;
 
 use super::registry::recommended_model;
 use super::{bin_path, model_path, models_dir, voice_dir};
 
 pub struct WhisperLocalASR {
     app_data: PathBuf,
-    tier: Arc<dyn TierService>,
 }
 
 impl WhisperLocalASR {
-    pub fn new(app_data: PathBuf, tier: Arc<dyn TierService>) -> Self {
-        Self { app_data, tier }
+    pub fn new(app_data: PathBuf) -> Self {
+        Self { app_data }
     }
 
     /// Pick a model: the recommended one if installed, else the first `.bin`
@@ -49,15 +46,10 @@ impl WhisperLocalASR {
 
 impl ASRService for WhisperLocalASR {
     fn available(&self) -> bool {
-        self.tier.is_enabled("voice_dictation")
-            && bin_path(&self.app_data).exists()
-            && self.select_model().is_some()
+        bin_path(&self.app_data).exists() && self.select_model().is_some()
     }
 
     fn transcribe_file(&self, path: &str) -> AppResult<Transcript> {
-        if !self.tier.is_enabled("voice_dictation") {
-            return Err(AppError::Unsupported("la voz no está activa".into()));
-        }
         let bin = bin_path(&self.app_data);
         if !bin.exists() {
             return Err(AppError::Unsupported(

@@ -82,17 +82,10 @@ impl ServiceFactory {
             Arc::new(LexicalProjectMemory::new(storage.clone()));
         let validators: Arc<dyn AIValidatorService> =
             Arc::new(OpenRouterValidators::new(ai.clone()));
-        // Local Whisper ASR (H). Gated by tier + installed binary/model; with
-        // nothing installed `available()` is false, like the old NoOpASR.
-        let asr: Arc<dyn ASRService> = Arc::new(WhisperLocalASR::new(
-            app_data_dir.to_path_buf(),
-            tier_service.clone(),
-        ));
-        // Local Piper TTS (H). Same gating: tier + installed binary/voice.
-        let tts: Arc<dyn TTSService> = Arc::new(PiperTTSService::new(
-            app_data_dir.to_path_buf(),
-            tier_service.clone(),
-        ));
+        // Local Whisper ASR. Available when the binary + a model are installed.
+        let asr: Arc<dyn ASRService> = Arc::new(WhisperLocalASR::new(app_data_dir.to_path_buf()));
+        // Local Piper TTS. Available when the binary + a voice are installed.
+        let tts: Arc<dyn TTSService> = Arc::new(PiperTTSService::new(app_data_dir.to_path_buf()));
 
         Ok(ServiceBundle {
             storage,
@@ -185,11 +178,7 @@ impl ServiceFactory {
         Ok(Arc::new(MutableTier::new(tier)))
     }
 
-    // `ai` is the BYOK `ByokAIService` (F-01), gated by the stored key at call time. The voice
-    // builders below still return NoOp stubs until `WhisperLocalASR` /
-    // `PiperTTSService` land in Épica H; activating premium flips their
-    // capability *gates* but the services stay stubs until then. See
-    // docs/PREMIUM-INTEGRATION.md.
+    // `ai` is the BYOK `ByokAIService` (F-01), gated by the stored key at call time.
 
     fn build_sync(_tier: Tier) -> Arc<dyn CloudSyncService> {
         Arc::new(NoOpSync)
@@ -218,7 +207,8 @@ mod tests {
         // Premium flips capability gates on…
         assert!(bundle.tier.is_enabled("ai_inline"));
         assert!(bundle.tier.is_enabled("voice_dictation"));
-        // …voice impls don't exist yet (land in Épica H), so they stay NoOp.
+        // …voice services need binaries+models on disk; none are installed in
+        // the temp dir, so available() is false regardless of tier.
         // (We don't probe `ai.available()` here — it reads the OS keyring, so
         // it isn't hermetic in tests; ByokAIService gating is unit-tested in
         // its own module.)
