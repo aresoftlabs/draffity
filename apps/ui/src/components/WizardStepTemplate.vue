@@ -58,7 +58,7 @@ function iconForDocType(type: string) {
 
 <template>
   <div class="flex flex-col gap-3 min-h-[20rem]">
-    <p v-if="loading" class="text-sm opacity-60">â€¦</p>
+    <p v-if="loading" class="text-sm opacity-60">…</p>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <button
         v-for="tpl in templates"

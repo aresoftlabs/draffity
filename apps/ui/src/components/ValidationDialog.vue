@@ -132,7 +132,7 @@ function localizedSummary(findings: ValidationFinding[]): string {
   if (counts.critical) parts.push(t('ai.validators.summary.critical', counts.critical));
   if (counts.warning) parts.push(t('ai.validators.summary.warning', counts.warning));
   if (counts.info) parts.push(t('ai.validators.summary.info', counts.info));
-  return parts.join(' Â· ');
+  return parts.join(' · ');
 }
 </script>
 
@@ -185,7 +185,7 @@ function localizedSummary(findings: ValidationFinding[]): string {
       <div v-else class="space-y-4 max-h-[50vh] overflow-auto">
         <section v-for="group in latest" :key="group.name">
           <h3 class="text-xs font-semibold uppercase tracking-wide opacity-70 mb-1">
-            {{ t(`ai.validators.${group.name}`) }} Â·
+            {{ t(`ai.validators.${group.name}`) }} ·
             <span class="font-normal normal-case opacity-80">{{
               localizedSummary(group.findings)
             }}</span>

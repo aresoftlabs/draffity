@@ -5,7 +5,7 @@
 use std::io::Cursor;
 use std::path::Path;
 
-use epub_builder::{EpubBuilder, EpubContent, ReferenceType, ZipLibrary};
+use epub_builder::{EpubBuilder, EpubContent, EpubVersion, ReferenceType, ZipLibrary};
 
 use crate::domain::{extension_for_mime, CodexEntry, CodexKind, DocNode, Project};
 use crate::error::{AppError, AppResult};
@@ -25,6 +25,7 @@ pub fn render(
     let zip = ZipLibrary::new().map_err(|e| AppError::Unexpected(format!("epub zip init: {e}")))?;
     let mut builder = EpubBuilder::new(zip)
         .map_err(|e| AppError::Unexpected(format!("epub builder init: {e}")))?;
+    builder.epub_version(EpubVersion::V30);
 
     let title = config
         .title_override

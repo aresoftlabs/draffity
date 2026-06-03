@@ -106,7 +106,7 @@ onMounted(loadBackups);
         <div class="flex flex-col min-w-0">
           <span class="font-mono text-xs truncate">{{ b.id }}</span>
           <span class="text-xs opacity-60">
-            {{ kindLabel(b.kind) }} Â· {{ formatDate(b.createdAt) }} Â·
+            {{ kindLabel(b.kind) }} · {{ formatDate(b.createdAt) }} ·
             {{ formatSize(b.sizeBytes) }}
           </span>
         </div>

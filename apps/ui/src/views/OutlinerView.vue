@@ -183,7 +183,7 @@ function onRowClick(event: { data: DocNode }) {
       <Column field="labels" :header="t('labels.label')" :style="{ minWidth: '9rem' }">
         <template #body="{ data }">
           <LabelChips v-if="data.labelIds.length > 0" :label-ids="data.labelIds" />
-          <span v-else class="italic opacity-40 text-xs">â€”</span>
+          <span v-else class="italic opacity-40 text-xs">—</span>
         </template>
       </Column>
 
@@ -198,7 +198,7 @@ function onRowClick(event: { data: DocNode }) {
               class="!text-[10px] !py-0 !px-1.5"
             />
           </div>
-          <span v-else class="italic opacity-40 text-xs">â€”</span>
+          <span v-else class="italic opacity-40 text-xs">—</span>
         </template>
       </Column>
 
@@ -212,7 +212,7 @@ function onRowClick(event: { data: DocNode }) {
       >
         <template #body="{ data }">
           <span v-if="data.metadata[f.id]" class="text-xs">{{ data.metadata[f.id] }}</span>
-          <span v-else class="italic opacity-40 text-xs">â€”</span>
+          <span v-else class="italic opacity-40 text-xs">—</span>
         </template>
       </Column>
     </DataTable>

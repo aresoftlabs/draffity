@@ -964,7 +964,7 @@ onBeforeUnmount(() => {
             :label="t('composition.exit')"
             @click="uiStore.toggleCompositionMode()"
           />
-          <span class="text-xs opacity-60 font-mono">{{ wordCount }} Â· {{ totalWordCount }}</span>
+          <span class="text-xs opacity-60 font-mono">{{ wordCount }} · {{ totalWordCount }}</span>
           <span class="flex-1" />
           <label class="flex items-center gap-2 text-xs opacity-70">
             {{ t('composition.paperWidth') }}

@@ -146,7 +146,7 @@ function onDelete(id: string) {
       </div>
     </header>
 
-    <div v-if="loading" class="text-sm opacity-60">â€¦</div>
+    <div v-if="loading" class="text-sm opacity-60">…</div>
 
     <template v-else-if="projects.length === 0">
       <div class="flex-1 flex flex-col items-center justify-center text-center gap-4 opacity-80">
