@@ -1,6 +1,6 @@
 # Draffity — Guía de usuario (alpha)
 
-> Versión gratuita. Todo el contenido se almacena localmente en tu equipo.
+> Aplicación 100% gratuita. Todo el contenido se almacena localmente en tu equipo.
 
 ## Instalación
 
@@ -20,7 +20,7 @@ El proyecto se abre con la estructura ya generada en el binder izquierdo.
 
 ## La regla del proyecto activo
 
-Draffity gratuito permite **un proyecto activo** a la vez. Los demás quedan **archivados en solo lectura**:
+Draffity permite **un proyecto activo** a la vez. Los demás quedan **archivados en solo lectura**:
 
 - Puedes seguir leyendo y exportando proyectos archivados.
 - No puedes editar texto en archivados.
@@ -71,11 +71,31 @@ El export procesa el árbol completo del proyecto en orden de aparición.
 - **Intervalo de autoguardado** — 200 ms a 3 segundos.
 - **Hábito de escritura** — racha actual y más larga (días consecutivos).
 
+## IA (opcional, BYOK)
+
+Draffity puede asistir tu escritura con acciones de IA (Continuar, Expandir, Reescribir, Describir) y con validadores analíticos. Para activarlas necesitás tu propia API key de [OpenRouter](https://openrouter.ai/):
+
+1. Creá una cuenta en openrouter.ai y generá una API key.
+2. En **Ajustes → IA y modelos**, pegá la key en el campo correspondiente.
+3. La key se guarda en el keyring del sistema operativo, nunca en texto plano.
+
+Sin key la app es completamente funcional — la IA es un complemento opcional.
+
+## Voz (opcional, binarios locales)
+
+El dictado (Whisper) y la lectura en voz alta (Piper) no están incluidos en el instalador base. Para activarlos:
+
+1. En **Ajustes → Audio y voz**, usá el botón **Descargar modelo** para instalar el modelo de Whisper (≈570 MB, se descarga con barra de progreso y verificación de checksum).
+2. El binario de Piper se descarga junto al modelo de voz TTS predeterminado.
+3. Una vez descargados, el dictado (`Ctrl+Shift+M`) y la lectura en voz alta (`Ctrl+Shift+R`) quedan habilitados.
+
+Podés también importar binarios manualmente si tenés los archivos ya descargados.
+
 ## Datos y privacidad
 
 - Todo se guarda en tu disco local: una sola base SQLite en `<carpeta de datos de la app>/draffity.db` (en Windows: `%APPDATA%\cl.aresoft.draffity`).
 - Los logs van a `<carpeta de datos>/logs/draffity.log` con rotación diaria.
-- No hay telemetría ni envío a servidores externos en la versión gratuita.
+- No hay telemetría ni envío a servidores externos.
 
 ## Problemas conocidos en alpha
 

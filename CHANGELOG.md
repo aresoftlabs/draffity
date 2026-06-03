@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Desarrollo del **backlog v4** (interno): cerrar brechas competitivas + capa
-premium (IA BYOK + voz). Aún sin release versionada.
+Desarrollo del **backlog v4** (interno): cerrar brechas competitivas + IA BYOK
+
+- voz local. Aún sin release versionada.
+
+### Cambiado — Modelo 100% gratuito (2026-06-02)
+
+- Draffity es ahora **100% gratuito**: se eliminó el modelo premium/suscripción.
+  Todas las features están disponibles sin condición. La IA sigue usando tu
+  propia API key (BYOK) y la voz usa modelos locales que instalás vos.
+  Consultar `docs/ADR/0006-draffity-100-gratis-sin-premium.md` para el
+  razonamiento completo.
 
 ### Fixed / Changed — Remediación de auditoría (`docs/AUDITORIA-2026-05-30.md`)
 

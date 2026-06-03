@@ -1,6 +1,6 @@
 # Draffity — User guide (beta)
 
-> Free tier. All content is stored locally on your machine.
+> 100% free app. All content is stored locally on your machine.
 
 ## Installation
 
@@ -20,7 +20,7 @@ The project opens with the seeded structure on the left-hand binder.
 
 ## The active-project rule
 
-The free tier of Draffity allows **one active project** at a time. Everything else is **archived as read-only**:
+Draffity allows **one active project** at a time. Everything else is **archived as read-only**:
 
 - You can keep reading and exporting archived projects.
 - You can't edit text in archived projects.
@@ -71,11 +71,31 @@ The exporter walks the whole document tree in display order.
 - **Auto-save interval** — 200 ms to 3 seconds.
 - **Writing habit** — current and longest streak (consecutive days).
 
+## AI (optional, BYOK)
+
+Draffity can assist your writing with AI actions (Continue, Expand, Rewrite, Describe) and analytical validators. To enable them, you need your own [OpenRouter](https://openrouter.ai/) API key:
+
+1. Create an account at openrouter.ai and generate an API key.
+2. In **Settings → AI & models**, paste the key in the corresponding field.
+3. The key is stored in the OS keyring — never in plain text.
+
+Without a key the app is fully functional — AI is an optional add-on.
+
+## Voice (optional, local binaries)
+
+Dictation (Whisper) and read-aloud (Piper) are not included in the base installer. To enable them:
+
+1. In **Settings → Audio & voice**, click **Download model** to install the Whisper model (≈570 MB, with a progress bar and checksum verification).
+2. The Piper binary is downloaded alongside the default TTS voice model.
+3. Once downloaded, dictation (`Ctrl+Shift+M`) and read-aloud (`Ctrl+Shift+R`) become available.
+
+You can also import binaries manually if you already have the files.
+
 ## Data & privacy
 
 - Everything is stored on your local disk: a single SQLite file at `<app data folder>/draffity.db` (on Windows: `%APPDATA%\cl.aresoft.draffity`).
 - Logs go to `<app data folder>/logs/draffity.log` with daily rotation.
-- No telemetry or external servers in the free tier.
+- No telemetry or external servers.
 
 ## Known issues in beta
 
