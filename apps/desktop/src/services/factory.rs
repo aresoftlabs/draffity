@@ -75,11 +75,9 @@ impl ServiceFactory {
             Self::build_crash_reporter(app_data_dir);
 
         // Secrets feed the BYOK AI service; both share the keyring. AI is gated
-        // at call time by tier + key (see ByokAIService), so it's wired the
-        // same way for free and premium — activation flips it live.
+        // at call time by the stored key (see ByokAIService).
         let secrets: Arc<dyn SecretStorage> = Arc::new(KeyringSecretStorage::new());
-        let ai: Arc<dyn AIService> =
-            Arc::new(ByokAIService::new(tier_service.clone(), secrets.clone()));
+        let ai: Arc<dyn AIService> = Arc::new(ByokAIService::new(secrets.clone()));
         let memory: Arc<dyn ProjectMemoryService> =
             Arc::new(LexicalProjectMemory::new(storage.clone()));
         let validators: Arc<dyn AIValidatorService> =

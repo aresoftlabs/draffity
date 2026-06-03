@@ -1,10 +1,8 @@
-//! BYOK OpenRouter implementation of `AIService` (F-01).
+//! BYOK OpenRouter implementation of `AIService`. Gated by the stored key at call time.
 //!
-//! Gated by **tier + key at call time** (not at build time), so premium
-//! activation (E-06/E-07) and key entry take effect live without rebuilding
-//! the service: `available()` and every call re-check `ai_inline` capability
-//! and the stored key. The key lives in the OS keyring (E-01), never in
-//! SQLite.
+//! The key lives in the OS keyring (E-01), never in SQLite. `available()` and
+//! every call check only whether a non-empty key is present — no tier or
+//! capability check.
 //!
 //! Streaming uses `reqwest::blocking` + manual SSE parsing, forwarding each
 //! delta to the callback sink — fits the sync, object-safe `AIService`
@@ -21,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use crate::error::{AppError, AppResult};
 use crate::services::ai::{AIService, CompletionRequest, CompletionResponse, Role, TokenUsage};
 use crate::services::secrets::SecretStorage;
-use crate::services::tier::TierService;
 
 /// Keyring entry name for the BYOK OpenRouter key.
 pub const OPENROUTER_KEY: &str = "openrouter_api_key";
@@ -38,21 +35,15 @@ const REQUEST_TIMEOUT_SECS: u64 = 120;
 const RETRY_BACKOFF_BASE_MS: u64 = 400;
 
 pub struct ByokAIService {
-    tier: Arc<dyn TierService>,
     secrets: Arc<dyn SecretStorage>,
 }
 
 impl ByokAIService {
-    pub fn new(tier: Arc<dyn TierService>, secrets: Arc<dyn SecretStorage>) -> Self {
-        Self { tier, secrets }
+    pub fn new(secrets: Arc<dyn SecretStorage>) -> Self {
+        Self { secrets }
     }
 
     fn gate(&self) -> AppResult<String> {
-        if !self.tier.is_enabled("ai_inline") {
-            return Err(AppError::Unsupported(
-                "las funciones de IA no están activas".into(),
-            ));
-        }
         self.secrets
             .get_secret(OPENROUTER_KEY)?
             .filter(|k| !k.trim().is_empty())
@@ -116,14 +107,12 @@ impl ByokAIService {
 
 impl AIService for ByokAIService {
     fn available(&self) -> bool {
-        self.tier.is_enabled("ai_inline")
-            && self
-                .secrets
-                .get_secret(OPENROUTER_KEY)
-                .ok()
-                .flatten()
-                .map(|k| !k.trim().is_empty())
-                .unwrap_or(false)
+        self.secrets
+            .get_secret(OPENROUTER_KEY)
+            .ok()
+            .flatten()
+            .map(|k| !k.trim().is_empty())
+            .unwrap_or(false)
     }
 
     fn complete(&self, req: CompletionRequest) -> AppResult<CompletionResponse> {
@@ -270,35 +259,27 @@ pub(crate) fn parse_sse_stream<R: BufRead>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::capabilities::Tier;
     use crate::services::secrets::InMemorySecretStorage;
-    use crate::services::tier::MutableTier;
     use std::io::Cursor;
 
-    fn svc(tier: Tier, key: Option<&str>) -> ByokAIService {
+    fn svc(key: Option<&str>) -> ByokAIService {
         let secrets = InMemorySecretStorage::new();
         if let Some(k) = key {
             secrets.set_secret(OPENROUTER_KEY, k).unwrap();
         }
-        ByokAIService::new(Arc::new(MutableTier::new(tier)), Arc::new(secrets))
+        ByokAIService::new(Arc::new(secrets))
     }
 
     #[test]
-    fn unavailable_without_premium_even_with_key() {
-        let s = svc(Tier::Free, Some("sk-abc"));
+    fn unavailable_without_key() {
+        let s = svc(None);
         assert!(!s.available());
         assert!(s.complete(CompletionRequest::from_prompt("x")).is_err());
     }
 
     #[test]
-    fn unavailable_premium_without_key() {
-        let s = svc(Tier::Premium, None);
-        assert!(!s.available());
-    }
-
-    #[test]
-    fn available_with_premium_and_key() {
-        let s = svc(Tier::Premium, Some("sk-abc"));
+    fn available_with_key() {
+        let s = svc(Some("sk-abc"));
         assert!(s.available());
     }
 
