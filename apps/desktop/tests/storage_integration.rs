@@ -61,7 +61,7 @@ fn full_lifecycle_active_then_switch_then_reactivate() {
         .unwrap();
     assert_eq!(paper.status, app::domain::ProjectStatus::Active);
 
-    // Free tier invariant: only one active.
+    // Single active project invariant: only one active.
     let active = pm.active().unwrap().unwrap();
     assert_eq!(active.id, paper.id);
     let stored_novela = pm.get(&novela.id).unwrap().unwrap();

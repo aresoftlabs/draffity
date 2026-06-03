@@ -1,6 +1,5 @@
 //! Draffity desktop entry point.
 
-mod capabilities;
 mod commands;
 pub mod domain;
 mod error;
@@ -13,7 +12,6 @@ pub use error::{AppError, AppResult};
 
 use tauri::Manager;
 
-use crate::capabilities::Tier;
 use crate::services::ServiceFactory;
 use crate::state::AppState;
 
@@ -32,7 +30,7 @@ pub fn run() {
 
             // Log guard must outlive the app — hand it to AppState.
             let log_guard = logging::init(&app_data_dir.join("logs"));
-            let bundle = ServiceFactory::build(Tier::Free, &app_data_dir)?;
+            let bundle = ServiceFactory::build(&app_data_dir)?;
             // Daily backup + prune. Idempotent — calling again today is a
             // no-op. Failures are logged, not fatal: a missed backup must
             // never prevent the app from launching.
@@ -46,18 +44,6 @@ pub fn run() {
                 let enabled = matches!(value.as_str(), "1" | "true" | "on");
                 bundle.crash_reporter.set_enabled(enabled);
             }
-            // Restore a previously-activated premium license from the OS
-            // keyring and hot-swap the tier (E-07). A missing/invalid key
-            // simply leaves the app on Free — never blocks startup.
-            if let Ok(Some(key)) = bundle
-                .secrets
-                .get_secret(commands::license::LICENSE_SECRET_KEY)
-            {
-                match bundle.license_validator.validate(&key) {
-                    Ok(claims) => bundle.tier.set_tier(claims.tier),
-                    Err(e) => tracing::warn!(error = %e, "stored license invalid; staying on free"),
-                }
-            }
             app.manage(AppState::from_bundle(bundle, log_guard));
 
             Ok(())
@@ -65,7 +51,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // system
             commands::ping,
-            commands::capability_enabled,
             commands::get_setting,
             commands::set_setting,
             commands::get_writing_stats,
@@ -74,10 +59,6 @@ pub fn run() {
             commands::set_daily_goal,
             commands::get_crash_reporting_status,
             commands::set_crash_reporting_enabled,
-            // premium / license
-            commands::get_premium_status,
-            commands::activate_premium,
-            commands::deactivate_premium,
             // ai (byok)
             commands::get_ai_status,
             commands::set_openrouter_key,

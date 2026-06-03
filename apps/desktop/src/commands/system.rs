@@ -12,11 +12,6 @@ pub fn ping() -> String {
 }
 
 #[tauri::command]
-pub fn capability_enabled(state: State<'_, AppState>, name: String) -> bool {
-    state.tier.is_enabled(&name)
-}
-
-#[tauri::command]
 pub fn get_setting(state: State<'_, AppState>, key: String) -> CmdResult<Option<String>> {
     state.storage.get_setting(&key)
 }

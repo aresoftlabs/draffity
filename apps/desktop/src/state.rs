@@ -10,9 +10,9 @@ use std::sync::{Arc, Mutex};
 use crate::logging::LogGuards;
 use crate::services::{
     AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
-    CloudSyncService, CrashReporterService, ExportService, ImportService, LicenseValidator,
-    MediaService, ProjectManagerService, ProjectMemoryService, SecretStorage, ServiceBundle,
-    StorageService, TTSService, TemplatesService, TierService, UserTemplatesLoader,
+    CrashReporterService, ExportService, ImportService, MediaService, ProjectManagerService,
+    ProjectMemoryService, SecretStorage, ServiceBundle, StorageService, TTSService,
+    TemplatesService, UserTemplatesLoader,
 };
 
 /// Per-request cancellation flags for in-flight AI streams (F-06). The
@@ -51,19 +51,16 @@ impl AiCancelRegistry {
 
 pub struct AppState {
     pub storage: Arc<dyn StorageService>,
-    pub tier: Arc<dyn TierService>,
     pub project_manager: Arc<dyn ProjectManagerService>,
     pub templates: Arc<dyn TemplatesService>,
     pub user_templates: Arc<UserTemplatesLoader>,
-    /// BYOK AI service (gated at call time by tier + key). Consumed by the
+    /// BYOK AI service (gated at call time by the stored key). Consumed by the
     /// AI commands (Épica F).
     pub ai: Arc<dyn AIService>,
     /// Engram-aligned project memory feeding AI context (Épica F/G).
     pub memory: Arc<dyn ProjectMemoryService>,
     /// AI validators (Épica G). Consumed by the validation commands.
     pub validators: Arc<dyn AIValidatorService>,
-    #[allow(dead_code)]
-    pub sync: Arc<dyn CloudSyncService>,
     /// Local Whisper ASR (H). Consumed by the voice commands.
     pub asr: Arc<dyn ASRService>,
     /// Local Piper TTS (H). Consumed by the read-aloud command.
@@ -74,11 +71,9 @@ pub struct AppState {
     pub backup: Arc<dyn BackupService>,
     pub media: Arc<dyn MediaService>,
     pub crash_reporter: Arc<dyn CrashReporterService>,
-    /// OS-keyring storage for BYOK keys + license (E-01). Never the plain
+    /// OS-keyring storage for BYOK keys (E-01). Never the plain
     /// `settings` table.
     pub secrets: Arc<dyn SecretStorage>,
-    /// Offline Ed25519 license validator (E-07).
-    pub license_validator: Arc<dyn LicenseValidator>,
     /// In-flight AI stream cancellation flags (F-06).
     pub ai_cancel: Arc<AiCancelRegistry>,
     /// App data dir — voice commands resolve binary/model paths (H).
@@ -93,14 +88,12 @@ impl AppState {
     pub fn from_bundle(bundle: ServiceBundle, log_guards: LogGuards) -> Self {
         Self {
             storage: bundle.storage,
-            tier: bundle.tier,
             project_manager: bundle.project_manager,
             templates: bundle.templates,
             user_templates: bundle.user_templates,
             ai: bundle.ai,
             memory: bundle.memory,
             validators: bundle.validators,
-            sync: bundle.sync,
             asr: bundle.asr,
             tts: bundle.tts,
             exporter: bundle.exporter,
@@ -110,7 +103,6 @@ impl AppState {
             media: bundle.media,
             crash_reporter: bundle.crash_reporter,
             secrets: bundle.secrets,
-            license_validator: bundle.license_validator,
             ai_cancel: Arc::new(AiCancelRegistry::default()),
             app_data_dir: bundle.app_data_dir,
             _log_guards: log_guards,

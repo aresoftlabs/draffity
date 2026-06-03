@@ -1,8 +1,7 @@
-//! Composes the full set of services for a given tier.
+//! Composes the full set of services.
 //!
-//! Single point of wiring for `LocalStorageService`, `FreeTier`, `LocalExporter`
-//! and the `NoOp*` stubs. Adding a premium implementation means adding a match
-//! arm here — never touching `lib.rs::run` or any service module.
+//! Single point of wiring for `LocalStorageService`, `LocalExporter`
+//! and the `NoOp*` stubs — never touching `lib.rs::run` or any service module.
 //!
 //! Logging is **not** initialised here: the caller owns the log lifecycle
 //! because the `WorkerGuard` must outlive the whole app and the factory is
@@ -11,32 +10,28 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::capabilities::Tier;
 use crate::error::AppResult;
 use crate::services::{
     AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
-    BuiltInTemplates, ByokAIService, CloudSyncService, CrashReporterService,
-    DisabledLicenseValidator, Ed25519Validator, ExportService, ImportService, KeyringSecretStorage,
-    LayeredTemplatesService, LexicalProjectMemory, LicenseValidator, LocalBackupService,
+    BuiltInTemplates, ByokAIService, CrashReporterService, ExportService, ImportService,
+    KeyringSecretStorage, LayeredTemplatesService, LexicalProjectMemory, LocalBackupService,
     LocalBibliographyService, LocalExporter, LocalFileCrashReporter, LocalImporter,
-    LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, MutableTier,
-    NoOpCrashReporter, NoOpSync, OpenRouterValidators, PiperTTSService, ProjectManagerService,
-    ProjectMemoryService, SecretStorage, StorageService, TTSService, TemplatesService, TierService,
-    UserTemplatesLoader, WhisperLocalASR,
+    LocalMediaService, LocalProjectManager, LocalStorageService, MediaService, NoOpCrashReporter,
+    OpenRouterValidators, PiperTTSService, ProjectManagerService, ProjectMemoryService,
+    SecretStorage, StorageService, TTSService, TemplatesService, UserTemplatesLoader,
+    WhisperLocalASR,
 };
 
 /// All services needed by the app, fully wired. Caller composes `AppState`
 /// by adding the log guard (whose lifetime it owns).
 pub struct ServiceBundle {
     pub storage: Arc<dyn StorageService>,
-    pub tier: Arc<dyn TierService>,
     pub project_manager: Arc<dyn ProjectManagerService>,
     pub templates: Arc<dyn TemplatesService>,
     pub user_templates: Arc<UserTemplatesLoader>,
     pub ai: Arc<dyn AIService>,
     pub memory: Arc<dyn ProjectMemoryService>,
     pub validators: Arc<dyn AIValidatorService>,
-    pub sync: Arc<dyn CloudSyncService>,
     pub asr: Arc<dyn ASRService>,
     pub tts: Arc<dyn TTSService>,
     pub exporter: Arc<dyn ExportService>,
@@ -46,19 +41,17 @@ pub struct ServiceBundle {
     pub media: Arc<dyn MediaService>,
     pub crash_reporter: Arc<dyn CrashReporterService>,
     pub secrets: Arc<dyn SecretStorage>,
-    pub license_validator: Arc<dyn LicenseValidator>,
     /// App data dir — voice commands resolve binary/model paths from it.
     pub app_data_dir: PathBuf,
 }
 
-/// Builds `ServiceBundle` from a tier + storage location. Idempotent w.r.t.
+/// Builds `ServiceBundle` from a storage location. Idempotent w.r.t.
 /// migrations (running twice on the same DB is a no-op past v1).
 pub struct ServiceFactory;
 
 impl ServiceFactory {
-    pub fn build(tier: Tier, app_data_dir: &Path) -> AppResult<ServiceBundle> {
+    pub fn build(app_data_dir: &Path) -> AppResult<ServiceBundle> {
         let storage = Self::build_storage(app_data_dir)?;
-        let tier_service = Self::build_tier(tier)?;
         let user_templates = Arc::new(UserTemplatesLoader::new(
             app_data_dir.join("templates").join("user"),
         ));
@@ -86,14 +79,12 @@ impl ServiceFactory {
 
         Ok(ServiceBundle {
             storage,
-            tier: tier_service,
             project_manager,
             templates,
             user_templates,
             ai,
             memory,
             validators,
-            sync: Self::build_sync(tier),
             asr,
             tts,
             exporter: Arc::new(LocalExporter),
@@ -103,26 +94,8 @@ impl ServiceFactory {
             media,
             crash_reporter,
             secrets,
-            license_validator: Self::build_license_validator(),
             app_data_dir: app_data_dir.to_path_buf(),
         })
-    }
-
-    /// Wire the license validator from the build-time `DRAFFITY_LICENSE_PUBKEY`
-    /// (base64url of the 32-byte Ed25519 public key). When absent — the default
-    /// for OSS builds — premium cannot be activated. Mirrors the crash-reporter
-    /// env gating above. A malformed key fails closed (disabled), logging why.
-    fn build_license_validator() -> Arc<dyn LicenseValidator> {
-        match std::env::var("DRAFFITY_LICENSE_PUBKEY") {
-            Ok(b64) if !b64.trim().is_empty() => match Ed25519Validator::from_base64(&b64) {
-                Ok(v) => Arc::new(v),
-                Err(e) => {
-                    tracing::warn!(error = %e, "invalid DRAFFITY_LICENSE_PUBKEY; licensing disabled");
-                    Arc::new(DisabledLicenseValidator)
-                }
-            },
-            _ => Arc::new(DisabledLicenseValidator),
-        }
     }
 
     /// Pick a crash reporter impl. When `DRAFFITY_SENTRY_DSN` is empty
@@ -166,20 +139,6 @@ impl ServiceFactory {
         storage.migrate()?;
         Ok(Arc::new(storage))
     }
-
-    /// Always wraps the tier in a `MutableTier` so premium activation (E-07)
-    /// can flip capabilities at runtime without a restart — the same
-    /// `Arc<dyn TierService>` is shared by the IPC layer and the project
-    /// manager, so one `set_tier` is seen everywhere live.
-    fn build_tier(tier: Tier) -> AppResult<Arc<dyn TierService>> {
-        Ok(Arc::new(MutableTier::new(tier)))
-    }
-
-    // `ai` is the BYOK `ByokAIService` (F-01), gated by the stored key at call time.
-
-    fn build_sync(_tier: Tier) -> Arc<dyn CloudSyncService> {
-        Arc::new(NoOpSync)
-    }
 }
 
 #[cfg(test)]
@@ -187,47 +146,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn build_free_tier_in_tempdir() {
+    fn build_in_tempdir_wires_services() {
         let dir = tempdir();
-        let bundle = ServiceFactory::build(Tier::Free, &dir).expect("build free tier bundle");
-        // The wired services answer correctly to a smoke probe.
-        assert!(!bundle.tier.is_enabled("ai_features"));
+        let bundle = ServiceFactory::build(&dir).expect("build bundle");
         assert!(bundle.templates.get("novela-tres-actos").is_some());
         // Migrations applied: listing projects on a fresh DB returns empty.
         assert_eq!(bundle.storage.list_projects().expect("list").len(), 0);
-    }
-
-    #[test]
-    fn build_premium_tier_grants_capabilities() {
-        let dir = tempdir();
-        let bundle = ServiceFactory::build(Tier::Premium, &dir).expect("build premium bundle");
-        // Premium flips capability gates on…
-        assert!(bundle.tier.is_enabled("ai_inline"));
-        assert!(bundle.tier.is_enabled("voice_dictation"));
-        // …voice services need binaries+models on disk; none are installed in
-        // the temp dir, so available() is false regardless of tier.
-        // (We don't probe `ai.available()` here — it reads the OS keyring, so
-        // it isn't hermetic in tests; ByokAIService gating is unit-tested in
-        // its own module.)
+        // Voice/AI are unavailable without installed resources (no tier gate).
         assert!(!bundle.asr.available());
         assert!(!bundle.tts.available());
     }
 
     #[test]
-    fn tier_hot_swaps_free_to_premium_at_runtime() {
-        let dir = tempdir();
-        let bundle = ServiceFactory::build(Tier::Free, &dir).expect("build free bundle");
-        assert!(!bundle.tier.is_enabled("ai_inline"));
-        bundle.tier.set_tier(Tier::Premium);
-        assert!(bundle.tier.is_enabled("ai_inline"), "hot-swap to premium");
-    }
-
-    #[test]
     fn build_is_idempotent_on_same_dir() {
         let dir = tempdir();
-        ServiceFactory::build(Tier::Free, &dir).expect("first build");
-        // Re-running on the same dir reuses the DB and migrations no-op.
-        ServiceFactory::build(Tier::Free, &dir).expect("second build");
+        ServiceFactory::build(&dir).expect("first build");
+        ServiceFactory::build(&dir).expect("second build");
     }
 
     fn tempdir() -> std::path::PathBuf {

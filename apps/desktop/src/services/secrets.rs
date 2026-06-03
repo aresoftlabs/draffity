@@ -1,5 +1,5 @@
-//! Secret storage abstraction (E-01). BYOK API keys and the premium license
-//! never touch the plain-text `settings` table — they live in the OS keyring
+//! Secret storage abstraction (E-01). BYOK API keys never touch the plain-text
+//! `settings` table — they live in the OS keyring
 //! (Windows Credential Manager / macOS Keychain / Linux Secret Service).
 //!
 //! `KeyringSecretStorage` is the real impl. `InMemorySecretStorage` is the
