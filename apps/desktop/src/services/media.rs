@@ -3,9 +3,9 @@
 //! `StorageService`. Dedupes by `(project_id, sha256)` so pasting the
 //! same image twice references a single file on disk.
 //!
-//! Premium-ready behind `MediaService` trait + `NoOpMedia`. A future
-//! `CloudMediaService` can implement the same surface against an S3
-//! backend without touching commands or the editor.
+//! `MediaService` trait + `NoOpMedia`. A future `CloudMediaService` can
+//! implement the same surface against an S3 backend without touching commands
+//! or the editor.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;

@@ -1,8 +1,6 @@
-//! Backup service. **Premium-ready stub-on-top.**
-//!
-//! The free tier ships `LocalBackupService` (snapshots of `draffity.db` in
-//! `<app_data>/backups/`). Premium can add `CloudBackupService` (uploads to
-//! S3/B2/etc.) by implementing this trait — same wiring path as the other
+//! Backup service: `LocalBackupService` (snapshots of `draffity.db` in
+//! `<app_data>/backups/`). A future `CloudBackupService` can implement this
+//! trait without touching commands or the UI — same wiring path as the other
 //! services.
 
 use std::fs;

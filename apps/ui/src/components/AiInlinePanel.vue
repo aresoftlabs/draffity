@@ -24,8 +24,8 @@ const ai = useAiInline({
   docId: toRef(props, 'docId'),
 });
 
-// AI usability (premium + key). Fetched once; the menu never appears without
-// it, so free users see nothing (no premium leakage).
+// AI usability: requires BYOK key. Fetched once; the menu never appears
+// without it so users without a key configured see nothing.
 const available = ref(false);
 async function refreshAvailability() {
   try {

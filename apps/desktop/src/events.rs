@@ -1,6 +1,6 @@
 //! Event names emitted on the Tauri event bus.
 //!
-//! Premium features (cloud sync, AI background jobs, codex updates) subscribe
+//! AI and voice features (background jobs, codex updates) subscribe
 //! to these without modifying the core. Names are stable wire identifiers —
 //! never rename, only add.
 //!
@@ -21,7 +21,7 @@ pub const DOCUMENT_DELETED: &str = "document.deleted";
 
 pub const SNAPSHOT_CREATED: &str = "snapshot.created";
 
-// Premium events (Épicas F/G/H). Placeholders wired by their épica; declared
+// AI/voice events (Épicas F/G/H). Placeholders wired by their épica; declared
 // here so the typed enum and subscribers share one stable name. Marked
 // dead_code until their emitters land — same convention as AppState's
 // not-yet-consumed service fields.
@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn premium_event_names_are_namespaced() {
+    fn ai_voice_event_names_are_namespaced() {
         assert_eq!(
             AppEvent::AiSuggestionReceived.name(),
             "ai.suggestion.received"

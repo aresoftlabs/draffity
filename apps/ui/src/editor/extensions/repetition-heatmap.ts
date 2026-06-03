@@ -6,7 +6,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 /**
  * Repetition heatmap (J-08): a toggleable, local (no-AI) overlay that flags
  * over-used content words and repeated two-word phrases. A fast subset of the
- * AI repetition validator (G-06) that works on the free tier. Implemented as
+ * AI repetition validator (G-06). Local, no-server overlay. Implemented as
  * ProseMirror decorations — it never mutates the document.
  *
  * Detection is pure (`detectRepetitions`) and unit-tested without an editor.

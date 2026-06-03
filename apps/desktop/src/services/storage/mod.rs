@@ -44,7 +44,7 @@ mod stats;
 mod template_seed;
 
 /// Embedded migrations applied in order. Each entry is `(version, sql)`.
-/// Premium adds entries in the 100_* range without touching MVP migrations.
+/// All migrations are additive and idempotent.
 const MIGRATIONS: &[(u32, &str)] = &[
     (1, include_str!("../../migrations/001_init.sql")),
     (2, include_str!("../../migrations/002_fts.sql")),

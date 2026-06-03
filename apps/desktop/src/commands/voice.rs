@@ -25,11 +25,11 @@ type CmdResult<T> = Result<T, AppError>;
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VoiceStatus {
-    /// Dictation usable now: premium voice + binary + a model installed.
+    /// Dictation usable now: Whisper binary + a model installed.
     pub dictation_available: bool,
     pub binary_installed: bool,
     pub installed_models: Vec<String>,
-    /// Read-aloud usable now: premium voice + Piper binary + a voice installed.
+    /// Read-aloud usable now: Piper binary + a voice installed.
     pub tts_available: bool,
     pub piper_installed: bool,
 }

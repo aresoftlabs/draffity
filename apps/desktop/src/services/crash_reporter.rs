@@ -1,7 +1,7 @@
-//! Crash reporting service. Premium-ready trait + a local stub impl that
-//! writes reports to disk and a no-op for the disabled case. A future
-//! Sentry-backed implementation drops in behind the trait without
-//! touching commands or the UI.
+//! Crash reporting service: trait + a local stub impl that writes reports to
+//! disk and a no-op for the disabled case. A future Sentry-backed
+//! implementation drops in behind the trait without touching commands or the
+//! UI.
 //!
 //! The contract is intentionally tiny — one method to record a captured
 //! error, one to drain the queue on a release boundary. The frontend

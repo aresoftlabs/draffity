@@ -110,7 +110,7 @@ pub trait AIValidatorService: Send + Sync {
     /// Run one validator and return its findings. Local validators work
     /// regardless of tier/key; AI validators require `available()`.
     fn run(&self, kind: ValidatorKind, input: &ValidationInput) -> AppResult<Vec<Finding>>;
-    /// Whether the AI-backed validators can run (premium + key).
+    /// Whether the AI-backed validators can run (requires BYOK key).
     fn available(&self) -> bool;
 }
 

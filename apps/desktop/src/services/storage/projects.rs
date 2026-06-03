@@ -70,8 +70,8 @@ pub(super) fn create_atomic(
     input.validate()?;
     let tx = conn.transaction()?;
 
-    // Free tier keeps a single active project: archive the previous one in the
-    // same transaction so a later failure can't leave zero active projects.
+    // Single-active invariant: archive the previous active project in the same
+    // transaction so a later failure can't leave zero active projects.
     if archive_active {
         archive_active_within(&tx, None)?;
     }

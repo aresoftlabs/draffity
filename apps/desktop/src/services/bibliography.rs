@@ -1,8 +1,8 @@
 //! Bibliographic import. Parses a BibTeX/BibLaTeX string with the `biblatex`
 //! crate, normalises every entry to `(key, entry_type, field map)` and
-//! delegates persistence to the storage layer. Premium can later add
-//! `RemoteBibliographyService` (Zotero, BibSonomy…) implementing the same
-//! trait.
+//! delegates persistence to the storage layer. A future
+//! `RemoteBibliographyService` (Zotero, BibSonomy…) can implement the same
+//! trait without touching commands or the UI.
 
 use std::collections::BTreeMap;
 

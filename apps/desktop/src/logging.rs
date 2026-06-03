@@ -14,7 +14,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 use tracing_subscriber::{fmt, EnvFilter};
 
-/// Tracing targets for premium events (E-10). Emit with
+/// Tracing targets for AI/voice events (E-10). Emit with
 /// `tracing::info!(target: logging::AI_EVENTS_TARGET, …)` from the AI layer
 /// (Épica F/G) and `VOICE_EVENTS_TARGET` from the voice layer (Épica H).
 /// These are mirrored to a dedicated local file — never sent over the network.
@@ -35,12 +35,12 @@ pub fn init(log_dir: &Path) -> LogGuards {
     let (non_blocking, guard) = tracing_appender::non_blocking(appender);
 
     // Dedicated, local-only sink for AI/voice telemetry (E-10). Same lines
-    // also land in the main log; this isolated stream makes the premium
+    // also land in the main log; this isolated stream makes the AI/voice
     // event audit trail easy to inspect. Zero network egress.
-    let premium_appender = tracing_appender::rolling::daily(log_dir, "premium-events.log");
-    let (premium_nb, premium_guard) = tracing_appender::non_blocking(premium_appender);
-    let premium_layer = fmt::layer()
-        .with_writer(premium_nb)
+    let events_appender = tracing_appender::rolling::daily(log_dir, "ai-voice-events.log");
+    let (events_nb, events_guard) = tracing_appender::non_blocking(events_appender);
+    let events_layer = fmt::layer()
+        .with_writer(events_nb)
         .with_ansi(false)
         .with_target(true)
         .with_filter(filter_fn(|meta| {
@@ -63,7 +63,7 @@ pub fn init(log_dir: &Path) -> LogGuards {
         .with(env_filter)
         .with(stderr_layer)
         .with(file_layer)
-        .with(premium_layer)
+        .with(events_layer)
         .try_init();
 
     install_panic_hook();
@@ -74,7 +74,7 @@ pub fn init(log_dir: &Path) -> LogGuards {
         "tracing initialised"
     );
 
-    LogGuards(vec![guard, premium_guard])
+    LogGuards(vec![guard, events_guard])
 }
 
 fn install_panic_hook() {

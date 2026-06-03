@@ -1,12 +1,13 @@
-//! AI service abstraction. **Premium-ready.**
+//! AI service abstraction.
 //!
-//! In the free MVP this is a `NoOpAI` that reports unavailable. Premium adds
-//! `OpenRouterAIService` (BYOK) by implementing this trait — no core change.
+//! The default impl is `NoOpAI` (reports unavailable). The BYOK impl
+//! `OpenRouterAIService` implements this trait and is wired in when an API key
+//! is present — no core change needed.
 //!
 //! Streaming is modelled with a **callback sink** (`&mut dyn FnMut(&str)`)
 //! rather than a returned `Stream`. This keeps the trait object-safe
 //! (`Arc<dyn AIService>`) and avoids pulling an async runtime into a
-//! currently-sync codebase: the premium impl does blocking SSE reads and
+//! currently-sync codebase: the BYOK impl does blocking SSE reads and
 //! forwards each delta to the sink, which the command layer relays to the UI
 //! via Tauri events. See `backlog-v4.md` E-03 / F-01.
 

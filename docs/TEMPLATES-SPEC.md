@@ -2,7 +2,7 @@
 
 Las plantillas de Draffity son archivos JSON que describen una **estructura inicial** de proyecto (folders + capítulos seed) y, opcionalmente, un conjunto de **metadatos pedidos al usuario** al crear el proyecto.
 
-Las plantillas built-in viven en [`packages/templates/`](../packages/templates/) y se embeben en el binario via `include_str!`. En premium, el loader podrá descubrir además plantillas en `~/.draffity/templates/` y, posteriormente, fetched de cloud.
+Las plantillas built-in viven en [`packages/templates/`](../packages/templates/) y se embeben en el binario via `include_str!`. El loader también descubre plantillas de usuario en `~/.draffity/templates/`.
 
 ## Versionado
 
@@ -18,7 +18,6 @@ El campo `schemaVersion` permite evolución. La versión actual es **1**. Cualqu
   "description": "Estructura clásica con planteamiento, confrontación y resolución.",
   "kind": "novel", // "novel" | "paper" | "manga" | "screenplay" | "generic"
   "locale": "es", // "es" | "en"
-  "tier": "free", // "free" | "premium" — gating del loader
   "structure": [
     {
       "title": "Acto 1 — Planteamiento",
@@ -49,7 +48,6 @@ El campo `schemaVersion` permite evolución. La versión actual es **1**. Cualqu
 | `description`    | `string`          | no        | descripción corta para wizard                              |
 | `kind`           | `string`          | sí        | uno de: `novel \| paper \| manga \| screenplay \| generic` |
 | `locale`         | `string`          | sí        | `es` o `en`                                                |
-| `tier`           | `string`          | sí        | `free` o `premium`. Free MVP solo carga `free`             |
 | `structure`      | `TemplateNode[]`  | sí        | árbol seed; puede estar vacío                              |
 | `metadataFields` | `MetadataField[]` | no        | campos extra pedidos al usuario                            |
 
@@ -100,4 +98,4 @@ Errores del loader son `AppError::Invariant` con mensaje preciso (id de la plant
 - `paper-imrad` — Abstract / Introduction / Methods / Results / Discussion / References
 - `manga-shonen` — capítulos como folders con páginas hijas
 
-Las plantillas premium (Save the Cat, Hero's Journey, Snowflake, Light Novel JP, etc.) **no se incluyen** en el MVP, solo el slot `tier: "premium"` reservado en el schema.
+Todas las plantillas built-in están disponibles incondicionalmente.
