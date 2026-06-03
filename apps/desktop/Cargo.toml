@@ -61,4 +61,5 @@ opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
-panic = "abort"
+# NOTA: `panic = "abort"` es incompatible con html2md, que declara crate-type
+# "dylib" (un dylib enlaza siempre el runtime panic_unwind). Se usa unwind.
