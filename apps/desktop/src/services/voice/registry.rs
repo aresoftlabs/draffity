@@ -143,7 +143,7 @@ const BINARY_INFOS: &[BinaryInfo] = &[
     BinaryInfo {
         id: "whisper",
         name: "whisper.cpp",
-        win_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip",
+        win_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-Win32.zip",
         linux_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip",
         size_mb: 30,
     },

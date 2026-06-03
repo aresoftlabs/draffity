@@ -93,7 +93,7 @@ pub fn download_to_file(
             ));
         }
     } else {
-        tracing::warn!(url, "downloaded voice asset without checksum verification");
+        tracing::debug!(url, "downloaded voice asset without checksum verification");
     }
 
     std::fs::rename(&tmp, dest)?;
