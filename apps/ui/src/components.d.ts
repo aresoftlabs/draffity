@@ -50,7 +50,6 @@ declare module 'vue' {
     SearchDialog: typeof import('./components/SearchDialog.vue')['default']
     SettingsAI: typeof import('./components/SettingsAI.vue')['default']
     SettingsBackups: typeof import('./components/SettingsBackups.vue')['default']
-    SettingsPremium: typeof import('./components/SettingsPremium.vue')['default']
     SettingsStats: typeof import('./components/SettingsStats.vue')['default']
     SettingsVoice: typeof import('./components/SettingsVoice.vue')['default']
     SnapshotDiffView: typeof import('./components/SnapshotDiffView.vue')['default']
