@@ -18,17 +18,14 @@ use crate::services::storage::StorageService;
 use crate::services::templates::TemplatesService;
 pub trait ProjectManagerService: Send + Sync {
     /// Create a new project, seeding it from the requested template if known.
-    /// If single-active is enforced (free tier), any currently-active project
-    /// is archived first.
+    /// The currently-active project (if any) is archived first.
     fn create(&self, input: ProjectInput) -> AppResult<Project>;
 
-    /// Activate an existing project. Archives the currently-active one
-    /// when single-active is enforced.
+    /// Activate an existing project. Archives the currently-active one first.
     fn activate(&self, id: &str) -> AppResult<Project>;
 
     /// Create a project from an imported document tree, archiving the
-    /// currently-active project first when single-active is enforced. Routes
-    /// imports through the same invariant as `create` (AUD-06).
+    /// currently-active project first (single-active invariant, AUD-06).
     fn create_from_import(&self, tree: &ImportTree, template_id: &str) -> AppResult<Project>;
 
     fn archive(&self, id: &str) -> AppResult<()>;
