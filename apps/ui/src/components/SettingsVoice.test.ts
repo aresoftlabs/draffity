@@ -31,7 +31,6 @@ const i18n = createI18n({
         voiceImportPiper: 'Importar Piper',
         voiceInstalled: 'Instalada',
       },
-      capability: { unavailable: 'No disponible' },
     },
   },
 });

@@ -28,7 +28,6 @@ const i18n = createI18n({
         aiUsageCostsLink: 'Ver costos',
         loadError: 'No se pudo cargar',
       },
-      capability: { unavailable: 'No disponible' },
     },
   },
 });
