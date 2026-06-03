@@ -6,12 +6,12 @@ import type { WireError } from '@draffity/shared-types';
  * success, or `null` on failure. Logs structured errors to the console for
  * future telemetry hooks.
  */
+export function isWireError(e: unknown): e is WireError {
+  return !!e && typeof e === 'object' && 'code' in e && 'message' in e;
+}
+
 export function useIpcError() {
   const toast = useToast();
-
-  function isWireError(e: unknown): e is WireError {
-    return !!e && typeof e === 'object' && 'code' in e && 'message' in e;
-  }
 
   async function run<T>(label: string, op: () => Promise<T>): Promise<T | null> {
     try {

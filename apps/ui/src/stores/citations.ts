@@ -36,32 +36,23 @@ export const useCitationsStore = defineStore('citations', () => {
     list.value = [];
   }
 
-  /** Pre-render the inline label `(Surname, Year)` for the editor node. */
-  function labelFor(c: Citation): string {
-    const surname = surnameOf(c);
-    const year = c.fields.year ?? '';
-    if (surname && year) return `(${surname}, ${year})`;
-    if (surname) return `(${surname})`;
-    if (year) return `(${year})`;
-    return `[${c.key}]`;
-  }
-
-  return {
-    projectId,
-    list,
-    byKey,
-    loadFor,
-    refresh,
-    setList,
-    reset,
-    labelFor,
-  };
+  return { projectId, list, byKey, loadFor, refresh, setList, reset, labelFor };
 });
 
-function surnameOf(c: Citation): string {
+/** Pre-render the inline label `(Surname, Year)` for the editor node. */
+export function labelFor(c: Citation): string {
+  const surname = surnameOf(c);
+  const year = c.fields.year ?? '';
+  if (surname && year) return `(${surname}, ${year})`;
+  if (surname) return `(${surname})`;
+  if (year) return `(${year})`;
+  return `[${c.key}]`;
+}
+
+export function surnameOf(c: Citation): string {
   const author = c.fields.author ?? '';
   if (!author) return '';
-  // First author only â€” BibTeX joins with " and ".
+  // First author only — BibTeX joins with " and ".
   const first = author.split(' and ')[0].trim();
   if (first.includes(',')) {
     return first.split(',')[0].trim();
