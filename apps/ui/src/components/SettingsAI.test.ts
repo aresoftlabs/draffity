@@ -110,7 +110,6 @@ describe('SettingsAI', () => {
     // so verify the Select component has the right options data.
     const select = w.findComponent({ name: 'Select' });
     expect(select.exists()).toBe(true);
-    // @ts-expect-error — options is a Vue prop
     const opts = select.props('options');
     expect(opts).toHaveLength(3); // 3 providers
     expect(opts[0].label).toBe('OpenAI');
