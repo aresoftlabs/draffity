@@ -274,6 +274,8 @@ async function onAsrStartRecord() {
   try {
     await recorder.start(voiceSettings.inputDeviceId);
     asrPhase.value = 'recording';
+    // Permiso concedido → ahora hay etiquetas de dispositivos: refrescar el selector.
+    void refreshInputDevices();
   } catch {
     asrMicDenied.value = true;
   }
