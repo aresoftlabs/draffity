@@ -2,15 +2,29 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  guard-main-source:
+    name: Guard main PR source
+    # PRs into main may only come from develop or hotfix/* branches.
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only develop or hotfix/* may target main
+        run: |
+          head="${{ github.head_ref }}"
+          if [[ "$head" != "develop" && "$head" != hotfix/* ]]; then
+            echo "::error::PRs a main deben venir de 'develop' o 'hotfix/*' (recibido '$head')."
+            exit 1
+          fi
+
   lint-and-test-js:
     name: Lint & test (JS)
     runs-on: ubuntu-latest
@@ -96,7 +110,7 @@ jobs:
           cargo llvm-cov \
             --manifest-path apps/desktop/Cargo.toml \
             --lib \
-            --ignore-filename-regex 'src/commands/|src/lib\.rs$|src/state\.rs$|src/capabilities\.rs$|src/events\.rs$|src/logging\.rs$|tests/|examples/' \
+            --ignore-filename-regex 'src/commands/|src/lib\.rs$|src/state\.rs$|src/events\.rs$|src/logging\.rs$|tests/|examples/' \
             --fail-under-lines 80
 
   validate-epub:
@@ -159,6 +173,9 @@ jobs:
 
   build-tauri:
     name: Build (${{ matrix.os }})
+    # Installer build only matters at the main boundary (PRs into main and
+    # pushes to main) — develop / feature PRs skip it to stay fast.
+    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
     needs: [lint-and-test-js, lint-and-test-rs, e2e]
     strategy:
       fail-fast: false
