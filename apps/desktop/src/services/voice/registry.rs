@@ -174,7 +174,6 @@ pub fn whisper_binary(os: &str, arch: &str, backend: Backend) -> Option<WhisperB
     let supported = matches!(
         (os, backend),
         ("macos", Backend::Metal)
-            | ("macos", Backend::Cpu)
             | ("windows", Backend::Vulkan)
             | ("windows", Backend::Cpu)
             | ("linux", Backend::Vulkan)
@@ -290,5 +289,13 @@ mod tests {
         let v = vad_model();
         assert_eq!(v.filename, "silero-v5.1.2-ggml.bin");
         assert!(v.url.ends_with(v.filename));
+    }
+
+    #[test]
+    fn macos_without_metal_is_unsupported() {
+        use crate::services::voice::accel::Backend;
+        // Intel Mac (x86_64 → Cpu) no tiene binario: error limpio, no 404.
+        assert!(whisper_binary("macos", "x86_64", Backend::Cpu).is_none());
+        assert!(whisper_binary("macos", "aarch64", Backend::Metal).is_some());
     }
 }
