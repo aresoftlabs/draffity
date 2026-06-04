@@ -80,6 +80,19 @@ impl DraffityHome {
         self.voice_dir().join("bin").join(name)
     }
 
+    pub fn whisper_server_bin_path(&self) -> std::path::PathBuf {
+        let name = if cfg!(windows) {
+            "whisper-server.exe"
+        } else {
+            "whisper-server"
+        };
+        self.voice_dir().join("bin").join(name)
+    }
+
+    pub fn vad_model_path(&self) -> std::path::PathBuf {
+        self.models_dir().join("silero-v5.1.2-ggml.bin")
+    }
+
     pub fn piper_bin_path(&self) -> PathBuf {
         let name = if cfg!(windows) { "piper.exe" } else { "piper" };
         self.voice_dir().join("bin").join(name)
@@ -441,5 +454,20 @@ mod tests {
         let home = DraffityHome::with_root(new.path().to_path_buf());
         let result = home.run_migration(old.path()).unwrap();
         assert!(!result, "should skip because target already has db");
+    }
+
+    #[test]
+    fn server_and_vad_paths_resolve_under_voice() {
+        let home = DraffityHome::with_root(std::path::PathBuf::from("/tmp/test-draffity"));
+        assert!(home
+            .whisper_server_bin_path()
+            .to_string_lossy()
+            .replace('\\', "/")
+            .contains("voice/bin/whisper-server"));
+        assert!(home
+            .vad_model_path()
+            .to_string_lossy()
+            .replace('\\', "/")
+            .ends_with("voice/models/silero-v5.1.2-ggml.bin"));
     }
 }
