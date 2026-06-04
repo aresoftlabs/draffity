@@ -222,6 +222,24 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
     Ok(())
 }
 
+/// Modelos instalados (ids cuyo `.bin` existe en el dir de modelos).
+fn installed_model_ids(state: &AppState) -> Vec<&'static str> {
+    crate::services::voice::whisper_models()
+        .iter()
+        .filter(|m| state.resources.model_path(m.filename).exists())
+        .map(|m| m.id)
+        .collect()
+}
+
+/// Id del modelo activo según backend + override del usuario (setting).
+fn active_model_id(state: &AppState) -> Option<String> {
+    use crate::services::voice::accel::{detect_backend, pick_model};
+    let installed = installed_model_ids(state);
+    let installed_refs: Vec<&str> = installed.iter().copied().collect();
+    let override_id = state.storage.get_setting("voice.asr.model").ok().flatten();
+    pick_model(detect_backend(), &installed_refs, override_id.as_deref())
+}
+
 /// Transcribe a recorded clip (16 kHz mono WAV bytes from the UI) to text.
 /// If `sample_rate` is provided, `wav` is raw PCM16 samples (i16 LE) at that
 /// rate — a WAV header is written first. Without it, `wav` is expected to be a
@@ -250,9 +268,14 @@ pub async fn transcribe_audio(
         std::fs::write(&path, &wav)?;
     }
 
-    // Modelo activo (Fase 3 lo hará backend-aware; por ahora el recomendado).
-    let model_path = crate::services::voice::registry::recommended_model()
-        .map(|m| state.resources.model_path(m.filename));
+    // Modelo activo: backend-aware con override del usuario (Fase 3).
+    let model = active_model_id(&state)
+        .and_then(|id| crate::services::voice::model_by_id(&id).map(|m| m.filename))
+        .map(|fname| state.resources.model_path(fname));
+    let model_path = match model {
+        Some(p) if p.exists() => Some(p),
+        _ => None,
+    };
 
     // Camino rápido: server caliente (si hay binario + VAD + modelo instalados).
     if let Some(ref model) = model_path {
