@@ -59,6 +59,8 @@ declare module 'vue' {
     SwitchProjectDialog: typeof import('./components/SwitchProjectDialog.vue')['default']
     ValidationDialog: typeof import('./components/ValidationDialog.vue')['default']
     VoiceNotesDialog: typeof import('./components/VoiceNotesDialog.vue')['default']
+    VoiceRecorderControl: typeof import('./components/VoiceRecorderControl.vue')['default']
+    VoiceWaveform: typeof import('./components/VoiceWaveform.vue')['default']
     WizardStepConfirm: typeof import('./components/WizardStepConfirm.vue')['default']
     WizardStepMetadata: typeof import('./components/WizardStepMetadata.vue')['default']
     WizardStepTemplate: typeof import('./components/WizardStepTemplate.vue')['default']
