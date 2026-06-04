@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import Button from 'primevue/button';
 import type { DictationPhase } from '@/composables/useDictation';
 
-const props = defineProps<{ phase: DictationPhase; level: number }>();
+const props = defineProps<{ phase: DictationPhase; level: number; progress?: number | null }>();
 defineEmits<{ stop: []; cancel: [] }>();
 
 const { t } = useI18n();
@@ -53,8 +53,21 @@ const meterWidth = computed(() => `${Math.min(100, Math.round(props.level * 240)
       />
     </template>
     <template v-else>
-      <i class="pi pi-spin pi-spinner" />
-      <span class="text-sm">{{ t('voice.dictation.transcribing') }}</span>
+      <template v-if="props.progress != null">
+        <div class="h-2 w-28 rounded-full bg-surface-200 dark:bg-surface-700 overflow-hidden">
+          <div
+            data-test="transcribe-progress"
+            class="h-full bg-primary-500 transition-[width] duration-150"
+            :style="{ width: `${Math.min(100, Math.max(0, props.progress))}%` }"
+          />
+        </div>
+        <span class="text-sm tabular-nums">{{ Math.round(props.progress) }}%</span>
+        <span class="text-sm">{{ t('voice.dictation.transcribing') }}</span>
+      </template>
+      <template v-else>
+        <i class="pi pi-spin pi-spinner" />
+        <span class="text-sm">{{ t('voice.dictation.transcribing') }}</span>
+      </template>
     </template>
   </div>
 </template>

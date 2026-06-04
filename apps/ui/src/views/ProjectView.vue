@@ -740,6 +740,7 @@ onBeforeUnmount(() => {
       <DictationOverlay
         :phase="dictation.phase.value"
         :level="dictation.level.value"
+        :progress="dictation.progress.value"
         @stop="dictation.stopAndInsert"
         @cancel="dictation.cancel"
       />
