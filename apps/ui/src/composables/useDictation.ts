@@ -50,12 +50,17 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   const progress = ref<number | null>(null);
 
   let unlistenProgress: UnlistenFn | null = null;
+  let disposed = false;
   void listen<VoiceTranscribeProgress>('voice.transcribe.progress', (e) => {
     if (phase.value === 'transcribing') progress.value = e.payload.progress;
   }).then((un) => {
-    unlistenProgress = un;
+    if (disposed) un();
+    else unlistenProgress = un;
   });
-  onUnmounted(() => unlistenProgress?.());
+  onUnmounted(() => {
+    disposed = true;
+    unlistenProgress?.();
+  });
 
   function fail(e: unknown) {
     const message = String((e as { message?: string })?.message ?? e);
