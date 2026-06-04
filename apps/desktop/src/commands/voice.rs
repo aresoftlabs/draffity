@@ -250,6 +250,28 @@ pub async fn transcribe_audio(
         std::fs::write(&path, &wav)?;
     }
 
+    // Modelo activo (Fase 3 lo hará backend-aware; por ahora el recomendado).
+    let model_path = crate::services::voice::registry::recommended_model()
+        .map(|m| state.resources.model_path(m.filename));
+
+    // Camino rápido: server caliente (si hay binario + VAD + modelo instalados).
+    if let Some(ref model) = model_path {
+        if state.whisper_server.available() && model.exists() {
+            let mgr = state.whisper_server.clone();
+            let wav_owned = std::fs::read(&path).unwrap_or_default();
+            let model2 = model.clone();
+            let res =
+                tauri::async_runtime::spawn_blocking(move || mgr.transcribe(&model2, &wav_owned))
+                    .await
+                    .map_err(|e| AppError::Unexpected(format!("tarea server: {e}")))?;
+            if let Ok(t) = res {
+                let _ = std::fs::remove_file(&path);
+                return Ok(t);
+            }
+            // Si el server falló, caer al CLI abajo (no propagar todavía).
+        }
+    }
+
     let asr = state.asr.clone();
     let path_str = path.to_string_lossy().into_owned();
     let app2 = app.clone();
