@@ -73,10 +73,11 @@ jobs:
 
       - name: Install Vulkan SDK (Windows)
         if: matrix.target_os == 'windows' && matrix.backend == 'vulkan'
-        uses: humbletim/install-vulkan-sdk@v1.2
+        uses: jakoch/install-vulkan-sdk-action@v1.5.5
         with:
-          version: latest
+          vulkan_version: 1.3.296.0
           cache: true
+          stripdown: true
 
       - name: Configure
         # On Windows Vulkan, point cmake at the SDK so find_package(SPIRV-Headers)
@@ -84,7 +85,9 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }} ${{ (matrix.target_os == 'windows' && matrix.backend == 'vulkan') && '-DCMAKE_PREFIX_PATH=$env:VULKAN_SDK' || '' }}
 
       - name: Build
-        run: cmake --build build --config Release --target whisper-cli whisper-server -j
+        # Vulkan limita la paralelización: compilar los shaders generados con
+        # -j (todos los cores) agota la RAM del runner (OOM → exit 143).
+        run: cmake --build build --config Release --target whisper-cli whisper-server -j ${{ matrix.backend == 'vulkan' && '2' || '' }}
 
       - name: Stage binaries
         shell: bash
