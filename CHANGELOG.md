@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Desarrollo del **backlog v4** (interno): cerrar brechas competitivas + IA BYOK
 y voz local. Aún sin release versionada.
 
+### Changed — Open-source público bajo Aresoft SpA (2026-06-04)
+
+- Relicenciado de MIT a **GPL-3.0-or-later**; titular **Aresoft SpA**.
+- Proyecto abierto como **open-source público** administrado por Aresoft SpA.
+
 ### Changed — Modelo 100% gratuito (2026-06-02)
 
 - Draffity es **100% gratuito**: todas las features están disponibles sin
