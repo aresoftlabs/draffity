@@ -7,11 +7,13 @@
 //! Everything here degrades gracefully: with no binary/model installed,
 //! `WhisperLocalASR::available()` is `false` and the UI offers nothing.
 
+pub mod accel;
 pub mod download;
 pub mod piper;
 pub mod registry;
 pub mod whisper;
 
+pub use accel::{detect_backend, Backend};
 pub use download::download_to_file;
 pub use piper::{parse_wav_pcm16, PiperTTSService};
 pub use registry::{
