@@ -15,6 +15,7 @@ const i18n = createI18n({
           transcribing: 'Transcribiendo',
           stop: 'Detener',
           cancel: 'Cancelar',
+          silent: 'No se detecta voz',
         },
       },
     },
@@ -23,24 +24,40 @@ const i18n = createI18n({
 
 function mountOverlay(props: Record<string, unknown>) {
   return mount(DictationOverlay, {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    props: props as any,
+    props: props as never,
     global: { plugins: [i18n, PrimeVue], directives: { tooltip: {} } },
   });
 }
 
 describe('DictationOverlay', () => {
-  it('shows a determinate progress bar while transcribing with a progress value', () => {
-    const w = mountOverlay({ phase: 'transcribing', level: 0, progress: 42 });
-    const bar = w.find('[data-test="transcribe-progress"]');
-    expect(bar.exists()).toBe(true);
-    expect(bar.attributes('style')).toContain('42%');
-    expect(w.text()).toContain('42');
+  it('is hidden when idle', () => {
+    const w = mountOverlay({
+      phase: 'idle',
+      waveform: new Uint8Array(0),
+      elapsedMs: 0,
+      isSilent: false,
+    });
+    expect(w.find('[role="status"]').exists()).toBe(false);
   });
 
-  it('falls back to the spinner when progress is null', () => {
-    const w = mountOverlay({ phase: 'transcribing', level: 0, progress: null });
-    expect(w.find('[data-test="transcribe-progress"]').exists()).toBe(false);
-    expect(w.find('.pi-spinner').exists()).toBe(true);
+  it('shows the recording pill with the elapsed timer', () => {
+    const w = mountOverlay({
+      phase: 'recording',
+      waveform: new Uint8Array([128]),
+      elapsedMs: 7000,
+      isSilent: false,
+    });
+    expect(w.text()).toContain('0:07');
+  });
+
+  it('shows a determinate progress bar while transcribing', () => {
+    const w = mountOverlay({
+      phase: 'transcribing',
+      waveform: new Uint8Array(0),
+      elapsedMs: 0,
+      isSilent: false,
+      progress: 42,
+    });
+    expect(w.find('[data-test="rec-progress"]').attributes('style')).toContain('42%');
   });
 });

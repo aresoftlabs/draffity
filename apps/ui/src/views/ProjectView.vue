@@ -739,7 +739,9 @@ onBeforeUnmount(() => {
       />
       <DictationOverlay
         :phase="dictation.phase.value"
-        :level="dictation.level.value"
+        :waveform="dictation.waveform.value"
+        :elapsed-ms="dictation.elapsedMs.value"
+        :is-silent="dictation.isSilent.value"
         :progress="dictation.progress.value"
         @stop="dictation.stopAndInsert"
         @cancel="dictation.cancel"

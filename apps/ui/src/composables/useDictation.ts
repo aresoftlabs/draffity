@@ -118,6 +118,9 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   return {
     phase,
     level: recorder.level,
+    waveform: recorder.waveform,
+    elapsedMs: recorder.elapsedMs,
+    isSilent: recorder.isSilent,
     progress,
     error,
     start,
