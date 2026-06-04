@@ -17,6 +17,8 @@ import {
   type LanguageGroup,
 } from '@/services/ipc';
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
+import { useVoiceRecorder } from '@/audio/useVoiceRecorder';
+import VoiceRecorderControl from './VoiceRecorderControl.vue';
 /**
  * Voice section of Settings (Épica H), extracted from the god-view (AUD-28).
  * Manages the Whisper/Piper binaries and the downloadable model/voice catalog,
@@ -27,7 +29,6 @@ const toast = useToast();
 const voiceSettings = useVoiceSettingsStore();
 
 const testingVoiceId = ref<string | null>(null);
-const asrRecording = ref(false);
 const asrResult = ref<string | null>(null);
 const asrMicDenied = ref(false);
 const inputDevices = ref<{ label: string; value: string }[]>([]);
@@ -264,105 +265,42 @@ async function refreshInputDevices() {
   }
 }
 
-let asrStopFn: (() => void) | null = null;
+const recorder = useVoiceRecorder();
+const asrPhase = ref<'idle' | 'recording' | 'transcribing'>('idle');
 
 async function onAsrStartRecord() {
   asrMicDenied.value = false;
   asrResult.value = null;
-  let ctx: AudioContext | null = null;
-  let stream: MediaStream | null = null;
-  let source: MediaStreamAudioSourceNode | null = null;
-  let processor: ScriptProcessorNode | null = null;
   try {
-    const deviceId = voiceSettings.inputDeviceId;
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: deviceId ? { deviceId: { exact: deviceId } } : true,
-    });
-    // Now that permission is granted, labels become available — refresh so the
-    // picker shows real device names instead of "Microphone N".
-    void refreshInputDevices();
-    ctx = new AudioContext();
-    const chunks: Int16Array[] = [];
-    source = ctx.createMediaStreamSource(stream);
-    processor = ctx.createScriptProcessor(4096, 1, 1);
-
-    processor.onaudioprocess = (e) => {
-      const input = e.inputBuffer.getChannelData(0);
-      const pcm16 = new Int16Array(input.length);
-      for (let i = 0; i < input.length; i++) {
-        const s = Math.max(-1, Math.min(1, input[i]));
-        pcm16[i] = s * 0x7fff;
-      }
-      chunks.push(pcm16);
-    };
-
-    source.connect(processor);
-    processor.connect(ctx.destination);
-
-    asrRecording.value = true;
-
-    function stopRecord() {
-      try {
-        source?.disconnect();
-        processor?.disconnect();
-        stream?.getTracks().forEach((t) => t.stop());
-        ctx?.close();
-      } catch {
-        // best-effort cleanup
-      }
-
-      const totalLen = chunks.reduce((s, c) => s + c.length, 0);
-      if (totalLen > 0) {
-        const all = new Int16Array(totalLen);
-        let offset = 0;
-        for (const c of chunks) {
-          all.set(c, offset);
-          offset += c.length;
-        }
-        const sampleRate = ctx?.sampleRate ?? 44100;
-        const bytes = new Uint8Array(all.buffer);
-
-        ipc
-          .transcribeAudio(bytes, sampleRate)
-          .then((t) => {
-            asrResult.value = t.text;
-          })
-          .catch(() => {
-            toast.add({
-              severity: 'error',
-              summary: t('settings.voiceTitle'),
-              detail: t('settings.voiceTestError'),
-              life: 5000,
-            });
-          })
-          .finally(() => {
-            asrRecording.value = false;
-          });
-      } else {
-        asrRecording.value = false;
-      }
-      asrStopFn = null;
-    }
-
-    asrStopFn = stopRecord;
-
-    // Auto-stop after 10 seconds
-    setTimeout(() => {
-      if (asrStopFn === stopRecord) {
-        stopRecord();
-      }
-    }, 10000);
+    await recorder.start(voiceSettings.inputDeviceId);
+    asrPhase.value = 'recording';
   } catch {
-    source?.disconnect();
-    processor?.disconnect();
-    stream?.getTracks().forEach((t) => t.stop());
-    ctx?.close();
     asrMicDenied.value = true;
   }
 }
 
-function onAsrStopRecord() {
-  asrStopFn?.();
+async function onAsrStopRecord() {
+  if (asrPhase.value !== 'recording') return;
+  asrPhase.value = 'transcribing';
+  try {
+    const rec = await recorder.stop();
+    const transcript = await ipc.transcribeAudio(rec.wav);
+    asrResult.value = transcript.text;
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.voiceTitle'),
+      detail: t('settings.voiceTestError'),
+      life: 5000,
+    });
+  } finally {
+    asrPhase.value = 'idle';
+  }
+}
+
+function onAsrCancel() {
+  recorder.cancel();
+  asrPhase.value = 'idle';
 }
 
 async function onImportBinary() {
@@ -602,25 +540,25 @@ onBeforeUnmount(() => {
       <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2">
         {{ t('settings.voiceAsrTestLabel') }}
       </h3>
-      <div class="flex items-center gap-2">
+      <div v-if="asrPhase === 'idle'">
         <Button
-          v-if="!asrRecording"
           :label="t('settings.voiceAsrTestRecord')"
           icon="pi pi-microphone"
           size="small"
           text
           @click="onAsrStartRecord"
         />
-        <Button
-          v-else
-          :label="t('settings.voiceAsrTestStop')"
-          icon="pi pi-stop"
-          size="small"
-          text
-          severity="danger"
-          @click="onAsrStopRecord"
-        />
       </div>
+      <VoiceRecorderControl
+        v-else
+        :state="asrPhase === 'recording' ? 'recording' : 'transcribing'"
+        :waveform="recorder.waveform.value"
+        :elapsed-ms="recorder.elapsedMs.value"
+        :is-silent="recorder.isSilent.value"
+        :progress="null"
+        @stop="onAsrStopRecord"
+        @cancel="onAsrCancel"
+      />
       <p v-if="asrMicDenied" class="text-xs text-amber-500 mt-1">
         {{ t('settings.voiceAsrTestMicDenied') }}
       </p>
