@@ -89,6 +89,8 @@ const i18n = createI18n({
         voiceCatalogRetry: 'Reintentar',
         voiceCatalogSize: '{size} MB',
         voiceDownloadFailed: 'Descarga fallida',
+        voiceAutoStopSilence: 'Detener tras silencio',
+        voiceAutoStopSilenceHint: 'Finaliza la grabación sola tras silencio.',
       },
     },
   },
