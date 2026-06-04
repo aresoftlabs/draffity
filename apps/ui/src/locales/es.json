@@ -773,7 +773,8 @@
       "recording": "Grabando…",
       "transcribing": "Transcribiendo…",
       "stop": "Listo",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "silent": "No se detecta voz — acercá el micrófono o revisá el dispositivo"
     },
     "readAloud": {
       "title": "Lectura en voz alta",

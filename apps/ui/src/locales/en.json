@@ -773,7 +773,8 @@
       "recording": "Recording…",
       "transcribing": "Transcribing…",
       "stop": "Done",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "silent": "No voice detected — move closer or check the device"
     },
     "readAloud": {
       "title": "Read aloud",
