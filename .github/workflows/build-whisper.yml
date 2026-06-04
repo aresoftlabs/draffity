@@ -79,10 +79,17 @@ jobs:
           cache: true
           stripdown: true
 
+      - name: Install SPIRV-Headers (Windows vulkan, vcpkg)
+        if: matrix.target_os == 'windows' && matrix.backend == 'vulkan'
+        # The LunarG Windows SDK provides Vulkan + glslc/glslangValidator but no
+        # SPIRV-HeadersConfig.cmake (which ggml-vulkan's find_package needs).
+        # vcpkg ships that config; the toolchain below makes cmake find it.
+        run: C:/vcpkg/vcpkg install spirv-headers:x64-windows
+
       - name: Configure
-        # On Windows Vulkan, point cmake at the SDK so find_package(SPIRV-Headers)
-        # resolves; VULKAN_SDK is set by the install action. No-op elsewhere.
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }} ${{ (matrix.target_os == 'windows' && matrix.backend == 'vulkan') && '-DCMAKE_PREFIX_PATH=$env:VULKAN_SDK' || '' }}
+        # Windows Vulkan: vcpkg toolchain provides SPIRV-Headers; Vulkan itself
+        # is found via VULKAN_SDK (set by the SDK action). No-op elsewhere.
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }} ${{ (matrix.target_os == 'windows' && matrix.backend == 'vulkan') && '-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows' || '' }}
 
       - name: Build
         # Vulkan limita la paralelización: compilar los shaders generados con
