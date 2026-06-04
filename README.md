@@ -14,6 +14,20 @@ Draffity es una aplicación desktop ligera y rápida para escritores que trabaja
 
 Guía de usuario: [ES](./docs/USER-GUIDE.md) · [EN](./docs/USER-GUIDE.en.md).
 
+## Características
+
+- ✍️ Editor TipTap completo, multi-formato (novela, paper, manga, artículo, guion).
+- 🗂️ Binder con vistas tipo Scrivener + codex de worldbuilding.
+- 🤖 IA inline con **BYOK** (OpenRouter): continuar / expandir / reescribir / describir, con streaming y diff.
+- 🎙️ Voz **local**: dictado (ASR) + lectura (TTS), con aceleración por GPU.
+- 📤 Export / import DOCX · EPUB · Markdown · PDF.
+- 💾 Backups, plantillas, estadísticas, accesibilidad.
+- 🆓 100% gratis, sin tiers ni suscripciones. Local-first, sin telemetría.
+
+## Instalación
+
+Binarios firmados vía **Releases** — _próximamente_. Por ahora, **build from source** (ver [Desarrollo](#desarrollo)).
+
 ## Requisitos
 
 - **Node.js** ≥ 20
@@ -52,8 +66,7 @@ draffity/
 ├── packages/
 │   ├── templates/     # Plantillas built-in (JSON)
 │   └── shared-types/  # Tipos compartidos Rust ↔ TS
-├── docs/              # ARCHITECTURE, TEMPLATES-SPEC, ADR/
-├── backlog.md         # Backlog del MVP
+├── docs/              # ARCHITECTURE, WORKFLOW, USER-GUIDE, ADR/
 └── ...
 ```
 
@@ -68,6 +81,10 @@ Ver [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). Patrones clave:
 ## Modelo del producto
 
 Draffity es completamente gratuito. 1 proyecto activo (editable, exportable) + N proyectos archivados (read-only). Sin límite de palabras, capítulos ni exportaciones. IA con BYOK (trae tu propia key de OpenRouter). Voz local sin suscripción.
+
+## Contribuir
+
+¡Bienvenidas las contribuciones! Leé **[CONTRIBUTING](./CONTRIBUTING.md)** y el **[workflow de ramas](./docs/WORKFLOW.md)** — branch desde `develop`, Conventional Commits, y DCO (`git commit -s`). Convivencia: [Código de Conducta](./CODE_OF_CONDUCT.md). Reporte de seguridad: [SECURITY](./SECURITY.md). Avisos de terceros: [THIRD-PARTY-NOTICES](./THIRD-PARTY-NOTICES.md).
 
 ## Licencia
 

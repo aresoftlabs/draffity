@@ -2,14 +2,17 @@
 
 ## Workflow
 
-1. Fork / branch desde `main` con un nombre descriptivo (`feat/binder-drag`, `fix/autosave-debounce`).
-2. Commits siguen [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
+Modelo de ramas, naming y flujo de release completos en **[docs/WORKFLOW.md](./docs/WORKFLOW.md)**. En resumen:
+
+1. Branch desde **`develop`** (el default branch) con un nombre `<tipo>/descripcion` (`feat/binder-drag`, `fix/autosave-debounce`).
+2. Commits siguen [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `perf:`, `ci:`, `build:`) — enforzado por `commitlint`. Firmá con `git commit -s` (DCO).
 3. Ejecuta antes de PR:
    - `pnpm fmt`
    - `pnpm lint`
    - `pnpm typecheck`
    - `pnpm test`
-4. PR pequeño, foco único. Si una historia toca >5 archivos, considéralo un indicio de que se puede dividir.
+4. PR **hacia `develop`**, pequeño y de foco único. Si una historia toca >5 archivos, considéralo un indicio de que se puede dividir.
+5. Merge cuando el **CI esté verde**. Las releases salen de `develop` → `main` (PR) y se taggean en `main`.
 
 ## Reglas de oro del proyecto
 
