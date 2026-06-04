@@ -17,6 +17,7 @@ import { Image } from './extensions/image';
 import { LinguisticFocus } from './extensions/linguistic-focus';
 import { RepetitionHeatmap } from './extensions/repetition-heatmap';
 import { ParagraphFade } from './extensions/paragraph-fade';
+import { DictationPlaceholder } from '@/editor/extensions/dictation-placeholder';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 import { useMediaStore } from '@/stores/media';
 
@@ -91,6 +92,9 @@ const editor = useEditor({
     RepetitionHeatmap,
     // Paragraph fade (K-08): dims non-focused blocks in composition mode.
     ParagraphFade,
+    // Dictation placeholder (Fase 3): inline node that marks the insertion
+    // point while transcription is in progress.
+    DictationPlaceholder,
   ],
   editorProps: {
     attributes: {

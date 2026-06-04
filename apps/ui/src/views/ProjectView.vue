@@ -55,6 +55,7 @@ import EditorToolbar from '@/editor/EditorToolbar.vue';
 import AiInlinePanel from '@/components/AiInlinePanel.vue';
 import ValidationDialog from '@/components/ValidationDialog.vue';
 import DictationOverlay from '@/components/DictationOverlay.vue';
+import DictationFab from '@/components/DictationFab.vue';
 import ReadAloudBar from '@/components/ReadAloudBar.vue';
 import VoiceNotesDialog from '@/components/VoiceNotesDialog.vue';
 import { useEditorSettings } from '@/composables/useEditorSettings';
@@ -196,7 +197,17 @@ const showVoiceNotes = ref(false);
 function notifyVoiceError(message: string) {
   toast.add({ severity: 'error', summary: t('voice.error'), detail: message, life: 6000 });
 }
-const dictation = useDictation(editor, { onError: notifyVoiceError });
+const dictation = useDictation(editor, {
+  onError: notifyVoiceError,
+  confirmDiscard: () => window.confirm(t('voice.dictation.discardConfirm')),
+  onClipboardFallback: () =>
+    toast.add({
+      severity: 'info',
+      summary: t('settings.voiceTitle'),
+      detail: t('voice.dictation.clipboardFallback'),
+      life: 6000,
+    }),
+});
 const readAloud = useReadAloud(editor, { onError: notifyVoiceError });
 
 const actionMenu = ref<{ toggle: (e: Event) => void } | null>(null);
@@ -745,6 +756,11 @@ onBeforeUnmount(() => {
         :progress="dictation.progress.value"
         @stop="dictation.stopAndInsert"
         @cancel="dictation.cancel"
+      />
+      <DictationFab
+        :available="voiceDictation"
+        :active="dictation.phase.value !== 'idle'"
+        @toggle="dictation.toggle()"
       />
       <ReadAloudBar
         :phase="readAloud.phase.value"

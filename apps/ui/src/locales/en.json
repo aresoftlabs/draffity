@@ -775,7 +775,9 @@
       "transcribing": "Transcribing…",
       "stop": "Done",
       "cancel": "Cancel",
-      "silent": "No voice detected — move closer or check the device"
+      "silent": "No voice detected — move closer or check the device",
+      "discardConfirm": "Discard the recording?",
+      "clipboardFallback": "Couldn't insert; copied to clipboard."
     },
     "readAloud": {
       "title": "Read aloud",
