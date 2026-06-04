@@ -21,6 +21,7 @@ pub use registry::{
     binary_info, model_by_id, model_url, piper_voices, recommended_voice, voice_by_id,
     voice_config_filename, whisper_models, BinaryInfo, PiperVoiceInfo, WhisperModelInfo,
 };
+pub use server::{WhisperServer, WhisperServerManager};
 pub use whisper::{autopunctuate, parse_whisper_json, WhisperLocalASR};
 
 // ---------------------------------------------------------------------------

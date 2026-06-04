@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::logging::LogGuards;
+use crate::services::voice::WhisperServerManager;
 use crate::services::{
     AIService, AIValidatorService, ASRService, BackupService, BibliographyService,
     CrashReporterService, DraffityHome, ExportService, ImportService, MediaService,
@@ -75,6 +76,8 @@ pub struct AppState {
     pub secrets: Arc<dyn SecretStorage>,
     /// In-flight AI stream cancellation flags (F-06).
     pub ai_cancel: Arc<AiCancelRegistry>,
+    /// Server whisper caliente (motor rápido). Arranque perezoso.
+    pub whisper_server: std::sync::Arc<WhisperServerManager>,
     /// Resources root (DraffityHome) — all path resolution goes through this.
     pub resources: DraffityHome,
     /// Keeps the non-blocking log writers alive for the whole app lifecycle.
@@ -89,6 +92,7 @@ impl AppState {
         resources: DraffityHome,
         log_guards: LogGuards,
     ) -> Self {
+        let whisper_server = std::sync::Arc::new(WhisperServerManager::new(&resources));
         Self {
             storage: bundle.storage,
             project_manager: bundle.project_manager,
@@ -107,6 +111,7 @@ impl AppState {
             crash_reporter: bundle.crash_reporter,
             secrets: bundle.secrets,
             ai_cancel: Arc::new(AiCancelRegistry::default()),
+            whisper_server,
             resources,
             _log_guards: log_guards,
         }

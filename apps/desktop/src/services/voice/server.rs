@@ -3,7 +3,10 @@
 
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
+
+use crate::services::DraffityHome;
 
 use crate::services::asr::Transcript;
 
@@ -138,6 +141,55 @@ impl WhisperServer {
 impl Drop for WhisperServer {
     fn drop(&mut self) {
         self.shutdown();
+    }
+}
+
+/// Arranca/reusa el `whisper-server` de forma perezosa y lo apaga al salir.
+pub struct WhisperServerManager {
+    home: DraffityHome,
+    inner: Mutex<Option<WhisperServer>>,
+}
+
+impl WhisperServerManager {
+    pub fn new(home: &DraffityHome) -> Self {
+        Self {
+            home: DraffityHome::with_root(home.root().to_path_buf()),
+            inner: Mutex::new(None),
+        }
+    }
+
+    /// Transcribe con el server caliente. Lo arranca si hace falta y lo
+    /// reinicia si el proceso murió. `Err` si no hay binario/modelo (el caller
+    /// cae al CLI).
+    pub fn transcribe(&self, model: &Path, wav: &[u8]) -> AppResult<Transcript> {
+        let bin = self.home.whisper_server_bin_path();
+        let vad = self.home.vad_model_path();
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|_| AppError::Unexpected("lock server".into()))?;
+        if let Some(s) = guard.as_mut() {
+            if !s.is_alive() {
+                *guard = None;
+            }
+        }
+        if guard.is_none() {
+            *guard = Some(WhisperServer::start(&bin, model, &vad)?);
+        }
+        guard.as_ref().unwrap().transcribe(wav)
+    }
+
+    pub fn shutdown(&self) {
+        if let Ok(mut g) = self.inner.lock() {
+            if let Some(mut s) = g.take() {
+                s.shutdown();
+            }
+        }
+    }
+
+    /// ¿Hay binario de server + VAD instalados? (decidir server vs CLI sin spawnear).
+    pub fn available(&self) -> bool {
+        self.home.whisper_server_bin_path().exists() && self.home.vad_model_path().exists()
     }
 }
 

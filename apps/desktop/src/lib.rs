@@ -197,8 +197,15 @@ pub fn run() {
             commands::get_resources_path,
             commands::set_resources_path,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                if let Some(state) = app_handle.try_state::<crate::state::AppState>() {
+                    state.whisper_server.shutdown();
+                }
+            }
+        });
 }
 
 /// Register a WebView2 `PermissionRequested` handler that allows the microphone
