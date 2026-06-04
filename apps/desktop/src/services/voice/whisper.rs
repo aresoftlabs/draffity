@@ -6,7 +6,8 @@
 //! The pure parts — JSON parsing and autopunctuation — are unit-tested; the
 //! actual spawn is exercised manually with a real binary present.
 
-use std::process::Command;
+use std::io::{BufRead, BufReader};
+use std::process::{Command, Stdio};
 
 use serde::Deserialize;
 
@@ -84,6 +85,79 @@ impl ASRService for WhisperLocalASR {
             return Err(AppError::Unexpected(format!(
                 "whisper falló: {}",
                 stderr.chars().take(300).collect::<String>()
+            )));
+        }
+
+        let json_path = base.with_extension("json");
+        let json = std::fs::read_to_string(&json_path).map_err(|e| {
+            AppError::Unexpected(format!("no se pudo leer la salida de whisper: {e}"))
+        })?;
+        let _ = std::fs::remove_file(&json_path);
+        Ok(parse_whisper_json(&json))
+    }
+
+    fn transcribe_file_with_progress(
+        &self,
+        path: &str,
+        on_progress: &mut dyn FnMut(u8),
+    ) -> AppResult<Transcript> {
+        let bin = self.home.bin_dir();
+        if !bin.exists() {
+            return Err(AppError::Unsupported(
+                "el binario de Whisper no está instalado".into(),
+            ));
+        }
+        let model = self
+            .select_model()
+            .ok_or_else(|| AppError::Unsupported("no hay modelo de voz instalado".into()))?;
+
+        let tmp_dir = self.home.tmp_dir();
+        std::fs::create_dir_all(&tmp_dir)?;
+        let base = tmp_dir.join(format!("t{}", now_ms()));
+
+        let mut child = Command::new(&bin)
+            .arg("-m")
+            .arg(&model)
+            .arg("-f")
+            .arg(path)
+            .arg("-l")
+            .arg("auto")
+            .arg("--print-progress")
+            .arg("-oj")
+            .arg("-of")
+            .arg(&base)
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| AppError::Unexpected(format!("no se pudo ejecutar whisper: {e}")))?;
+
+        // Leer stderr en streaming: parsear progreso y conservar el resto por si
+        // hay un fallo (whisper escribe sus errores a stderr).
+        let mut stderr_tail: Vec<String> = Vec::new();
+        let mut last = 0u8;
+        if let Some(stderr) = child.stderr.take() {
+            for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+                if let Some(p) = parse_progress_line(&line) {
+                    if p != last {
+                        last = p;
+                        on_progress(p);
+                    }
+                } else {
+                    stderr_tail.push(line);
+                    if stderr_tail.len() > 20 {
+                        stderr_tail.remove(0);
+                    }
+                }
+            }
+        }
+
+        let status = child
+            .wait()
+            .map_err(|e| AppError::Unexpected(format!("whisper falló: {e}")))?;
+        if !status.success() {
+            return Err(AppError::Unexpected(format!(
+                "whisper falló: {}",
+                stderr_tail.join(" ").chars().take(300).collect::<String>()
             )));
         }
 
