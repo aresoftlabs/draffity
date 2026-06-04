@@ -57,6 +57,31 @@ fn vulkan_loader_present() -> bool {
     }
 }
 
+/// Elige el id de modelo whisper según el backend, respetando un override del
+/// usuario (si está instalado). GPU favorece el turbo; CPU favorece `small`
+/// por latencia. Cae a cualquiera instalado, o `None`.
+pub fn pick_model(
+    backend: Backend,
+    installed: &[&str],
+    user_override: Option<&str>,
+) -> Option<String> {
+    if let Some(ov) = user_override {
+        if !ov.is_empty() && installed.contains(&ov) {
+            return Some(ov.to_string());
+        }
+    }
+    let pref: &[&str] = match backend {
+        Backend::Metal | Backend::Vulkan => &["large-v3-turbo-q5_0", "small", "base", "tiny"],
+        Backend::Cpu => &["small", "base", "tiny", "large-v3-turbo-q5_0"],
+    };
+    for id in pref {
+        if installed.contains(id) {
+            return Some((*id).to_string());
+        }
+    }
+    installed.first().map(|s| s.to_string())
+}
+
 /// Backend para esta máquina (consts de compilación + probe Vulkan en runtime).
 pub fn detect_backend() -> Backend {
     decide_backend(
@@ -93,5 +118,44 @@ mod tests {
         assert_eq!(Backend::Metal.as_str(), "metal");
         assert_eq!(Backend::Vulkan.as_str(), "vulkan");
         assert_eq!(Backend::Cpu.as_str(), "cpu");
+    }
+
+    #[test]
+    fn gpu_prefers_turbo_cpu_prefers_small() {
+        let installed = ["tiny", "base", "small", "large-v3-turbo-q5_0"];
+        assert_eq!(
+            pick_model(Backend::Metal, &installed, None).as_deref(),
+            Some("large-v3-turbo-q5_0")
+        );
+        assert_eq!(
+            pick_model(Backend::Vulkan, &installed, None).as_deref(),
+            Some("large-v3-turbo-q5_0")
+        );
+        assert_eq!(
+            pick_model(Backend::Cpu, &installed, None).as_deref(),
+            Some("small")
+        );
+    }
+
+    #[test]
+    fn user_override_wins_when_installed() {
+        let installed = ["small", "large-v3-turbo-q5_0"];
+        assert_eq!(
+            pick_model(Backend::Cpu, &installed, Some("large-v3-turbo-q5_0")).as_deref(),
+            Some("large-v3-turbo-q5_0")
+        );
+        assert_eq!(
+            pick_model(Backend::Cpu, &installed, Some("tiny")).as_deref(),
+            Some("small")
+        );
+    }
+
+    #[test]
+    fn falls_back_to_any_installed_then_none() {
+        assert_eq!(
+            pick_model(Backend::Cpu, &["tiny"], None).as_deref(),
+            Some("tiny")
+        );
+        assert_eq!(pick_model(Backend::Cpu, &[], None), None);
     }
 }
