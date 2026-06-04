@@ -196,6 +196,13 @@ export interface DiskUsageEntry {
   bytes: number;
 }
 
+/** Hardware acceleration status reported by the backend (H). */
+export interface AccelStatus {
+  backend: string; // 'metal' | 'vulkan' | 'cpu'
+  model: string | null;
+  serverAvailable: boolean;
+}
+
 /** Curated AI model info from the backend. */
 export interface AiModelInfo {
   id: string;
@@ -286,6 +293,7 @@ export const ipc = {
   testSynthesize: (voiceId: string, text: string) =>
     invoke<string>('test_synthesize', { voiceId, text }),
   getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
+  getAccelStatus: () => invoke<AccelStatus>('get_accel_status'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

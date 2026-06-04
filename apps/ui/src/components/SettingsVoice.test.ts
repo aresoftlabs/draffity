@@ -91,6 +91,12 @@ const i18n = createI18n({
         voiceDownloadFailed: 'Descarga fallida',
         voiceAutoStopSilence: 'Detener tras silencio',
         voiceAutoStopSilenceHint: 'Finaliza la grabación sola tras silencio.',
+        voiceAccel: 'Aceleración',
+        voiceAccelModel: 'Modelo activo',
+        voiceAccelRedetect: 'Re-detectar',
+        voiceAccelMetal: 'Metal (GPU Apple)',
+        voiceAccelVulkan: 'Vulkan (GPU)',
+        voiceAccelCpu: 'CPU',
       },
     },
   },
@@ -425,5 +431,22 @@ describe('SettingsVoice', () => {
     const w = mountVoice();
     await flushPromises();
     expect(w.text()).toContain('No hay voces disponibles');
+  });
+
+  it('shows the detected acceleration backend', async () => {
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === 'get_voice_status')
+        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
+      if (cmd === 'list_voice_models') return Promise.resolve([]);
+      if (cmd === 'list_voice_voices') return Promise.resolve([]);
+      if (cmd === 'get_disk_usage') return Promise.resolve([]);
+      if (cmd === 'get_accel_status')
+        return Promise.resolve({ backend: 'vulkan', model: 'small', serverAvailable: true });
+      return Promise.resolve(undefined);
+    });
+    const w = mountVoice();
+    await flushPromises();
+    expect(w.text()).toContain('Aceleración');
+    expect(w.text()).toContain('Vulkan');
   });
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -10,6 +10,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
   ipc,
+  type AccelStatus,
   type VoiceModel,
   type VoiceStatus,
   type VoiceVoice,
@@ -45,6 +46,34 @@ const importingBinary = ref(false);
 const importingPiper = ref(false);
 const downloadingBinary = ref<string | null>(null);
 let unlistenVoiceProgress: UnlistenFn | null = null;
+
+const accel = ref<AccelStatus | null>(null);
+
+async function loadAccel() {
+  try {
+    accel.value = await ipc.getAccelStatus();
+  } catch {
+    accel.value = null;
+  }
+}
+
+function accelLabel(b: string): string {
+  if (b === 'metal') return t('settings.voiceAccelMetal');
+  if (b === 'vulkan') return t('settings.voiceAccelVulkan');
+  return t('settings.voiceAccelCpu');
+}
+
+watch(
+  () => voiceSettings.asrModelId,
+  async (id) => {
+    try {
+      await ipc.setSetting('voice.asr.model', id ?? '');
+      await loadAccel();
+    } catch {
+      /* best-effort */
+    }
+  },
+);
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -373,6 +402,7 @@ function onCatalogDownload(item: { id: string; kind: string }) {
 
 onMounted(async () => {
   await loadVoice();
+  await loadAccel();
   await loadAvailableModels();
   await refreshInputDevices();
   navigator.mediaDevices?.addEventListener?.('devicechange', refreshInputDevices);
@@ -507,6 +537,21 @@ onBeforeUnmount(() => {
         >
           {{ t('settings.voiceModelNotInstalled') }}
         </span>
+      </div>
+      <div v-if="accel" class="mt-3 flex items-center gap-3 text-sm" data-test="accel-panel">
+        <span class="opacity-70">{{ t('settings.voiceAccel') }}:</span>
+        <span class="font-medium">{{ accelLabel(accel.backend) }}</span>
+        <template v-if="accel.model">
+          <span class="opacity-70">· {{ t('settings.voiceAccelModel') }}:</span>
+          <span class="font-mono text-xs">{{ accel.model }}</span>
+        </template>
+        <Button
+          :label="t('settings.voiceAccelRedetect')"
+          size="small"
+          text
+          icon="pi pi-refresh"
+          @click="loadAccel"
+        />
       </div>
     </div>
 
