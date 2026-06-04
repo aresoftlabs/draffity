@@ -168,6 +168,30 @@ pub struct WhisperBinary {
     pub sha256: Option<&'static str>,
 }
 
+/// sha256 de cada archivo publicado en el release `whisper-bins-v1` (tomados
+/// de los sidecars `.sha256` que produce el CI). `None` para archivos no
+/// publicados — el downloader tolera `None` (descarga sin verificar).
+fn archive_sha256(archive: &str) -> Option<&'static str> {
+    match archive {
+        "whisper-linux-x86_64-cpu.tar.gz" => {
+            Some("ba9ebe33f55c2ab3fdde8b0a159b9b34f360e34bf7e5af8a0154d69446de3ec8")
+        }
+        "whisper-linux-x86_64-vulkan.tar.gz" => {
+            Some("6d4cdea4bfb78a4dcd8885bd8df84db376284822a61e7b4e5bf986a24d7ae9cb")
+        }
+        "whisper-macos-aarch64-metal.tar.gz" => {
+            Some("8301e269507e6f37351edc379ee030d4f398898724044154f2ec95f24b0861d0")
+        }
+        "whisper-windows-x86_64-cpu.zip" => {
+            Some("459285ca35326498fe8a3813fb562a956ef0f18ef9031fcfeaaa15f9a81053db")
+        }
+        "whisper-windows-x86_64-vulkan.zip" => {
+            Some("5cb6a6ed60cb57b885e36e05e74c44cb2cdfcd742373b74da3c2effd615f080e")
+        }
+        _ => None,
+    }
+}
+
 /// Binario whisper para `(os, arch, backend)`. `None` para combos no soportados.
 /// Archivo: `whisper-<os>-<arch>-<backend>.<ext>` (zip en Windows, tar.gz resto).
 pub fn whisper_binary(os: &str, arch: &str, backend: Backend) -> Option<WhisperBinary> {
@@ -184,10 +208,11 @@ pub fn whisper_binary(os: &str, arch: &str, backend: Backend) -> Option<WhisperB
     }
     let ext = if os == "windows" { "zip" } else { "tar.gz" };
     let archive = format!("whisper-{os}-{arch}-{}.{ext}", backend.as_str());
+    let sha256 = archive_sha256(&archive);
     Some(WhisperBinary {
         url: format!("{WHISPER_BINS_BASE}{archive}"),
         archive,
-        sha256: None,
+        sha256,
     })
 }
 
@@ -297,5 +322,23 @@ mod tests {
         // Intel Mac (x86_64 → Cpu) no tiene binario: error limpio, no 404.
         assert!(whisper_binary("macos", "x86_64", Backend::Cpu).is_none());
         assert!(whisper_binary("macos", "aarch64", Backend::Metal).is_some());
+    }
+
+    #[test]
+    fn published_variants_have_pinned_sha256() {
+        use crate::services::voice::accel::Backend;
+        // Las 5 variantes del release `whisper-bins-v1` tienen checksum fijado.
+        for (os, arch, backend) in [
+            ("macos", "aarch64", Backend::Metal),
+            ("windows", "x86_64", Backend::Cpu),
+            ("windows", "x86_64", Backend::Vulkan),
+            ("linux", "x86_64", Backend::Cpu),
+            ("linux", "x86_64", Backend::Vulkan),
+        ] {
+            let b = whisper_binary(os, arch, backend).unwrap();
+            let sha = b.sha256.unwrap_or("");
+            assert_eq!(sha.len(), 64, "{} debe tener sha256 de 64 hex", b.archive);
+            assert!(sha.bytes().all(|c| c.is_ascii_hexdigit()));
+        }
     }
 }
