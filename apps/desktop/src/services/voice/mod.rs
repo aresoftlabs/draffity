@@ -81,6 +81,16 @@ pub fn download_and_extract_binary(
     extract_binary_impl(&archive_bytes, format, &target, binary_id)
 }
 
+/// If a zip entry path is inside an `espeak-ng-data` directory, return the path
+/// re-rooted at `espeak-ng-data/…` (e.g. `piper/espeak-ng-data/lang/es` →
+/// `espeak-ng-data/lang/es`). Zip paths use forward slashes. Returns `None`
+/// when the entry is unrelated to espeak data.
+fn espeak_data_subpath(name: &str) -> Option<std::path::PathBuf> {
+    let parts: Vec<&str> = name.split('/').filter(|s| !s.is_empty()).collect();
+    let idx = parts.iter().position(|&p| p == "espeak-ng-data")?;
+    Some(parts[idx..].iter().collect())
+}
+
 /// Extract a binary from archive bytes (zip or tar.gz) to the target path.
 fn extract_binary_impl(
     archive_bytes: &[u8],
@@ -154,6 +164,26 @@ fn extract_binary_impl(
                     std::io::copy(&mut entry, &mut out)?;
                     main_extracted = true;
                     continue;
+                }
+
+                // Piper needs its `espeak-ng-data/` directory for phonemization.
+                // The zip nests it under `piper/espeak-ng-data/…`; re-root the
+                // whole tree next to the binary, preserving subdirectories
+                // (flattening to file_name like the DLLs below would lose it).
+                if binary_id == "piper" {
+                    if let Some(rel) = espeak_data_subpath(&name) {
+                        if entry.is_dir() {
+                            std::fs::create_dir_all(target_dir.join(&rel))?;
+                        } else {
+                            let dest = target_dir.join(&rel);
+                            if let Some(parent) = dest.parent() {
+                                std::fs::create_dir_all(parent)?;
+                            }
+                            let mut out = std::fs::File::create(&dest)?;
+                            std::io::copy(&mut entry, &mut out)?;
+                        }
+                        continue;
+                    }
                 }
 
                 // Extract sibling DLLs / shared libs next to the binary
@@ -321,6 +351,46 @@ mod tests {
         assert!(result.is_ok(), "extract_binary_impl failed: {:?}", result);
         assert!(target.exists());
         assert_eq!(std::fs::read(&target).unwrap(), b"bin\n");
+    }
+
+    #[test]
+    fn espeak_data_subpath_reroots_nested_paths() {
+        assert_eq!(
+            espeak_data_subpath("piper/espeak-ng-data/phontab"),
+            Some(std::path::PathBuf::from("espeak-ng-data/phontab"))
+        );
+        assert_eq!(
+            espeak_data_subpath("piper/espeak-ng-data/lang/gmw/en"),
+            Some(std::path::PathBuf::from("espeak-ng-data/lang/gmw/en"))
+        );
+        assert_eq!(espeak_data_subpath("piper/piper.exe"), None);
+        assert_eq!(espeak_data_subpath("piper/espeak-ng.dll"), None);
+    }
+
+    #[test]
+    fn extract_piper_zip_preserves_espeak_ng_data_tree() {
+        let zip_bytes = build_zip(&[
+            ("piper/piper.exe", &[0x4D, 0x5A]),
+            ("piper/espeak-ng.dll", &[0x4D, 0x5A]),
+            ("piper/espeak-ng-data/phontab", b"phon"),
+            ("piper/espeak-ng-data/lang/es", b"es-lang"),
+        ]);
+        let tmp = tempfile::tempdir().unwrap();
+        let target = tmp.path().join("piper.exe");
+        extract_binary_impl(&zip_bytes, ".zip", &target, "piper").unwrap();
+
+        let bin_dir = tmp.path();
+        assert!(target.exists(), "piper.exe extracted");
+        assert!(bin_dir.join("espeak-ng.dll").exists(), "dll extracted");
+        // espeak-ng-data tree re-rooted next to the binary, structure preserved.
+        assert_eq!(
+            std::fs::read(bin_dir.join("espeak-ng-data/phontab")).unwrap(),
+            b"phon"
+        );
+        assert_eq!(
+            std::fs::read(bin_dir.join("espeak-ng-data/lang/es")).unwrap(),
+            b"es-lang"
+        );
     }
 
     #[test]

@@ -93,11 +93,21 @@ impl TTSService for PiperTTSService {
         std::fs::create_dir_all(&tmp_dir)?;
         let tmp = tmp_dir.join(format!("tts{}.wav", now_ms()));
 
-        let mut child = Command::new(&bin)
-            .arg("--model")
-            .arg(&onnx)
-            .arg("--output_file")
-            .arg(&tmp)
+        let mut cmd = Command::new(&bin);
+        cmd.arg("--model").arg(&onnx).arg("--output_file").arg(&tmp);
+
+        // Piper needs the espeak-ng phoneme data. Its bundled espeak-ng defaults
+        // to a baked-in Unix path (`/usr/share/espeak-ng-data`) that never exists
+        // on Windows, so we must point it at the `espeak-ng-data` directory that
+        // ships next to piper.exe. Without this, piper prints an espeak error,
+        // exits 0, and produces no WAV.
+        if let Some(espeak_data) = bin.parent().map(|p| p.join("espeak-ng-data")) {
+            if espeak_data.is_dir() {
+                cmd.arg("--espeak_data").arg(&espeak_data);
+            }
+        }
+
+        let mut child = cmd
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::piped())
@@ -117,16 +127,27 @@ impl TTSService for PiperTTSService {
         let out = child
             .wait_with_output()
             .map_err(|e| AppError::Unexpected(format!("piper falló: {e}")))?;
+        let stderr = String::from_utf8_lossy(&out.stderr);
         if !out.status.success() {
-            let stderr = String::from_utf8_lossy(&out.stderr);
             return Err(AppError::Unexpected(format!(
                 "piper falló: {}",
                 stderr.chars().take(300).collect::<String>()
             )));
         }
 
+        // Piper can exit 0 yet write nothing (e.g. missing espeak-ng-data is only
+        // reported on stderr). Treat a missing/empty output as a failure and
+        // surface piper's stderr so the cause is visible instead of a generic
+        // "playback failed".
         let bytes = std::fs::read(&tmp).map_err(|e| {
-            AppError::Unexpected(format!("no se pudo leer la salida de piper: {e}"))
+            AppError::Unexpected(format!(
+                "piper no generó audio: {e}{}",
+                if stderr.trim().is_empty() {
+                    String::new()
+                } else {
+                    format!(" — {}", stderr.trim().chars().take(300).collect::<String>())
+                }
+            ))
         })?;
         let _ = std::fs::remove_file(&tmp);
         let (samples_pcm16, sample_rate) = parse_wav_pcm16(&bytes)
