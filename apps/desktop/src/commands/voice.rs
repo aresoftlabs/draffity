@@ -256,9 +256,8 @@ fn installed_model_ids(state: &AppState) -> Vec<&'static str> {
 fn active_model_id(state: &AppState) -> Option<String> {
     use crate::services::voice::accel::{detect_backend, pick_model};
     let installed = installed_model_ids(state);
-    let installed_refs: Vec<&str> = installed.iter().copied().collect();
     let override_id = state.storage.get_setting("voice.asr.model").ok().flatten();
-    pick_model(detect_backend(), &installed_refs, override_id.as_deref())
+    pick_model(detect_backend(), &installed, override_id.as_deref())
 }
 
 /// Transcribe a recorded clip (16 kHz mono WAV bytes from the UI) to text.
