@@ -12,6 +12,9 @@ on:
 env:
   WHISPER_TAG: v1.8.6 # pineado (Vulkan estable >=1.8.3)
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
