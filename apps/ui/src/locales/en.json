@@ -322,6 +322,8 @@
     "voiceInputDeviceUnnamed": "Microphone {n}",
     "voiceInputDeviceRefresh": "Refresh microphone list",
     "voiceInputDeviceHint": "Choose which microphone to use for dictation. Names appear after you grant permission while recording.",
+    "voiceAutoStopSilence": "Auto-stop after silence",
+    "voiceAutoStopSilenceHint": "Ends the dictation recording on its own after a few seconds without speech.",
     "voiceReadAloud": "Read aloud (Piper)",
     "voicePiperInstalled": "Piper binary installed",
     "voicePiperMissing": "Piper binary missing",

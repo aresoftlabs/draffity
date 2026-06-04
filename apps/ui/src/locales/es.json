@@ -322,6 +322,8 @@
     "voiceInputDeviceUnnamed": "Micrófono {n}",
     "voiceInputDeviceRefresh": "Actualizar lista de micrófonos",
     "voiceInputDeviceHint": "Elegí qué micrófono usar para el dictado. Los nombres aparecen tras conceder el permiso al grabar.",
+    "voiceAutoStopSilence": "Detener automáticamente tras silencio",
+    "voiceAutoStopSilenceHint": "Finaliza la grabación de dictado sola tras unos segundos sin voz.",
     "voiceReadAloud": "Lectura en voz alta (Piper)",
     "voicePiperInstalled": "Binario de Piper instalado",
     "voicePiperMissing": "Falta el binario de Piper",

@@ -5,6 +5,7 @@ import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -536,6 +537,19 @@ onBeforeUnmount(() => {
       </div>
       <p class="text-xs opacity-50 mt-1">{{ t('settings.voiceInputDeviceHint') }}</p>
     </div>
+
+    <!-- Auto-stop on silence toggle -->
+    <div class="mt-3 flex items-center gap-2">
+      <ToggleSwitch
+        v-model="voiceSettings.autoStopOnSilence"
+        input-id="auto-stop-silence"
+        :aria-label="t('settings.voiceAutoStopSilence')"
+      />
+      <label for="auto-stop-silence" class="text-sm">{{
+        t('settings.voiceAutoStopSilence')
+      }}</label>
+    </div>
+    <p class="text-xs opacity-50 mt-1">{{ t('settings.voiceAutoStopSilenceHint') }}</p>
 
     <!-- ASR test recorder -->
     <div class="mt-3">
