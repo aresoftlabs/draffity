@@ -24,6 +24,7 @@ declare module 'vue' {
     CustomFieldsEditor: typeof import('./components/CustomFieldsEditor.vue')['default']
     CustomFieldsManagerDialog: typeof import('./components/CustomFieldsManagerDialog.vue')['default']
     Dialog: typeof import('primevue/dialog')['default']
+    DictationFab: typeof import('./components/DictationFab.vue')['default']
     DictationOverlay: typeof import('./components/DictationOverlay.vue')['default']
     ExportDialog: typeof import('./components/ExportDialog.vue')['default']
     FindReplaceBar: typeof import('./components/FindReplaceBar.vue')['default']
