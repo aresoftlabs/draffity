@@ -143,6 +143,19 @@ pub fn parse_whisper_json(json: &str) -> Transcript {
     Transcript { text, segments }
 }
 
+/// Parsea una línea de stderr de whisper con `--print-progress` a un porcentaje.
+/// Las líneas tienen la forma `whisper_print_progress_callback: progress = 42%`.
+/// Devuelve `None` para líneas no relacionadas.
+pub fn parse_progress_line(line: &str) -> Option<u8> {
+    let idx = line.find("progress =")?;
+    let rest = line[idx + "progress =".len()..].trim_start();
+    let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+    if digits.is_empty() {
+        return None;
+    }
+    digits.parse::<u32>().ok().map(|n| n.min(100) as u8)
+}
+
 /// Light cleanup of dictated text (H-04): trim, capitalise the first letter,
 /// and ensure terminal punctuation. The model handles most punctuation; this
 /// just tidies the seams when inserting at the cursor.
@@ -192,5 +205,24 @@ mod tests {
         assert_eq!(autopunctuate("ya termina."), "Ya termina.");
         assert_eq!(autopunctuate("¿qué tal?"), "¿qué tal?");
         assert_eq!(autopunctuate(""), "");
+    }
+
+    #[test]
+    fn parses_whisper_progress_lines() {
+        assert_eq!(
+            parse_progress_line("whisper_print_progress_callback: progress = 42%"),
+            Some(42)
+        );
+        assert_eq!(
+            parse_progress_line("whisper_print_progress_callback: progress = 100%"),
+            Some(100)
+        );
+        // Tolera espacios y valores de un dígito.
+        assert_eq!(parse_progress_line("progress =  5%"), Some(5));
+        // Clampa a 100.
+        assert_eq!(parse_progress_line("progress = 130%"), Some(100));
+        // Líneas no-progreso → None.
+        assert_eq!(parse_progress_line("output_json: saving output"), None);
+        assert_eq!(parse_progress_line("whisper_init_from_file"), None);
     }
 }
