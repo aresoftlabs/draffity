@@ -45,6 +45,16 @@ pub trait ASRService: Send + Sync {
         ))
     }
 
+    /// Como `transcribe_file`, pero reporta progreso 0..100 vía `on_progress`.
+    /// El default ignora el progreso y delega en `transcribe_file`.
+    fn transcribe_file_with_progress(
+        &self,
+        path: &str,
+        _on_progress: &mut dyn FnMut(u8),
+    ) -> AppResult<Transcript> {
+        self.transcribe_file(path)
+    }
+
     /// Dictado en streaming. `samples` es PCM16 mono a `sample_rate`; la impl
     /// reconoce de forma incremental y llama a `on_partial` con el mejor
     /// transcript parcial, devolviendo el final al terminar.
