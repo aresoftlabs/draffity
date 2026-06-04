@@ -2,6 +2,8 @@
 //! transcribe vía HTTP `POST /inference`. Ver spec §5.4.
 
 use std::path::Path;
+use std::process::{Child, Command, Stdio};
+use std::time::{Duration, Instant};
 
 use crate::services::asr::Transcript;
 
@@ -35,6 +37,110 @@ pub fn build_server_args(model: &Path, vad_model: &Path, port: u16) -> Vec<Strin
     ]
 }
 
+use crate::error::{AppError, AppResult};
+
+/// POST del WAV a `<base>/inference` y parseo. Separado del proceso para testear contra un stub.
+pub fn transcribe_at(base_url: &str, wav: &[u8]) -> AppResult<Transcript> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(120))
+        .build()
+        .map_err(|e| AppError::Unexpected(format!("cliente http: {e}")))?;
+    let part = reqwest::blocking::multipart::Part::bytes(wav.to_vec())
+        .file_name("audio.wav")
+        .mime_str("audio/wav")
+        .map_err(|e| AppError::Unexpected(format!("multipart: {e}")))?;
+    let form = reqwest::blocking::multipart::Form::new()
+        .part("file", part)
+        .text("response_format", "json");
+    let resp = client
+        .post(format!("{base_url}/inference"))
+        .multipart(form)
+        .send()
+        .map_err(|e| AppError::Unexpected(format!("post /inference: {e}")))?;
+    let body = resp
+        .text()
+        .map_err(|e| AppError::Unexpected(format!("lectura respuesta: {e}")))?;
+    parse_inference_response(&body)
+        .ok_or_else(|| AppError::Unexpected("respuesta /inference inválida".into()))
+}
+
+/// Poll hasta que el server responda en `port`.
+pub fn wait_ready(port: u16, timeout: Duration) -> bool {
+    let deadline = Instant::now() + timeout;
+    let client = match reqwest::blocking::Client::builder()
+        .timeout(Duration::from_millis(400))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    while Instant::now() < deadline {
+        if client
+            .get(format!("http://127.0.0.1:{port}/"))
+            .send()
+            .is_ok()
+        {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(150));
+    }
+    false
+}
+
+/// Elige un puerto efímero libre.
+pub fn pick_port() -> Option<u16> {
+    std::net::TcpListener::bind("127.0.0.1:0")
+        .ok()
+        .and_then(|l| l.local_addr().ok())
+        .map(|a| a.port())
+}
+
+/// Proceso `whisper-server` vivo, con su puerto.
+pub struct WhisperServer {
+    child: Child,
+    port: u16,
+}
+
+impl WhisperServer {
+    pub fn start(bin: &Path, model: &Path, vad_model: &Path) -> AppResult<Self> {
+        if !bin.exists() {
+            return Err(AppError::Unsupported("whisper-server no instalado".into()));
+        }
+        let port = pick_port().ok_or_else(|| AppError::Unexpected("sin puerto libre".into()))?;
+        let child = Command::new(bin)
+            .args(build_server_args(model, vad_model, port))
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|e| AppError::Unexpected(format!("spawn whisper-server: {e}")))?;
+        let mut server = WhisperServer { child, port };
+        if !wait_ready(port, Duration::from_secs(30)) {
+            let _ = server.child.kill();
+            return Err(AppError::Unexpected("whisper-server no quedó listo".into()));
+        }
+        Ok(server)
+    }
+
+    pub fn is_alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
+    }
+
+    pub fn transcribe(&self, wav: &[u8]) -> AppResult<Transcript> {
+        transcribe_at(&format!("http://127.0.0.1:{}", self.port), wav)
+    }
+
+    pub fn shutdown(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+impl Drop for WhisperServer {
+    fn drop(&mut self) {
+        self.shutdown();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,5 +170,43 @@ mod tests {
         assert!(joined.contains("--vad-model /m/vad.bin"));
         assert!(joined.contains("--host 127.0.0.1"));
         assert!(joined.contains("--port 54123"));
+    }
+
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    fn spawn_stub() -> (u16, std::thread::JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let h = std::thread::spawn(move || {
+            for stream in listener.incoming().take(2) {
+                let mut s = stream.unwrap();
+                let mut buf = [0u8; 1024];
+                let _ = s.read(&mut buf);
+                let body = r#"{"text":"hola desde el stub"}"#;
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                let _ = s.write_all(resp.as_bytes());
+            }
+        });
+        (port, h)
+    }
+
+    #[test]
+    fn transcribe_at_posts_and_parses() {
+        let (port, _h) = spawn_stub();
+        let base = format!("http://127.0.0.1:{port}");
+        let wav = vec![0u8; 64];
+        let t = transcribe_at(&base, &wav).expect("transcribe ok");
+        assert_eq!(t.text, "hola desde el stub");
+    }
+
+    #[test]
+    fn wait_ready_succeeds_against_live_port() {
+        let (port, _h) = spawn_stub();
+        assert!(wait_ready(port, std::time::Duration::from_secs(2)));
     }
 }
