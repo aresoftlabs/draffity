@@ -10,6 +10,8 @@ interface VoiceSettings {
   spendingLimitMonthly: number | null;
   /** Preferred microphone (`deviceId` from enumerateDevices); null = system default. */
   inputDeviceId: string | null;
+  /** Auto-detener la grabación tras silencio sostenido. */
+  autoStopOnSilence: boolean;
 }
 
 const DEFAULTS: VoiceSettings = {
@@ -18,6 +20,7 @@ const DEFAULTS: VoiceSettings = {
   aiModelId: null,
   spendingLimitMonthly: null,
   inputDeviceId: null,
+  autoStopOnSilence: false,
 };
 
 function load(): VoiceSettings {
@@ -38,6 +41,7 @@ function load(): VoiceSettings {
             : null
           : null,
       inputDeviceId: 'inputDeviceId' in parsed ? (parsed.inputDeviceId ?? null) : null,
+      autoStopOnSilence: 'autoStopOnSilence' in parsed ? Boolean(parsed.autoStopOnSilence) : false,
     };
   } catch {
     return { ...DEFAULTS };
@@ -57,9 +61,10 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
   const aiModelId = ref<string | null>(initial.aiModelId);
   const spendingLimitMonthly = ref<number | null>(initial.spendingLimitMonthly);
   const inputDeviceId = ref<string | null>(initial.inputDeviceId);
+  const autoStopOnSilence = ref<boolean>(initial.autoStopOnSilence);
 
   watch(
-    [ttsVoiceId, asrModelId, aiModelId, spendingLimitMonthly, inputDeviceId],
+    [ttsVoiceId, asrModelId, aiModelId, spendingLimitMonthly, inputDeviceId, autoStopOnSilence],
     () => {
       save({
         ttsVoiceId: ttsVoiceId.value,
@@ -67,6 +72,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
         aiModelId: aiModelId.value,
         spendingLimitMonthly: spendingLimitMonthly.value,
         inputDeviceId: inputDeviceId.value,
+        autoStopOnSilence: autoStopOnSilence.value,
       });
     },
     { deep: true },
@@ -78,6 +84,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     aiModelId.value = null;
     spendingLimitMonthly.value = null;
     inputDeviceId.value = null;
+    autoStopOnSilence.value = false;
   }
 
   return {
@@ -86,6 +93,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     aiModelId,
     spendingLimitMonthly,
     inputDeviceId,
+    autoStopOnSilence,
     reset,
   };
 });
