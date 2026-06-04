@@ -167,6 +167,11 @@ export interface VoiceDownloadProgress {
   total: number | null;
 }
 
+/** Progreso de transcripción (0–100), evento `voice.transcribe.progress`. */
+export interface VoiceTranscribeProgress {
+  progress: number;
+}
+
 /** A voice or model entry in the available models catalog. */
 export interface AvailableModelEntry {
   id: string;

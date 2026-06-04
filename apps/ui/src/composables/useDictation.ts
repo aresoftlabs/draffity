@@ -1,8 +1,10 @@
-import { ref, type Ref } from 'vue';
+import { onUnmounted, ref, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { useAudioRecorder } from '@/audio/useAudioRecorder';
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { ipc } from '@/services/ipc';
+import type { VoiceTranscribeProgress } from '@/services/ipc';
 
 /**
  * Resolve the current ASR model ID from the settings store.
@@ -45,6 +47,15 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   const recorder = useAudioRecorder();
   const phase = ref<DictationPhase>('idle');
   const error = ref<string | null>(null);
+  const progress = ref<number | null>(null);
+
+  let unlistenProgress: UnlistenFn | null = null;
+  void listen<VoiceTranscribeProgress>('voice.transcribe.progress', (e) => {
+    if (phase.value === 'transcribing') progress.value = e.payload.progress;
+  }).then((un) => {
+    unlistenProgress = un;
+  });
+  onUnmounted(() => unlistenProgress?.());
 
   function fail(e: unknown) {
     const message = String((e as { message?: string })?.message ?? e);
@@ -65,6 +76,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
 
   async function stopAndInsert() {
     if (phase.value !== 'recording') return;
+    progress.value = 0;
     phase.value = 'transcribing';
     try {
       const rec = await recorder.stop();
@@ -74,6 +86,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
       fail(e);
     } finally {
       phase.value = 'idle';
+      progress.value = null;
     }
   }
 
@@ -100,6 +113,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   return {
     phase,
     level: recorder.level,
+    progress,
     error,
     start,
     stopAndInsert,
