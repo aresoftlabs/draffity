@@ -123,8 +123,8 @@ pub fn recommended_voice() -> Option<&'static PiperVoiceInfo> {
 }
 
 // ---------------------------------------------------------------------------
-// Binary info for whisper.cpp and Piper (auto-download). The URLs below point
-// to the latest stable release archives per platform.
+// Binary info for Piper TTS (auto-download). The URLs below point to the
+// latest stable release archives per platform.
 // ---------------------------------------------------------------------------
 
 pub struct BinaryInfo {
@@ -139,22 +139,76 @@ pub fn binary_info(name: &str) -> Option<&'static BinaryInfo> {
     BINARY_INFOS.iter().find(|b| b.id == name)
 }
 
-const BINARY_INFOS: &[BinaryInfo] = &[
-    BinaryInfo {
-        id: "whisper",
-        name: "whisper.cpp",
-        win_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-Win32.zip",
-        linux_url: "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip",
-        size_mb: 30,
-    },
-    BinaryInfo {
-        id: "piper",
-        name: "Piper",
-        win_url: "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip",
-        linux_url: "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz",
-        size_mb: 8,
-    },
-];
+const BINARY_INFOS: &[BinaryInfo] = &[BinaryInfo {
+    id: "piper",
+    name: "Piper",
+    win_url:
+        "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip",
+    linux_url:
+        "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz",
+    size_mb: 8,
+}];
+
+// ---------------------------------------------------------------------------
+// Whisper binary matrix — per-backend pre-built archives from our own CI
+// release. Task 4 will wire download_and_extract_binary to this matrix.
+// ---------------------------------------------------------------------------
+
+use crate::services::voice::accel::Backend;
+
+/// Base de descarga: binarios compilados por nuestro CI, publicados en un
+/// release propio. Pinear el tag al release vigente.
+pub const WHISPER_BINS_BASE: &str =
+    "https://github.com/arezouski/draffity/releases/download/whisper-bins-v1/";
+
+#[derive(Debug, Clone)]
+pub struct WhisperBinary {
+    pub archive: String,
+    pub url: String,
+    pub sha256: Option<&'static str>,
+}
+
+/// Binario whisper para `(os, arch, backend)`. `None` para combos no soportados.
+/// Archivo: `whisper-<os>-<arch>-<backend>.<ext>` (zip en Windows, tar.gz resto).
+pub fn whisper_binary(os: &str, arch: &str, backend: Backend) -> Option<WhisperBinary> {
+    let supported = matches!(
+        (os, backend),
+        ("macos", Backend::Metal)
+            | ("macos", Backend::Cpu)
+            | ("windows", Backend::Vulkan)
+            | ("windows", Backend::Cpu)
+            | ("linux", Backend::Vulkan)
+            | ("linux", Backend::Cpu)
+    );
+    if !supported {
+        return None;
+    }
+    let ext = if os == "windows" { "zip" } else { "tar.gz" };
+    let archive = format!("whisper-{os}-{arch}-{}.{ext}", backend.as_str());
+    Some(WhisperBinary {
+        url: format!("{WHISPER_BINS_BASE}{archive}"),
+        archive,
+        sha256: None,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// VAD model (Voice Activity Detection — Silero v5).
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy)]
+pub struct VadModelInfo {
+    pub filename: &'static str,
+    pub url: &'static str,
+}
+
+/// Modelo VAD Silero (pocos MB), hospedado en HF por ggml-org.
+pub fn vad_model() -> VadModelInfo {
+    VadModelInfo {
+        filename: "silero-v5.1.2-ggml.bin",
+        url: "https://huggingface.co/ggml-org/silero-v5.1.2/resolve/main/silero-v5.1.2-ggml.bin",
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -187,16 +241,6 @@ mod tests {
     }
 
     #[test]
-    fn binary_info_lookup_whisper() {
-        let info = binary_info("whisper").unwrap();
-        assert_eq!(info.id, "whisper");
-        assert_eq!(info.name, "whisper.cpp");
-        assert!(info.win_url.contains("whisper.cpp"));
-        assert!(info.linux_url.contains("whisper.cpp"));
-        assert!(info.size_mb > 0);
-    }
-
-    #[test]
     fn binary_info_lookup_piper() {
         let info = binary_info("piper").unwrap();
         assert_eq!(info.id, "piper");
@@ -209,5 +253,42 @@ mod tests {
     #[test]
     fn binary_info_nonexistent() {
         assert!(binary_info("nope").is_none());
+    }
+
+    #[test]
+    fn whisper_binary_matrix_resolves_per_backend() {
+        use crate::services::voice::accel::Backend;
+        let mac = whisper_binary("macos", "aarch64", Backend::Metal).unwrap();
+        assert!(mac.archive.contains("macos") && mac.archive.contains("metal"));
+        let winv = whisper_binary("windows", "x86_64", Backend::Vulkan).unwrap();
+        assert!(winv.archive.contains("windows") && winv.archive.contains("vulkan"));
+        let wincpu = whisper_binary("windows", "x86_64", Backend::Cpu).unwrap();
+        assert!(wincpu.archive.contains("windows") && wincpu.archive.contains("cpu"));
+        assert!(winv.url.starts_with(WHISPER_BINS_BASE));
+        assert!(whisper_binary("freebsd", "x86_64", Backend::Cpu).is_none());
+    }
+
+    #[test]
+    fn whisper_archive_naming_is_exact() {
+        use crate::services::voice::accel::Backend;
+        assert_eq!(
+            whisper_binary("macos", "aarch64", Backend::Metal)
+                .unwrap()
+                .archive,
+            "whisper-macos-aarch64-metal.tar.gz"
+        );
+        assert_eq!(
+            whisper_binary("windows", "x86_64", Backend::Vulkan)
+                .unwrap()
+                .archive,
+            "whisper-windows-x86_64-vulkan.zip"
+        );
+    }
+
+    #[test]
+    fn vad_model_is_silero() {
+        let v = vad_model();
+        assert_eq!(v.filename, "silero-v5.1.2-ggml.bin");
+        assert!(v.url.ends_with(v.filename));
     }
 }
