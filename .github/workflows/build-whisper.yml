@@ -1,0 +1,124 @@
+name: build-whisper
+# Compila whisper.cpp (cli + server) por plataforma/backend y publica binarios.
+# - push de tag `whisper-bins-*` → publica un release con los binarios.
+# - workflow_dispatch / PR que toque este archivo → smoke build (sin publicar).
+on:
+  push:
+    tags: ['whisper-bins-*']
+  workflow_dispatch:
+  pull_request:
+    paths: ['.github/workflows/build-whisper.yml']
+
+env:
+  WHISPER_TAG: v1.8.6 # pineado (Vulkan estable >=1.8.3)
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target_os: macos
+            arch: aarch64
+            backend: metal
+            cmake_flags: -DGGML_METAL=ON -DWHISPER_BUILD_SERVER=ON
+          - os: windows-latest
+            target_os: windows
+            arch: x86_64
+            backend: cpu
+            cmake_flags: -DGGML_BLAS=ON -DWHISPER_BUILD_SERVER=ON
+          - os: windows-latest
+            target_os: windows
+            arch: x86_64
+            backend: vulkan
+            cmake_flags: -DGGML_VULKAN=ON -DWHISPER_BUILD_SERVER=ON
+          - os: ubuntu-latest
+            target_os: linux
+            arch: x86_64
+            backend: cpu
+            cmake_flags: -DGGML_BLAS=ON -DWHISPER_BUILD_SERVER=ON
+          - os: ubuntu-latest
+            target_os: linux
+            arch: x86_64
+            backend: vulkan
+            cmake_flags: -DGGML_VULKAN=ON -DWHISPER_BUILD_SERVER=ON
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout whisper.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: ggml-org/whisper.cpp
+          ref: ${{ env.WHISPER_TAG }}
+
+      - name: Install Vulkan SDK (Linux)
+        if: matrix.target_os == 'linux' && matrix.backend == 'vulkan'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev glslc vulkan-tools
+
+      - name: Install OpenBLAS (Linux)
+        if: matrix.target_os == 'linux' && matrix.backend == 'cpu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas-dev
+
+      - name: Install Vulkan SDK (Windows)
+        if: matrix.target_os == 'windows' && matrix.backend == 'vulkan'
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: latest
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
+
+      - name: Build
+        run: cmake --build build --config Release --target whisper-cli whisper-server -j
+
+      - name: Stage binaries
+        shell: bash
+        run: |
+          mkdir -p dist
+          BIN=build/bin
+          [ -d "$BIN/Release" ] && BIN="$BIN/Release"
+          cp "$BIN"/whisper-cli* dist/ 2>/dev/null || cp "$BIN"/main* dist/
+          cp "$BIN"/whisper-server* dist/
+          find build -maxdepth 3 \( -name '*.dll' -o -name '*.so*' -o -name '*.dylib' \) -exec cp {} dist/ \; 2>/dev/null || true
+
+      - name: Ad-hoc sign (macOS)
+        if: matrix.target_os == 'macos'
+        run: |
+          for f in dist/whisper-cli dist/whisper-server dist/*.dylib; do
+            [ -f "$f" ] && codesign -s - -f "$f" || true
+          done
+
+      - name: Package
+        shell: bash
+        run: |
+          NAME="whisper-${{ matrix.target_os }}-${{ matrix.arch }}-${{ matrix.backend }}"
+          if [ "${{ matrix.target_os }}" = "windows" ]; then
+            cd dist && 7z a "../$NAME.zip" ./* && cd ..
+            certutil -hashfile "$NAME.zip" SHA256 > "$NAME.zip.sha256"
+          else
+            tar -C dist -czf "$NAME.tar.gz" .
+            shasum -a 256 "$NAME.tar.gz" > "$NAME.tar.gz.sha256"
+          fi
+
+      - name: Upload artifact (smoke)
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-${{ matrix.target_os }}-${{ matrix.arch }}-${{ matrix.backend }}
+          path: |
+            *.zip
+            *.tar.gz
+            *.sha256
+
+      - name: Publish to release (on tag)
+        if: startsWith(github.ref, 'refs/tags/whisper-bins-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.zip
+            *.tar.gz
+            *.sha256
