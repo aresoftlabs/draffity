@@ -2,7 +2,8 @@
 name = "draffity-desktop"
 version = "0.12.0"
 description = "Draffity desktop (Tauri 2 + Rust)"
-authors = ["Draffity"]
+authors = ["Aresoft SpA"]
+license = "GPL-3.0-or-later"
 edition = "2021"
 rust-version = "1.77"
 default-run = "draffity-desktop"

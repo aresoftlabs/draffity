@@ -3,7 +3,8 @@
   "version": "0.12.0-beta.0",
   "private": true,
   "description": "Asistente de escritura desktop multi-formato (Tauri 2 + Rust + Vue 3)",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
+  "author": "Aresoft SpA",
   "engines": {
     "node": ">=20",
     "pnpm": ">=10"
