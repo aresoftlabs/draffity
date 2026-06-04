@@ -65,6 +65,11 @@ struct DownloadProgress {
     total: Option<u64>,
 }
 
+#[derive(serde::Serialize, Clone)]
+struct TranscribeProgress {
+    progress: u8,
+}
+
 #[tauri::command]
 pub fn get_voice_status(state: State<'_, AppState>) -> VoiceStatus {
     VoiceStatus {
@@ -203,6 +208,7 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
 /// the trait, so swapping the ASR backend never touches it. Runs off-thread.
 #[tauri::command]
 pub async fn transcribe_audio(
+    app: AppHandle,
     state: State<'_, AppState>,
     wav: Vec<u8>,
     sample_rate: Option<u32>,
@@ -224,9 +230,17 @@ pub async fn transcribe_audio(
 
     let asr = state.asr.clone();
     let path_str = path.to_string_lossy().into_owned();
-    let result = tauri::async_runtime::spawn_blocking(move || asr.transcribe_file(&path_str))
-        .await
-        .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
+    let app2 = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        asr.transcribe_file_with_progress(&path_str, &mut |p| {
+            let _ = app2.emit(
+                "voice.transcribe.progress",
+                TranscribeProgress { progress: p },
+            );
+        })
+    })
+    .await
+    .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
     let _ = std::fs::remove_file(&path);
     result
 }
