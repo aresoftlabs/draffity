@@ -1270,13 +1270,13 @@ First public alpha. Free MVP.
 - Rust: 59 passing (28 domain + services + 9 exporter + 6 storage extras + project_manager + integration + capabilities).
 - Vitest: 19 passing (countWords, project store, document store, useShortcuts, useAutoSave).
 
-[Unreleased]: https://github.com/arezouski/draffity/compare/v0.9.0-beta...HEAD
-[0.9.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.9.0-beta
-[0.8.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.8.0-beta
-[0.7.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.7.0-beta
-[0.6.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.6.0-beta
-[0.5.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.5.0-beta
-[0.4.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.4.0-beta
-[0.3.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.3.0-beta
-[0.2.0-beta]: https://github.com/arezouski/draffity/releases/tag/v0.2.0-beta
-[0.1.0-alpha]: https://github.com/arezouski/draffity/releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/aresoftlabs/draffity/compare/v0.9.0-beta...HEAD
+[0.9.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.9.0-beta
+[0.8.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.8.0-beta
+[0.7.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.7.0-beta
+[0.6.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.6.0-beta
+[0.5.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.5.0-beta
+[0.4.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.4.0-beta
+[0.3.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.3.0-beta
+[0.2.0-beta]: https://github.com/aresoftlabs/draffity/releases/tag/v0.2.0-beta
+[0.1.0-alpha]: https://github.com/aresoftlabs/draffity/releases/tag/v0.1.0-alpha

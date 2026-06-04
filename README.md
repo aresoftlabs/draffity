@@ -3,7 +3,7 @@
 > Asistente de escritura desktop multi-formato — novela, paper, manga, artículo, guion.
 > **Tauri 2 + Rust + Vue 3 + TypeScript + PrimeVue + Tailwind + TipTap + SQLite.**
 
-[![CI](https://github.com/arezouski/draffity/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
+[![CI](https://github.com/aresoftlabs/draffity/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
 
 Draffity es una aplicación desktop ligera y rápida para escritores que trabajan en distintos formatos. Inspirada en Scrivener, repensada con stack moderno. **100% gratuita y de código abierto**: editor completo, IA con BYOK (OpenRouter), voz local — sin tiers, sin suscripciones, sin gates de funcionalidad.
 

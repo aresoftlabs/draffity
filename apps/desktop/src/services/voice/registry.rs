@@ -159,7 +159,7 @@ use crate::services::voice::accel::Backend;
 /// Base de descarga: binarios compilados por nuestro CI, publicados en un
 /// release propio. Pinear el tag al release vigente.
 pub const WHISPER_BINS_BASE: &str =
-    "https://github.com/arezouski/draffity/releases/download/whisper-bins-v1/";
+    "https://github.com/aresoftlabs/draffity/releases/download/whisper-bins-v1/";
 
 #[derive(Debug, Clone)]
 pub struct WhisperBinary {
