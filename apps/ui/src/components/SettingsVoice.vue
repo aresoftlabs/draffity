@@ -30,6 +30,7 @@ const testingVoiceId = ref<string | null>(null);
 const asrRecording = ref(false);
 const asrResult = ref<string | null>(null);
 const asrMicDenied = ref(false);
+const inputDevices = ref<{ label: string; value: string }[]>([]);
 const availableModels = ref<LanguageGroup[]>([]);
 const catalogError = ref(false);
 
@@ -202,21 +203,29 @@ async function onDeleteModel(m: VoiceModel) {
   await loadVoice();
 }
 
+// Reused across test plays so we don't leak AudioContext instances.
+let ttsCtx: AudioContext | null = null;
+
 async function onTestVoice(v: VoiceVoice) {
   testingVoiceId.value = v.id;
   try {
-    const path = await ipc.testSynthesize(v.id, 'Hello, this is a test voice.');
-    const { readFile } = await import('@tauri-apps/plugin-fs');
-    const bytes = await readFile(path);
-    const blob = new Blob([bytes], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    const audio = document.createElement('audio');
-    audio.src = url;
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
+    // Synthesize to PCM16 in-process and play via Web Audio. We deliberately
+    // avoid the temp-file + plugin-fs `readFile` round trip: the home dir
+    // (~/.draffity) is outside the `fs:default` scope, so reading it throws.
+    const audio = await ipc.synthesizeSpeech('Hello, this is a test voice.', v.id);
+    if (!ttsCtx) ttsCtx = new AudioContext();
+    if (ttsCtx.state === 'suspended') await ttsCtx.resume();
+    const len = Math.max(1, audio.samplesPcm16.length);
+    const buffer = ttsCtx.createBuffer(1, len, audio.sampleRate || 22050);
+    const channel = buffer.getChannelData(0);
+    for (let i = 0; i < audio.samplesPcm16.length; i++) channel[i] = audio.samplesPcm16[i] / 32768;
+    const source = ttsCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ttsCtx.destination);
+    source.onended = () => {
       testingVoiceId.value = null;
     };
-    await audio.play();
+    source.start();
   } catch {
     toast.add({
       severity: 'error',
@@ -225,6 +234,33 @@ async function onTestVoice(v: VoiceVoice) {
       life: 5000,
     });
     testingVoiceId.value = null;
+  }
+}
+
+/**
+ * Enumerate available microphones for the input-device picker. Device labels
+ * are only populated by the browser once microphone permission has been
+ * granted, so the first call (before any recording) may return unnamed
+ * entries — we fall back to a generic numbered label in that case.
+ */
+async function refreshInputDevices() {
+  if (!navigator.mediaDevices?.enumerateDevices) return;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const inputs = devices.filter((d) => d.kind === 'audioinput' && d.deviceId);
+    inputDevices.value = inputs.map((d, i) => ({
+      value: d.deviceId,
+      label: d.label || t('settings.voiceInputDeviceUnnamed', { n: String(i + 1) }),
+    }));
+    // Drop a stale saved selection that no longer matches a present device.
+    if (
+      voiceSettings.inputDeviceId &&
+      !inputs.some((d) => d.deviceId === voiceSettings.inputDeviceId)
+    ) {
+      voiceSettings.inputDeviceId = null;
+    }
+  } catch {
+    inputDevices.value = [];
   }
 }
 
@@ -238,7 +274,13 @@ async function onAsrStartRecord() {
   let source: MediaStreamAudioSourceNode | null = null;
   let processor: ScriptProcessorNode | null = null;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const deviceId = voiceSettings.inputDeviceId;
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+    });
+    // Now that permission is granted, labels become available — refresh so the
+    // picker shows real device names instead of "Microphone N".
+    void refreshInputDevices();
     ctx = new AudioContext();
     const chunks: Int16Array[] = [];
     source = ctx.createMediaStreamSource(stream);
@@ -391,6 +433,8 @@ function onCatalogDownload(item: { id: string; kind: string }) {
 onMounted(async () => {
   await loadVoice();
   await loadAvailableModels();
+  await refreshInputDevices();
+  navigator.mediaDevices?.addEventListener?.('devicechange', refreshInputDevices);
   unlistenVoiceProgress = await listen<VoiceDownloadProgress>('voice.download.progress', (e) => {
     const p = e.payload;
     if (p.total && p.total > 0) {
@@ -404,6 +448,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unlistenVoiceProgress?.();
+  navigator.mediaDevices?.removeEventListener?.('devicechange', refreshInputDevices);
 });
 </script>
 
@@ -522,6 +567,34 @@ onBeforeUnmount(() => {
           {{ t('settings.voiceModelNotInstalled') }}
         </span>
       </div>
+    </div>
+
+    <!-- Microphone (input device) selector -->
+    <div class="mt-3">
+      <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2">
+        {{ t('settings.voiceInputDevice') }}
+      </h3>
+      <div class="flex items-center gap-2">
+        <Select
+          v-model="voiceSettings.inputDeviceId"
+          :options="inputDevices"
+          option-label="label"
+          option-value="value"
+          :placeholder="t('settings.voiceInputDeviceDefault')"
+          show-clear
+          class="flex-1"
+          :aria-label="t('settings.voiceInputDevice')"
+          :empty-message="t('settings.voiceInputDeviceEmpty')"
+        />
+        <Button
+          icon="pi pi-refresh"
+          size="small"
+          text
+          :aria-label="t('settings.voiceInputDeviceRefresh')"
+          @click="refreshInputDevices"
+        />
+      </div>
+      <p class="text-xs opacity-50 mt-1">{{ t('settings.voiceInputDeviceHint') }}</p>
     </div>
 
     <!-- ASR test recorder -->

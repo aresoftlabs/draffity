@@ -17,6 +17,16 @@ export function resolveAsrModelId(): string | null {
   }
 }
 
+/** Resolve the preferred microphone `deviceId` from settings (null = default). */
+export function resolveInputDeviceId(): string | null {
+  try {
+    const store = useVoiceSettingsStore();
+    return store.inputDeviceId;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Dictation orchestration (H-04). Wires the (engine-agnostic) recorder to the
  * (engine-agnostic) `transcribe_audio` command and inserts the result at the
@@ -45,7 +55,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   async function start() {
     error.value = null;
     try {
-      await recorder.start();
+      await recorder.start(resolveInputDeviceId());
       phase.value = 'recording';
     } catch (e) {
       fail(e);

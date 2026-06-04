@@ -96,10 +96,13 @@ export function useAudioRecorder() {
     }
   }
 
-  async function start() {
+  async function start(deviceId?: string | null) {
     if (state.value === 'recording') return;
     discarded = false;
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const audio: MediaTrackConstraints | boolean = deviceId
+      ? { deviceId: { exact: deviceId } }
+      : true;
+    stream = await navigator.mediaDevices.getUserMedia({ audio });
     audioCtx = new AudioContext();
     const source = audioCtx.createMediaStreamSource(stream);
     analyser = audioCtx.createAnalyser();

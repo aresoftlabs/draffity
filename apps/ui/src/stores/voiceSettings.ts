@@ -8,6 +8,8 @@ interface VoiceSettings {
   asrModelId: string | null;
   aiModelId: string | null;
   spendingLimitMonthly: number | null;
+  /** Preferred microphone (`deviceId` from enumerateDevices); null = system default. */
+  inputDeviceId: string | null;
 }
 
 const DEFAULTS: VoiceSettings = {
@@ -15,6 +17,7 @@ const DEFAULTS: VoiceSettings = {
   asrModelId: null,
   aiModelId: null,
   spendingLimitMonthly: null,
+  inputDeviceId: null,
 };
 
 function load(): VoiceSettings {
@@ -34,6 +37,7 @@ function load(): VoiceSettings {
             ? parsed.spendingLimitMonthly
             : null
           : null,
+      inputDeviceId: 'inputDeviceId' in parsed ? (parsed.inputDeviceId ?? null) : null,
     };
   } catch {
     return { ...DEFAULTS };
@@ -52,15 +56,17 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
   const asrModelId = ref<string | null>(initial.asrModelId);
   const aiModelId = ref<string | null>(initial.aiModelId);
   const spendingLimitMonthly = ref<number | null>(initial.spendingLimitMonthly);
+  const inputDeviceId = ref<string | null>(initial.inputDeviceId);
 
   watch(
-    [ttsVoiceId, asrModelId, aiModelId, spendingLimitMonthly],
+    [ttsVoiceId, asrModelId, aiModelId, spendingLimitMonthly, inputDeviceId],
     () => {
       save({
         ttsVoiceId: ttsVoiceId.value,
         asrModelId: asrModelId.value,
         aiModelId: aiModelId.value,
         spendingLimitMonthly: spendingLimitMonthly.value,
+        inputDeviceId: inputDeviceId.value,
       });
     },
     { deep: true },
@@ -71,6 +77,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     asrModelId.value = null;
     aiModelId.value = null;
     spendingLimitMonthly.value = null;
+    inputDeviceId.value = null;
   }
 
   return {
@@ -78,6 +85,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     asrModelId,
     aiModelId,
     spendingLimitMonthly,
+    inputDeviceId,
     reset,
   };
 });

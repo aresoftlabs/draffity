@@ -26,7 +26,18 @@ const audioContextMock = {
     disconnect: vi.fn(),
     onaudioprocess: null as ((e: unknown) => void) | null,
   })),
+  createBuffer: vi.fn((_ch: number, len: number) => ({
+    getChannelData: () => new Float32Array(len),
+  })),
+  createBufferSource: vi.fn(() => ({
+    buffer: null as unknown,
+    connect: vi.fn(),
+    start: vi.fn(),
+    onended: null as (() => void) | null,
+  })),
+  resume: vi.fn(),
   close: vi.fn(),
+  state: 'running',
   sampleRate: 44100,
   destination: {},
 };
@@ -66,6 +77,12 @@ const i18n = createI18n({
         voiceAsrTestResult: 'Transcripción',
         voiceAsrTestMicDenied: 'Micrófono requerido',
         voiceAsrTestLabel: 'Probar dictado',
+        voiceInputDevice: 'Micrófono',
+        voiceInputDeviceDefault: 'Micrófono predeterminado del sistema',
+        voiceInputDeviceEmpty: 'No se detectaron micrófonos',
+        voiceInputDeviceUnnamed: 'Micrófono {n}',
+        voiceInputDeviceRefresh: 'Actualizar lista de micrófonos',
+        voiceInputDeviceHint: 'Elegí qué micrófono usar para el dictado.',
         voiceCatalog: 'Catálogo de voces',
         voiceCatalogByLang: 'Voces en {lang}',
         voiceCatalogEmpty: 'No hay voces disponibles',
@@ -275,7 +292,7 @@ describe('SettingsVoice', () => {
     expect(playBtns).toHaveLength(1);
   });
 
-  it('calls testSynthesize on play button click', async () => {
+  it('synthesizes and plays via Web Audio on play button click', async () => {
     invokeMock.mockImplementation((cmd: string) => {
       if (cmd === 'get_voice_status')
         return Promise.resolve({ binaryInstalled: true, piperInstalled: true });
@@ -292,7 +309,8 @@ describe('SettingsVoice', () => {
           },
         ]);
       if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      if (cmd === 'test_synthesize') return Promise.resolve('/tmp/test_output.wav');
+      if (cmd === 'synthesize_speech')
+        return Promise.resolve({ samplesPcm16: [0, 1, -1], sampleRate: 22050 });
       return Promise.resolve(undefined);
     });
     const w = mountVoice();
@@ -301,13 +319,14 @@ describe('SettingsVoice', () => {
     expect(playBtn).toBeDefined();
     await playBtn!.trigger('click');
     await flushPromises();
-    // Verify test_synthesize was called with the right args
-    const synthCall = invokeMock.mock.calls.find((c) => c[0] === 'test_synthesize');
+    // Plays in-process via synthesize_speech (PCM16) — no temp-file readFile.
+    const synthCall = invokeMock.mock.calls.find((c) => c[0] === 'synthesize_speech');
     expect(synthCall).toBeDefined();
     expect(synthCall![1]).toEqual({
       voiceId: 'es_ES-carlfm',
       text: 'Hello, this is a test voice.',
     });
+    expect(audioContextMock.createBufferSource).toHaveBeenCalled();
   });
 
   it('shows ASR test recorder section', async () => {
