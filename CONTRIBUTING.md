@@ -43,3 +43,10 @@ Decisiones arquitectónicas importantes van en `docs/ADR/`. Usar la plantilla [`
 ## Issues
 
 Etiqueta tus issues con `sprint-0`...`sprint-8`, `bug`, `enhancement`, `arch` (cuando toca límites de módulos).
+
+## Developer Certificate of Origin (DCO)
+
+Este proyecto usa DCO. Cada commit debe ir firmado con `git commit -s`, que agrega
+una línea `Signed-off-by: Tu Nombre <tu@email>`. Con eso certificás que tenés
+derecho a aportar ese código bajo la licencia del proyecto (**GPLv3**). Mantenés tu
+copyright; no cedés derechos. Ver https://developercertificate.org/.
