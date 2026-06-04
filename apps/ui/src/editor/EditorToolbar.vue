@@ -11,6 +11,10 @@ const props = defineProps<{
   linguisticFocusActive?: boolean;
   /** Repetition heatmap overlay active state (J-08). */
   repetitionActive?: boolean;
+  /** Whether dictation (voice-to-text) is available on this device/session. */
+  dictationAvailable?: boolean;
+  /** Whether dictation is currently active/recording. */
+  dictationActive?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -20,6 +24,7 @@ const emit = defineEmits<{
   'insert-footnote': [];
   'toggle-linguistic-focus': [];
   'toggle-repetition': [];
+  'toggle-dictation': [];
 }>();
 
 const { t } = useI18n();
@@ -281,6 +286,21 @@ const isInTable = computed(() => isActive('table'));
       :disabled="!isReady"
       :class="{ 'p-button-outlined': repetitionActive }"
       @click="emit('toggle-repetition')"
+    />
+
+    <span class="w-px h-6 bg-surface-300 dark:bg-surface-700 mx-1" aria-hidden="true" />
+
+    <Button
+      data-test="toolbar-dictate"
+      v-tooltip.bottom="t('toolbar.dictate')"
+      :aria-label="t('toolbar.dictate')"
+      :aria-pressed="dictationActive"
+      icon="pi pi-microphone"
+      text
+      :severity="dictationActive ? 'danger' : 'secondary'"
+      :disabled="!dictationAvailable"
+      :class="{ 'p-button-outlined': dictationActive }"
+      @click="emit('toggle-dictation')"
     />
 
     <span class="flex-1" aria-hidden="true" />

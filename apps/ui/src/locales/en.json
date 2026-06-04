@@ -187,7 +187,8 @@
     "linguisticFocus": "Linguistic focus (adverbs, passive, dialogue)",
     "repetitionHeatmap": "Repetition heatmap (repeated words and phrases)",
     "undo": "Undo",
-    "redo": "Redo"
+    "redo": "Redo",
+    "dictate": "Dictate"
   },
   "split": {
     "toggle": "Toggle split editor",
