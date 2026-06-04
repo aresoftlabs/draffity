@@ -83,6 +83,50 @@ pub fn download_and_extract_binary(
     extract_binary_impl(&archive_bytes, format, &target, binary_id)
 }
 
+/// Descarga + extrae el binario whisper acelerado para el backend dado.
+/// Reusa la extracción zip/tar de `extract_binary_impl`. En macOS quita el
+/// atributo de cuarentena para que Gatekeeper no bloquee el binario descargado.
+pub fn download_and_extract_whisper(
+    backend: crate::services::voice::accel::Backend,
+    home: &DraffityHome,
+    on_progress: impl FnMut(u64, Option<u64>),
+) -> crate::error::AppResult<()> {
+    use crate::error::AppError;
+    use registry::whisper_binary;
+
+    let variant = whisper_binary(std::env::consts::OS, std::env::consts::ARCH, backend)
+        .ok_or_else(|| AppError::Unsupported("plataforma sin binario whisper".into()))?;
+
+    let target = home.bin_dir();
+    if let Some(parent) = target.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let tmp_dir = home.tmp_dir();
+    std::fs::create_dir_all(&tmp_dir)?;
+    let archive_path = tmp_dir.join(&variant.archive);
+
+    download_to_file(&variant.url, &archive_path, variant.sha256, on_progress)?;
+
+    let format = if variant.archive.ends_with(".tar.gz") {
+        ".tar.gz"
+    } else {
+        ".zip"
+    };
+    let bytes = std::fs::read(&archive_path)?;
+    let _ = std::fs::remove_file(&archive_path);
+    extract_binary_impl(&bytes, format, &target, "whisper")?;
+
+    #[cfg(target_os = "macos")]
+    if let Some(dir) = target.parent() {
+        let _ = std::process::Command::new("xattr")
+            .arg("-dr")
+            .arg("com.apple.quarantine")
+            .arg(dir)
+            .status();
+    }
+    Ok(())
+}
+
 /// If a zip entry path is inside an `espeak-ng-data` directory, return the path
 /// re-rooted at `espeak-ng-data/…` (e.g. `piper/espeak-ng-data/lang/es` →
 /// `espeak-ng-data/lang/es`). Zip paths use forward slashes. Returns `None`
@@ -393,6 +437,16 @@ mod tests {
             std::fs::read(bin_dir.join("espeak-ng-data/lang/es")).unwrap(),
             b"es-lang"
         );
+    }
+
+    #[test]
+    fn whisper_download_url_follows_detected_backend() {
+        use crate::services::voice::accel::Backend;
+        use crate::services::voice::registry::whisper_binary;
+        let v = whisper_binary("windows", "x86_64", Backend::Vulkan).unwrap();
+        assert_eq!(v.archive, "whisper-windows-x86_64-vulkan.zip");
+        let m = whisper_binary("macos", "aarch64", Backend::Metal).unwrap();
+        assert_eq!(m.archive, "whisper-macos-aarch64-metal.tar.gz");
     }
 
     #[test]

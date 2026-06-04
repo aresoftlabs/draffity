@@ -15,8 +15,8 @@ use crate::domain::{now_ms, MediaAsset};
 use crate::error::AppError;
 use crate::services::tts::SynthesizedAudio;
 use crate::services::voice::{
-    download_and_extract_binary, download_to_file, model_by_id, model_url, piper_voices,
-    voice_by_id, voice_config_filename, whisper_models,
+    download_and_extract_binary, download_and_extract_whisper, download_to_file, model_by_id,
+    model_url, piper_voices, voice_by_id, voice_config_filename, whisper_models,
 };
 use crate::services::DraffityHome;
 use crate::services::Transcript;
@@ -169,6 +169,28 @@ pub async fn download_voice_binary(
     if binary_id != "whisper" && binary_id != "piper" {
         return Err(AppError::NotFound(format!("binary {binary_id}")));
     }
+
+    if binary_id == "whisper" {
+        let backend = crate::services::voice::accel::detect_backend();
+        let app2 = app.clone();
+        let id = binary_id.clone();
+        let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+        return tauri::async_runtime::spawn_blocking(move || {
+            download_and_extract_whisper(backend, &home, |downloaded, total| {
+                let _ = app2.emit(
+                    "voice.download.progress",
+                    DownloadProgress {
+                        model_id: id.clone(),
+                        downloaded,
+                        total,
+                    },
+                );
+            })
+        })
+        .await
+        .map_err(|e| AppError::Unexpected(format!("descarga: {e}")))?;
+    }
+
     let app2 = app.clone();
     let id = binary_id.clone();
     let home = DraffityHome::with_root(state.resources.root().to_path_buf());
