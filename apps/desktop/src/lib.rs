@@ -55,6 +55,14 @@ pub fn run() {
             }
             app.manage(AppState::from_bundle(bundle, home, log_guard));
 
+            // Grant the WebView2 microphone permission so `getUserMedia` works
+            // for dictation/ASR. wry only auto-grants clipboard-read, leaving
+            // the microphone denied by default, so we register our own handler.
+            #[cfg(target_os = "windows")]
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.with_webview(grant_microphone_permission);
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -191,4 +199,43 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Register a WebView2 `PermissionRequested` handler that allows the microphone
+/// kind. Without this, embedded WebView2 denies `getUserMedia({ audio: true })`
+/// and dictation/ASR recording never starts. Mirrors what wry does for the
+/// clipboard, applied to the microphone instead.
+#[cfg(target_os = "windows")]
+fn grant_microphone_permission(webview: tauri::webview::PlatformWebview) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        COREWEBVIEW2_PERMISSION_KIND, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+        COREWEBVIEW2_PERMISSION_STATE_ALLOW,
+    };
+    use webview2_com::PermissionRequestedEventHandler;
+
+    unsafe {
+        let core = match webview.controller().CoreWebView2() {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!(error = %e, "could not access CoreWebView2 for mic permission");
+                return;
+            }
+        };
+        let mut token = 0_i64;
+        let result = core.add_PermissionRequested(
+            &PermissionRequestedEventHandler::create(Box::new(|_, args| {
+                let Some(args) = args else { return Ok(()) };
+                let mut kind = COREWEBVIEW2_PERMISSION_KIND::default();
+                args.PermissionKind(&mut kind)?;
+                if kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE {
+                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+                }
+                Ok(())
+            })),
+            &mut token,
+        );
+        if let Err(e) = result {
+            tracing::warn!(error = %e, "failed to register WebView2 microphone permission handler");
+        }
+    }
 }

@@ -50,6 +50,12 @@ specta-serde = "0.0.12"
 specta-typescript = "0.0.12"
 dirs = "5"
 
+# Windows-only: grant the WebView2 microphone permission (wry does not).
+# Versions pinned to match the ones tauri/wry already resolve to, so the
+# COM types are identical across crates.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+
 [dev-dependencies]
 tempfile = "3"
 

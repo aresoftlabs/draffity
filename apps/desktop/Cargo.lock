@@ -1073,6 +1073,7 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "ulid",
+ "webview2-com",
  "zip 2.4.2",
 ]
 
