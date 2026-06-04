@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import ToggleSwitch from 'primevue/toggleswitch';
-import { useAudioRecorder } from '@/audio/useAudioRecorder';
+import { useVoiceRecorder } from '@/audio/useVoiceRecorder';
 import { useIpcError } from '@/composables/useIpcError';
 import { ipc } from '@/services/ipc';
 import type { MediaAsset } from '@draffity/shared-types';
@@ -14,7 +14,7 @@ const emit = defineEmits<{ 'update:visible': [boolean] }>();
 
 const { t } = useI18n();
 const { run: ipcRun } = useIpcError();
-const recorder = useAudioRecorder();
+const recorder = useVoiceRecorder();
 
 const notes = ref<MediaAsset[]>([]);
 const urls = ref<Record<string, string>>({});

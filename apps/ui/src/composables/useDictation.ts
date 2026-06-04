@@ -1,6 +1,6 @@
 import { onUnmounted, ref, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
-import { useAudioRecorder } from '@/audio/useAudioRecorder';
+import { useVoiceRecorder } from '@/audio/useVoiceRecorder';
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { ipc } from '@/services/ipc';
@@ -44,7 +44,7 @@ export interface DictationOptions {
 }
 
 export function useDictation(editor: Ref<Editor | null>, options: DictationOptions = {}) {
-  const recorder = useAudioRecorder();
+  const recorder = useVoiceRecorder();
   const phase = ref<DictationPhase>('idle');
   const error = ref<string | null>(null);
   const progress = ref<number | null>(null);

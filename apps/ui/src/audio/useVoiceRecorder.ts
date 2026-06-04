@@ -16,10 +16,16 @@ export interface Recording {
 
 const TARGET_RATE = 16000;
 
-export function useAudioRecorder() {
+export function useVoiceRecorder() {
   const state = ref<RecorderState>('idle');
   /** RMS amplitude 0..1 for a level meter / waveform. */
   const level = ref(0);
+  /** Datos time-domain (0..255, 128 = silencio) del analyser, para la onda. */
+  const waveform = ref<Uint8Array>(new Uint8Array(0));
+  /** Tiempo grabado en ms (para el temporizador). */
+  const elapsedMs = ref(0);
+  /** `true` tras ~2 s por debajo del umbral de RMS mientras se graba. */
+  const isSilent = ref(false);
 
   let stream: MediaStream | null = null;
   let audioCtx: AudioContext | null = null;
@@ -32,6 +38,10 @@ export function useAudioRecorder() {
   let resolveStop: ((r: Recording) => void) | null = null;
   let rejectStop: ((e: unknown) => void) | null = null;
 
+  const SILENCE_RMS = 0.02;
+  const SILENCE_MS = 2000;
+  let silentSince = 0;
+
   function tick() {
     if (!analyser) return;
     const buf = new Uint8Array(analyser.fftSize);
@@ -41,7 +51,17 @@ export function useAudioRecorder() {
       const c = (v - 128) / 128;
       sum += c * c;
     }
-    level.value = Math.sqrt(sum / buf.length);
+    const rms = Math.sqrt(sum / buf.length);
+    level.value = rms;
+    waveform.value = buf;
+    elapsedMs.value = performance.now() - startedAt;
+    if (rms < SILENCE_RMS) {
+      if (silentSince === 0) silentSince = performance.now();
+      else if (performance.now() - silentSince >= SILENCE_MS) isSilent.value = true;
+    } else {
+      silentSince = 0;
+      isSilent.value = false;
+    }
     raf = requestAnimationFrame(tick);
   }
 
@@ -54,6 +74,10 @@ export function useAudioRecorder() {
     if (audioCtx && audioCtx.state !== 'closed') void audioCtx.close();
     audioCtx = null;
     level.value = 0;
+    waveform.value = new Uint8Array(0);
+    elapsedMs.value = 0;
+    isSilent.value = false;
+    silentSince = 0;
     state.value = 'idle';
   }
 
@@ -99,6 +123,8 @@ export function useAudioRecorder() {
   async function start(deviceId?: string | null) {
     if (state.value === 'recording') return;
     discarded = false;
+    silentSince = 0;
+    isSilent.value = false;
     const audio: MediaTrackConstraints | boolean = deviceId
       ? { deviceId: { exact: deviceId } }
       : true;
@@ -145,5 +171,5 @@ export function useAudioRecorder() {
 
   onBeforeUnmount(cleanup);
 
-  return { state, level, start, stop, cancel };
+  return { state, level, waveform, elapsedMs, isSilent, start, stop, cancel };
 }
