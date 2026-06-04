@@ -1,10 +1,12 @@
-import { onUnmounted, ref, type Ref } from 'vue';
+import { onUnmounted, ref, watch, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { useVoiceRecorder } from '@/audio/useVoiceRecorder';
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
+import { shouldConfirmDiscard } from '@/composables/dictationDiscard';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { ipc } from '@/services/ipc';
 import type { VoiceTranscribeProgress } from '@/services/ipc';
+import '@/editor/extensions/dictation-placeholder';
 
 /**
  * Resolve the current ASR model ID from the settings store.
@@ -41,6 +43,10 @@ export interface DictationOptions {
   /** Called whenever an error is surfaced (mic denied, ASR failure) so the
    *  host can show it — the `error` ref alone was never rendered (AUD-15). */
   onError?: (message: string) => void;
+  /** Se llamó al fallback de portapapeles: el texto ya está copiado. */
+  onClipboardFallback?: (text: string) => void;
+  /** Confirmación de descarte para grabaciones largas. Default: confirma siempre que sí. */
+  confirmDiscard?: () => boolean;
 }
 
 export function useDictation(editor: Ref<Editor | null>, options: DictationOptions = {}) {
@@ -48,6 +54,25 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   const phase = ref<DictationPhase>('idle');
   const error = ref<string | null>(null);
   const progress = ref<number | null>(null);
+
+  let runId = 0;
+
+  function resolveAutoStop(): boolean {
+    try {
+      return useVoiceSettingsStore().autoStopOnSilence;
+    } catch {
+      return false;
+    }
+  }
+
+  async function clipboardFallback(text: string) {
+    try {
+      await navigator.clipboard?.writeText(text);
+    } catch {
+      /* sin portapapeles: el onError de abajo igual avisa */
+    }
+    options.onClipboardFallback?.(text);
+  }
 
   let unlistenProgress: UnlistenFn | null = null;
   let disposed = false;
@@ -57,9 +82,19 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
     if (disposed) un();
     else unlistenProgress = un;
   });
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && phase.value === 'recording') {
+      e.preventDefault();
+      cancel();
+    }
+  }
+  window.addEventListener('keydown', onKeydown);
+
   onUnmounted(() => {
     disposed = true;
     unlistenProgress?.();
+    window.removeEventListener('keydown', onKeydown);
   });
 
   function fail(e: unknown) {
@@ -81,23 +116,47 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
 
   async function stopAndInsert() {
     if (phase.value !== 'recording') return;
+    const myRun = ++runId;
+    editor.value?.commands.addDictationPlaceholder();
     progress.value = 0;
     phase.value = 'transcribing';
     try {
       const rec = await recorder.stop();
       const transcript = await ipc.transcribeAudio(rec.wav);
-      insertAtCursor(transcript.text);
+      if (myRun !== runId) return; // cancelado mientras transcribía
+      const clean = transcript.text.trim();
+      if (!clean) {
+        editor.value?.commands.clearDictationPlaceholder();
+      } else {
+        const ok = editor.value?.commands.replaceDictationPlaceholder(`${clean} `) ?? false;
+        if (!ok) await clipboardFallback(clean);
+      }
     } catch (e) {
-      fail(e);
+      if (myRun === runId) {
+        editor.value?.commands.clearDictationPlaceholder();
+        fail(e);
+      }
     } finally {
-      phase.value = 'idle';
-      progress.value = null;
+      if (myRun === runId) {
+        phase.value = 'idle';
+        progress.value = null;
+      }
     }
   }
 
   function cancel() {
+    if (
+      phase.value === 'recording' &&
+      shouldConfirmDiscard(recorder.elapsedMs.value) &&
+      !(options.confirmDiscard?.() ?? true)
+    ) {
+      return;
+    }
+    runId++; // invalida cualquier transcripción en vuelo
     recorder.cancel();
+    editor.value?.commands.clearDictationPlaceholder?.();
     phase.value = 'idle';
+    progress.value = null;
   }
 
   /** Toggle: start when idle, finish+insert when recording. */
@@ -106,14 +165,12 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
     else if (phase.value === 'idle') void start();
   }
 
-  function insertAtCursor(text: string) {
-    const ed = editor.value;
-    const clean = text.trim();
-    if (!ed || !clean) return;
-    // Whisper (esp. turbo) already punctuates; insert as plain text + a
-    // trailing space so the next dictation reads naturally.
-    ed.chain().focus().insertContent(`${clean} `).run();
-  }
+  watch(
+    () => recorder.isSilent.value,
+    (silent) => {
+      if (silent && phase.value === 'recording' && resolveAutoStop()) void stopAndInsert();
+    },
+  );
 
   return {
     phase,
