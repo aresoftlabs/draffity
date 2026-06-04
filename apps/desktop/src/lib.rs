@@ -111,6 +111,7 @@ pub fn run() {
             commands::set_document_metadata,
             // voice (épica h)
             commands::get_voice_status,
+            commands::get_accel_status,
             commands::list_voice_models,
             commands::download_voice_model,
             commands::delete_voice_model,

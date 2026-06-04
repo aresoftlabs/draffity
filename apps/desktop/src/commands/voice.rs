@@ -70,6 +70,27 @@ struct TranscribeProgress {
     progress: u8,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccelStatus {
+    /// "metal" | "vulkan" | "cpu"
+    pub backend: String,
+    /// Id del modelo activo (o null si no hay instalado).
+    pub model: Option<String>,
+    /// ¿Hay binario whisper-server instalado (motor rápido disponible)?
+    pub server_available: bool,
+}
+
+#[tauri::command]
+pub fn get_accel_status(state: State<'_, AppState>) -> AccelStatus {
+    use crate::services::voice::accel::detect_backend;
+    AccelStatus {
+        backend: detect_backend().as_str().to_string(),
+        model: active_model_id(&state),
+        server_available: state.whisper_server.available(),
+    }
+}
+
 #[tauri::command]
 pub fn get_voice_status(state: State<'_, AppState>) -> VoiceStatus {
     VoiceStatus {
