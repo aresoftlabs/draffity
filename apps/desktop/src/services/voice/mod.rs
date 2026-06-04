@@ -319,12 +319,15 @@ mod tests {
 
     #[test]
     fn extract_binary_finds_exe_in_zip_root() {
-        let zip_bytes = build_zip(&[
-            ("whisper.exe", &[0x4D, 0x5A, 0x90]),
-            ("readme.txt", b"info"),
-        ]);
+        // Binary name is platform-specific (whisper.exe on Windows, whisper elsewhere).
+        let bin_name = if cfg!(windows) {
+            "whisper.exe"
+        } else {
+            "whisper"
+        };
+        let zip_bytes = build_zip(&[(bin_name, &[0x4D, 0x5A, 0x90]), ("readme.txt", b"info")]);
         let tmp = tempfile::tempdir().unwrap();
-        let target = tmp.path().join("whisper.exe");
+        let target = tmp.path().join(bin_name);
         let result = (|| -> crate::error::AppResult<()> {
             extract_binary_impl(&zip_bytes, ".zip", &target, "whisper")?;
             Ok(())
@@ -336,16 +339,19 @@ mod tests {
 
     #[test]
     fn extract_binary_finds_nested_exe() {
-        // Simulate nested dir structure like whisper.cpp-1.8.6/build/bin/Release/whisper.exe
+        // Simulate nested dir like whisper.cpp-1.8.6/build/bin/Release/whisper(.exe).
+        let bin_name = if cfg!(windows) {
+            "whisper.exe"
+        } else {
+            "whisper"
+        };
+        let nested = format!("whisper.cpp-1.8.6/build/bin/Release/{bin_name}");
         let zip_bytes = build_zip(&[
-            (
-                "whisper.cpp-1.8.6/build/bin/Release/whisper.exe",
-                &[0x4D, 0x5A],
-            ),
+            (nested.as_str(), &[0x4D, 0x5A]),
             ("whisper.cpp-1.8.6/README.md", b"docs"),
         ]);
         let tmp = tempfile::tempdir().unwrap();
-        let target = tmp.path().join("whisper.exe");
+        let target = tmp.path().join(bin_name);
         let result = (|| -> crate::error::AppResult<()> {
             extract_binary_impl(&zip_bytes, ".zip", &target, "whisper")?;
             Ok(())
@@ -417,14 +423,18 @@ mod tests {
 
     #[test]
     fn extract_piper_zip_preserves_espeak_ng_data_tree() {
+        // Piper binary is platform-specific; the sibling shared lib is copied by
+        // extension regardless, so espeak-ng.dll stays a valid fixture cross-platform.
+        let bin_name = if cfg!(windows) { "piper.exe" } else { "piper" };
+        let bin_entry = format!("piper/{bin_name}");
         let zip_bytes = build_zip(&[
-            ("piper/piper.exe", &[0x4D, 0x5A]),
+            (bin_entry.as_str(), &[0x4D, 0x5A]),
             ("piper/espeak-ng.dll", &[0x4D, 0x5A]),
             ("piper/espeak-ng-data/phontab", b"phon"),
             ("piper/espeak-ng-data/lang/es", b"es-lang"),
         ]);
         let tmp = tempfile::tempdir().unwrap();
-        let target = tmp.path().join("piper.exe");
+        let target = tmp.path().join(bin_name);
         extract_binary_impl(&zip_bytes, ".zip", &target, "piper").unwrap();
 
         let bin_dir = tmp.path();
