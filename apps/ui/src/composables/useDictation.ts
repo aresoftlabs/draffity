@@ -58,7 +58,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
     phase.value = 'transcribing';
     try {
       const rec = await recorder.stop();
-      const transcript = await ipc.transcribeAudio(rec.wav, resolveAsrModelId());
+      const transcript = await ipc.transcribeAudio(rec.wav);
       insertAtCursor(transcript.text);
     } catch (e) {
       fail(e);

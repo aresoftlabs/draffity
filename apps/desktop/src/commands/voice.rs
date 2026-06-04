@@ -196,10 +196,17 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
 }
 
 /// Transcribe a recorded clip (16 kHz mono WAV bytes from the UI) to text.
+/// If `sample_rate` is provided, `wav` is raw PCM16 samples (i16 LE) at that
+/// rate — a WAV header is written first. Without it, `wav` is expected to be a
+/// complete WAV file (backward-compatible with existing callers).
 /// The engine is whatever `ASRService` is wired — this command only depends on
 /// the trait, so swapping the ASR backend never touches it. Runs off-thread.
 #[tauri::command]
-pub async fn transcribe_audio(state: State<'_, AppState>, wav: Vec<u8>) -> CmdResult<Transcript> {
+pub async fn transcribe_audio(
+    state: State<'_, AppState>,
+    wav: Vec<u8>,
+    sample_rate: Option<u32>,
+) -> CmdResult<Transcript> {
     if !state.asr.available() {
         return Err(AppError::Unsupported(
             "el dictado no está disponible (instalá el binario y un modelo de voz)".into(),
@@ -208,7 +215,12 @@ pub async fn transcribe_audio(state: State<'_, AppState>, wav: Vec<u8>) -> CmdRe
     let tmp_dir = state.resources.tmp_dir();
     std::fs::create_dir_all(&tmp_dir)?;
     let path = tmp_dir.join(format!("rec{}.wav", now_ms()));
-    std::fs::write(&path, &wav)?;
+
+    if let Some(sr) = sample_rate {
+        write_pcm16_wav(&path, &wav, sr)?;
+    } else {
+        std::fs::write(&path, &wav)?;
+    }
 
     let asr = state.asr.clone();
     let path_str = path.to_string_lossy().into_owned();
@@ -217,6 +229,39 @@ pub async fn transcribe_audio(state: State<'_, AppState>, wav: Vec<u8>) -> CmdRe
         .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
     let _ = std::fs::remove_file(&path);
     result
+}
+
+/// Write raw PCM16 samples to a WAV file with proper RIFF header.
+pub fn write_pcm16_wav(
+    path: &std::path::Path,
+    samples: &[u8],
+    sample_rate: u32,
+) -> Result<(), AppError> {
+    let channels: u16 = 1;
+    let bits_per_sample: u16 = 16;
+    let block_align = channels * bits_per_sample / 8;
+    let byte_rate = sample_rate * block_align as u32;
+    let data_size = samples.len() as u32;
+    let mut header = Vec::new();
+    header.extend_from_slice(b"RIFF");
+    header.extend_from_slice(&(36 + data_size).to_le_bytes());
+    header.extend_from_slice(b"WAVE");
+    header.extend_from_slice(b"fmt ");
+    header.extend_from_slice(&16u32.to_le_bytes());
+    header.extend_from_slice(&1u16.to_le_bytes()); // PCM
+    header.extend_from_slice(&channels.to_le_bytes());
+    header.extend_from_slice(&sample_rate.to_le_bytes());
+    header.extend_from_slice(&byte_rate.to_le_bytes());
+    header.extend_from_slice(&block_align.to_le_bytes());
+    header.extend_from_slice(&bits_per_sample.to_le_bytes());
+    header.extend_from_slice(b"data");
+    header.extend_from_slice(&data_size.to_le_bytes());
+
+    let mut f = std::fs::File::create(path)?;
+    use std::io::Write;
+    f.write_all(&header)?;
+    f.write_all(samples)?;
+    Ok(())
 }
 
 /// Copy a user-provided whisper.cpp binary into the app's voice/bin dir. The
@@ -701,5 +746,56 @@ mod tests {
         let json = serde_json::to_value(&entry).unwrap();
         assert_eq!(json["id"], "test");
         assert_eq!(json["bytes"], 12345);
+    }
+
+    #[test]
+    fn write_pcm16_wav_produces_valid_wav() {
+        use std::io::Read;
+        let tmp = std::env::temp_dir().join(format!("test_write_pcm16_{}", now_ms()));
+        let samples: Vec<u8> = vec![0u8, 0, 0x64, 0, 0x9C, 0xFF, 0xFF, 0x7F]; // 0, 100, -100, 32767 (i16 LE)
+        write_pcm16_wav(&tmp, &samples, 44100).unwrap();
+
+        let mut file_bytes = Vec::new();
+        std::fs::File::open(&tmp)
+            .unwrap()
+            .read_to_end(&mut file_bytes)
+            .unwrap();
+
+        // RIFF header
+        assert_eq!(&file_bytes[0..4], b"RIFF");
+        assert_eq!(&file_bytes[8..12], b"WAVE");
+        assert_eq!(&file_bytes[12..16], b"fmt ");
+        // PCM, 1 channel, 44100 Hz, 16 bit
+        assert_eq!(&file_bytes[20..22], &1u16.to_le_bytes());
+        assert_eq!(&file_bytes[22..24], &1u16.to_le_bytes());
+        assert_eq!(&file_bytes[24..28], &44100u32.to_le_bytes());
+        assert_eq!(&file_bytes[34..36], &16u16.to_le_bytes());
+        // data chunk
+        assert_eq!(&file_bytes[36..40], b"data");
+        assert_eq!(&file_bytes[40..44], &(samples.len() as u32).to_le_bytes());
+        // Total size: 44 header + 8 samples
+        assert_eq!(file_bytes.len(), 44 + 8);
+        // Sample bytes match
+        assert_eq!(&file_bytes[44..], &samples[..]);
+
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn write_pcm16_wav_empty_samples() {
+        use std::io::Read;
+        let tmp = std::env::temp_dir().join(format!("test_write_pcm16_empty_{}", now_ms()));
+        write_pcm16_wav(&tmp, &[], 16000).unwrap();
+
+        let mut file_bytes = Vec::new();
+        std::fs::File::open(&tmp)
+            .unwrap()
+            .read_to_end(&mut file_bytes)
+            .unwrap();
+
+        assert_eq!(file_bytes.len(), 44); // header only
+        assert_eq!(&file_bytes[40..44], &0u32.to_le_bytes());
+
+        let _ = std::fs::remove_file(&tmp);
     }
 }

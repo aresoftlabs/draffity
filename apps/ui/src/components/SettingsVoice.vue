@@ -206,10 +206,14 @@ async function onTestVoice(v: VoiceVoice) {
   testingVoiceId.value = v.id;
   try {
     const path = await ipc.testSynthesize(v.id, 'Hello, this is a test voice.');
-    const { convertFileSrc } = await import('@tauri-apps/api/core');
+    const { readFile } = await import('@tauri-apps/plugin-fs');
+    const bytes = await readFile(path);
+    const blob = new Blob([bytes], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
     const audio = document.createElement('audio');
-    audio.src = convertFileSrc(path);
+    audio.src = url;
     audio.onended = () => {
+      URL.revokeObjectURL(url);
       testingVoiceId.value = null;
     };
     await audio.play();
@@ -224,54 +228,99 @@ async function onTestVoice(v: VoiceVoice) {
   }
 }
 
-let asrMediaRecorder: MediaRecorder | null = null;
-let asrChunks: BlobPart[] = [];
+let asrStopFn: (() => void) | null = null;
 
 async function onAsrStartRecord() {
   asrMicDenied.value = false;
   asrResult.value = null;
+  let ctx: AudioContext | null = null;
+  let stream: MediaStream | null = null;
+  let source: MediaStreamAudioSourceNode | null = null;
+  let processor: ScriptProcessorNode | null = null;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    asrChunks = [];
-    asrMediaRecorder = new MediaRecorder(stream);
-    asrMediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) asrChunks.push(e.data);
-    };
-    asrMediaRecorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop());
-      const blob = new Blob(asrChunks, { type: asrMediaRecorder?.mimeType || 'audio/webm' });
-      const buffer = await blob.arrayBuffer();
-      const uint8 = new Uint8Array(buffer);
-      try {
-        const transcript = await ipc.transcribeAudio(uint8);
-        asrResult.value = transcript.text;
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: t('settings.voiceTitle'),
-          detail: t('settings.voiceTestError'),
-          life: 5000,
-        });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    ctx = new AudioContext();
+    const chunks: Int16Array[] = [];
+    source = ctx.createMediaStreamSource(stream);
+    processor = ctx.createScriptProcessor(4096, 1, 1);
+
+    processor.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0);
+      const pcm16 = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        pcm16[i] = s * 0x7fff;
       }
-      asrRecording.value = false;
+      chunks.push(pcm16);
     };
-    asrMediaRecorder.start();
+
+    source.connect(processor);
+    processor.connect(ctx.destination);
+
     asrRecording.value = true;
+
+    function stopRecord() {
+      try {
+        source?.disconnect();
+        processor?.disconnect();
+        stream?.getTracks().forEach((t) => t.stop());
+        ctx?.close();
+      } catch {
+        // best-effort cleanup
+      }
+
+      const totalLen = chunks.reduce((s, c) => s + c.length, 0);
+      if (totalLen > 0) {
+        const all = new Int16Array(totalLen);
+        let offset = 0;
+        for (const c of chunks) {
+          all.set(c, offset);
+          offset += c.length;
+        }
+        const sampleRate = ctx?.sampleRate ?? 44100;
+        const bytes = new Uint8Array(all.buffer);
+
+        ipc
+          .transcribeAudio(bytes, sampleRate)
+          .then((t) => {
+            asrResult.value = t.text;
+          })
+          .catch(() => {
+            toast.add({
+              severity: 'error',
+              summary: t('settings.voiceTitle'),
+              detail: t('settings.voiceTestError'),
+              life: 5000,
+            });
+          })
+          .finally(() => {
+            asrRecording.value = false;
+          });
+      } else {
+        asrRecording.value = false;
+      }
+      asrStopFn = null;
+    }
+
+    asrStopFn = stopRecord;
+
     // Auto-stop after 10 seconds
     setTimeout(() => {
-      if (asrMediaRecorder?.state === 'recording') {
-        asrMediaRecorder.stop();
+      if (asrStopFn === stopRecord) {
+        stopRecord();
       }
     }, 10000);
   } catch {
+    source?.disconnect();
+    processor?.disconnect();
+    stream?.getTracks().forEach((t) => t.stop());
+    ctx?.close();
     asrMicDenied.value = true;
   }
 }
 
 function onAsrStopRecord() {
-  if (asrMediaRecorder?.state === 'recording') {
-    asrMediaRecorder.stop();
-  }
+  asrStopFn?.();
 }
 
 async function onImportBinary() {

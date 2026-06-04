@@ -218,6 +218,11 @@ function onOpenPolicy(kind: LegalKind) {
 onMounted(async () => {
   await loadCustomFonts();
   await loadCrashReporting();
+  try {
+    resourcesPath.value = await ipc.getResourcesPath();
+  } catch {
+    // best-effort
+  }
 });
 
 type SettingsSection =
@@ -232,6 +237,34 @@ type SettingsSection =
   | 'about';
 
 const activeSection = ref<SettingsSection>('appearance');
+
+const resourcesPath = ref('');
+
+async function onChangeResourcesPath() {
+  const picked = await open({
+    multiple: false,
+    directory: true,
+    title: t('settings.resourcesPathChange'),
+  });
+  if (typeof picked !== 'string') return;
+  try {
+    await ipc.setResourcesPath(picked);
+    resourcesPath.value = picked;
+    toast.add({
+      severity: 'success',
+      summary: t('settings.resourcesPath'),
+      detail: t('settings.resourcesPathSaved'),
+      life: 5000,
+    });
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.resourcesPath'),
+      detail: t('settings.loadError'),
+      life: 5000,
+    });
+  }
+}
 
 const navSections: { id: SettingsSection; key: string }[] = [
   { id: 'appearance', key: 'settings.nav.appearance' },
@@ -435,6 +468,19 @@ const navSections: { id: SettingsSection; key: string }[] = [
 
         <!-- COPIAS -->
         <div v-show="activeSection === 'data'" class="space-y-8">
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-2">
+              {{ t('settings.resourcesPath') }}
+            </h2>
+            <p class="text-xs font-mono opacity-70 mb-2 truncate">{{ resourcesPath }}</p>
+            <Button
+              :label="t('settings.resourcesPathChange')"
+              icon="pi pi-folder-open"
+              size="small"
+              text
+              @click="onChangeResourcesPath"
+            />
+          </section>
           <SettingsBackups />
         </div>
 

@@ -253,8 +253,11 @@ export const ipc = {
   downloadVoiceBinary: (binaryId: string) => invoke<void>('download_voice_binary', { binaryId }),
   deleteVoiceModel: (modelId: string) => invoke<void>('delete_voice_model', { modelId }),
   importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
-  transcribeAudio: (wav: Uint8Array, _modelId?: string | null) =>
-    invoke<Transcript>('transcribe_audio', { wav: Array.from(wav) }),
+  transcribeAudio: (wav: Uint8Array, sampleRate?: number | null) =>
+    invoke<Transcript>('transcribe_audio', {
+      wav: Array.from(wav),
+      sampleRate: sampleRate ?? null,
+    }),
   listVoiceVoices: () => invoke<VoiceVoice[]>('list_voice_voices'),
   downloadVoiceVoice: (voiceId: string) => invoke<void>('download_voice_voice', { voiceId }),
   importPiperBinary: (sourcePath: string) => invoke<void>('import_piper_binary', { sourcePath }),

@@ -9,6 +9,7 @@ import SettingsVoice from './SettingsVoice.vue';
 
 // The component subscribes to a Tauri event on mount; stub it.
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}) }));
+vi.mock('@tauri-apps/plugin-fs', () => ({ readFile: vi.fn() }));
 
 let mediaRecorderMock: {
   start: ReturnType<typeof vi.fn>;
@@ -16,6 +17,18 @@ let mediaRecorderMock: {
   state: string;
   ondataavailable: ((e: { data: Blob }) => void) | null;
   onstop: (() => void) | null;
+};
+
+const audioContextMock = {
+  createMediaStreamSource: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
+  createScriptProcessor: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    onaudioprocess: null as ((e: unknown) => void) | null,
+  })),
+  close: vi.fn(),
+  sampleRate: 44100,
+  destination: {},
 };
 
 const invokeMock = vi.mocked(invoke);
@@ -95,6 +108,22 @@ describe('SettingsVoice', () => {
         result: new ArrayBuffer(8),
       })),
     );
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(() => audioContextMock),
+    );
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => 'blob:test'),
+      revokeObjectURL: vi.fn(),
+    });
+    Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue({
+          getTracks: vi.fn(() => [{ stop: vi.fn() }]),
+        }),
+      },
+      writable: true,
+    });
   });
 
   it('lists models and binary status when voice is enabled', async () => {

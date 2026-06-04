@@ -345,6 +345,10 @@
     "restore": "Restore",
     "restoreConfirm": "This will overwrite your current database. A safety backup will be saved first. Restart the app afterwards to apply the change. Continue?",
     "restoreSuccess": "Backup restored. Restart the app to see the change.",
+    "resourcesPath": "Resources folder",
+    "resourcesPathChange": "Change…",
+    "resourcesPathSaved": "Path saved. Restart to apply.",
+    "resourcesPathRestart": "Restart now",
     "backupKind": {
       "daily": "Daily",
       "monthly": "Monthly",

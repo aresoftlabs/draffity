@@ -345,6 +345,10 @@
     "restore": "Restaurar",
     "restoreConfirm": "Esto reemplazará tu base de datos actual. Se guardará una copia de seguridad automática antes. Reinicia la app para que el cambio se aplique. ¿Continuar?",
     "restoreSuccess": "Backup restaurado. Reinicia la app para verlo en efecto.",
+    "resourcesPath": "Carpeta de recursos",
+    "resourcesPathChange": "Cambiar…",
+    "resourcesPathSaved": "Ruta guardada. Reiniciá para aplicar.",
+    "resourcesPathRestart": "Reiniciar ahora",
     "backupKind": {
       "daily": "Diario",
       "monthly": "Mensual",
