@@ -826,12 +826,15 @@ onBeforeUnmount(() => {
               :disabled="readOnly"
               :linguistic-focus-active="uiStore.linguisticFocus"
               :repetition-active="uiStore.repetitionHeatmap"
+              :dictation-available="voiceDictation"
+              :dictation-active="dictation.phase.value !== 'idle'"
               @open-citation-picker="showCitationPicker = true"
               @open-codex-picker="showCodexPicker = true"
               @insert-image="onInsertImage"
               @insert-footnote="onInsertFootnote"
               @toggle-linguistic-focus="uiStore.toggleLinguisticFocus()"
               @toggle-repetition="uiStore.toggleRepetitionHeatmap()"
+              @toggle-dictation="dictation.toggle()"
             />
             <FindReplaceBar
               v-if="selected?.docType !== 'folder' && !compositionMode"
