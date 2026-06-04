@@ -7,9 +7,11 @@ don't install or use the app.
 
 ## 1. License
 
-Draffity is distributed under the MIT license (see `LICENSE` in the
-repository). You may use, copy, modify and redistribute it as long
-as you keep the copyright notice and license intact.
+Draffity is distributed under the **GPL-3.0-or-later** license (see
+`LICENSE` in the repository). You may use, copy, modify and
+distribute derivative versions as long as you keep the copyright
+notice and license intact and release the source code of your
+modifications under the same terms.
 
 ## 2. Ownership of your content
 
@@ -53,6 +55,11 @@ Sentry instance).
 
 If these terms change, the "Last updated" date above is bumped and
 the release CHANGELOG mentions the change.
+
+## 8. Owner
+
+Draffity is developed and maintained by **Aresoft SpA**. Contact:
+[hola@aresoft.cl](mailto:hola@aresoft.cl).
 
 ---
 

@@ -59,10 +59,15 @@ upgrade no te haga perder trabajo.
 Si esta política cambia, la fecha de "Última actualización" arriba
 se actualiza y el CHANGELOG del release menciona el cambio.
 
+## Responsable
+
+El responsable del tratamiento es **Aresoft SpA** (hola@aresoft.cl),
+titular del proyecto Draffity.
+
 ## Contacto
 
 Bugs y consultas sobre privacidad: abre una issue en el repositorio
-de Draffity.
+de Draffity o escribe a [hola@aresoft.cl](mailto:hola@aresoft.cl).
 
 ---
 

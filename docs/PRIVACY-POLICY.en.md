@@ -56,10 +56,15 @@ not touch that folder so upgrades don't erase your work.
 If this policy changes, the "Last updated" date above is bumped and
 the release CHANGELOG mentions the change.
 
+## Data controller
+
+The data controller is **Aresoft SpA** (hola@aresoft.cl), the
+organisation that owns and maintains Draffity.
+
 ## Contact
 
-Bugs and privacy questions: open an issue on the Draffity
-repository.
+Bugs and privacy questions: open an issue on the Draffity repository
+or write to [hola@aresoft.cl](mailto:hola@aresoft.cl).
 
 ---
 
