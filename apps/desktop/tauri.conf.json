@@ -29,7 +29,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "appimage"],
+    "targets": ["nsis", "appimage"],
+    "createUpdaterArtifacts": true,
     "category": "Productivity",
     "shortDescription": "Asistente de escritura multi-formato",
     "longDescription": "Aplicación de escritura desktop multi-formato (novela, paper, manga, artículo, guion).",
@@ -39,6 +40,20 @@
       "icons/128x128@2x.png",
       "icons/icon.png",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://bins.draffity.com/app/stable/latest.json"],
+      "pubkey": "REPLACE_WITH_TASK_1_PUBKEY",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
