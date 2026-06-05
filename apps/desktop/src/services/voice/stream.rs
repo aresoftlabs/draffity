@@ -140,10 +140,10 @@ impl Transcriber for WhisperTranscriber {
         let tmp = self.home.tmp_dir();
         std::fs::create_dir_all(&tmp)?;
         let path = tmp.join(format!("stream{}.wav", crate::domain::now_ms()));
-        crate::commands::voice::write_pcm16_wav(&path, &bytes, sample_rate)?;
 
         let model = self.select_model();
         let result = (|| -> AppResult<String> {
+            crate::commands::voice::write_pcm16_wav(&path, &bytes, sample_rate)?;
             // Camino rápido: whisper-server con el modelo resuelto.
             if let Some(ref m) = model {
                 if self.server.available() {
