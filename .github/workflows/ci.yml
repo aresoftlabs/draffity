@@ -197,6 +197,6 @@ jobs:
         with:
           name: draffity-${{ matrix.os }}
           path: |
-            apps/desktop/target/release/bundle/msi/*.msi
+            apps/desktop/target/release/bundle/nsis/*-setup.exe
             apps/desktop/target/release/bundle/appimage/*.AppImage
           if-no-files-found: ignore

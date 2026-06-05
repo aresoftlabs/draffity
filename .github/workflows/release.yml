@@ -68,13 +68,13 @@ jobs:
           releaseBody: |
             ## Instalación
             Descargá el instalable de tu sistema (abajo). **Builds sin firmar** (prerelease).
-            - **Windows** (`.msi`): si SmartScreen avisa "editor desconocido" → _Más información → Ejecutar de todos modos_.
+            - **Windows** (`.exe`, instalador NSIS per-user): si SmartScreen avisa "editor desconocido" → _Más información → Ejecutar de todos modos_.
             - **Linux** (`.AppImage`): `chmod +x <archivo> && ./<archivo>`.
 
             ## Incluye
             Escritura multi-formato · export EPUB · IA por BYOK (OpenRouter) · **voz 100 % local** (dictado Whisper + lectura Piper, catálogo dinámico de voces).
 
-            > ⚠️ Prerelease: sin firma de código, sin build macOS y sin auto-update todavía (instalación/actualización manual).
+            > ⚠️ Prerelease: sin firma de código OS-level y sin build macOS todavía. El **auto-update** (Windows/Linux) ya está activo.
 
             **Cambios:** https://github.com/aresoftlabs/draffity/commits/${{ github.ref_name }}
           releaseDraft: true
