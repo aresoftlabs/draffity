@@ -372,6 +372,7 @@ const navSections: { id: SettingsSection; key: string }[] = [
               suffix=" wpm"
               show-buttons
               class="!w-40"
+              :aria-label="t('settings.readingSpeed')"
             />
           </section>
 
