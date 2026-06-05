@@ -156,10 +156,11 @@ const BINARY_INFOS: &[BinaryInfo] = &[BinaryInfo {
 
 use crate::services::voice::accel::Backend;
 
-/// Base de descarga: binarios compilados por nuestro CI, publicados en un
-/// release propio. Pinear el tag al release vigente.
-pub const WHISPER_BINS_BASE: &str =
-    "https://github.com/aresoftlabs/draffity/releases/download/whisper-bins-v1/";
+/// Base de descarga: binarios vendor (whisper.cpp) compilados por nuestro CI y
+/// servidos desde Cloudflare R2 con path versionado e inmutable. Los Releases de
+/// GitHub quedan solo para el producto (auto-update). Bumpear `v1` al cambiar la
+/// matriz/whisper.cpp (y re-pinear los sha256).
+pub const WHISPER_BINS_BASE: &str = "https://bins.draffity.com/whisper/v1/";
 
 #[derive(Debug, Clone)]
 pub struct WhisperBinary {
@@ -168,25 +169,25 @@ pub struct WhisperBinary {
     pub sha256: Option<&'static str>,
 }
 
-/// sha256 de cada archivo publicado en el release `whisper-bins-v1` (tomados
-/// de los sidecars `.sha256` que produce el CI). `None` para archivos no
-/// publicados — el downloader tolera `None` (descarga sin verificar).
+/// sha256 de cada archivo vendor servido desde R2 (de los sidecars `.sha256`
+/// que produce el CI). `None` para archivos no publicados — el downloader
+/// tolera `None` (descarga sin verificar).
 fn archive_sha256(archive: &str) -> Option<&'static str> {
     match archive {
         "whisper-linux-x86_64-cpu.tar.gz" => {
-            Some("ba9ebe33f55c2ab3fdde8b0a159b9b34f360e34bf7e5af8a0154d69446de3ec8")
+            Some("59c6fb6007fff70d4907111e2559533c7d3970c817cfc40aff1ee059b85aea91")
         }
         "whisper-linux-x86_64-vulkan.tar.gz" => {
-            Some("6d4cdea4bfb78a4dcd8885bd8df84db376284822a61e7b4e5bf986a24d7ae9cb")
+            Some("3f1e1628f4a084cceba42ada1ede1b585fef51e826c7eebf28e2d7008f598180")
         }
         "whisper-macos-aarch64-metal.tar.gz" => {
-            Some("8301e269507e6f37351edc379ee030d4f398898724044154f2ec95f24b0861d0")
+            Some("7b98e53c4dc3d2a1f4c51494ff454f9a9ce065dc903ff4750ba2198dda3d8560")
         }
         "whisper-windows-x86_64-cpu.zip" => {
-            Some("459285ca35326498fe8a3813fb562a956ef0f18ef9031fcfeaaa15f9a81053db")
+            Some("5aeb0a798e11f8f67171d26be78bd0e27d63003e7a4b04d7064852008146eb0c")
         }
         "whisper-windows-x86_64-vulkan.zip" => {
-            Some("5cb6a6ed60cb57b885e36e05e74c44cb2cdfcd742373b74da3c2effd615f080e")
+            Some("d4e0ec93a2b50fc36862beba49790e30905462fb7dbacbc9b3c0ac541f7183b9")
         }
         _ => None,
     }
