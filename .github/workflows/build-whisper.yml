@@ -156,9 +156,9 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           [ -z "$VERSION" ] && VERSION="${GITHUB_REF_NAME#whisper-bins-}"
-          echo "Publishing to s3://draffity-bins/whisper/$VERSION/"
+          echo "Publishing to s3://bins-draffity/whisper/$VERSION/"
           for f in *.zip *.tar.gz *.zip.sha256 *.tar.gz.sha256; do
             [ -f "$f" ] || continue
             echo "  -> $f"
-            aws s3 cp "$f" "s3://draffity-bins/whisper/$VERSION/$f" --endpoint-url "$R2_ENDPOINT"
+            aws s3 cp "$f" "s3://bins-draffity/whisper/$VERSION/$f" --endpoint-url "$R2_ENDPOINT"
           done
