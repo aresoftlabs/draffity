@@ -139,6 +139,7 @@ pub struct ManifestVoice {
     pub locale: String,
     #[serde(default)]
     pub quality: String,
+    #[serde(default)]
     pub size_mb: u32,
     pub onnx_url: String,
     pub config_url: String,
