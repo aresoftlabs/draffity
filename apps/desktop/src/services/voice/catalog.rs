@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use crate::services::voice::registry::{
-    lang_display_name, seed_voice_manifest, VoiceManifest, VOICE_MANIFEST_URL,
+    lang_display_name, seed_voice_manifest, ManifestVoice, VoiceManifest, VOICE_MANIFEST_URL,
 };
 use crate::services::DraffityHome;
 
@@ -27,6 +27,19 @@ pub struct CatalogLang {
     pub lang_name: String,
     pub featured: bool,
     pub voices: Vec<CatalogVoice>,
+}
+
+/// Returns the lowercase hex-encoded MD5 digest of `bytes`.
+pub fn md5_hex(bytes: &[u8]) -> String {
+    use md5::{Digest, Md5};
+    let mut h = Md5::new();
+    h.update(bytes);
+    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Returns the first voice in the manifest whose `id` matches, or `None`.
+pub fn voice_in_manifest<'a>(m: &'a VoiceManifest, id: &str) -> Option<&'a ManifestVoice> {
+    m.voices.iter().find(|v| v.id == id)
 }
 
 pub fn parse_manifest(raw: &str) -> Result<VoiceManifest, serde_json::Error> {
@@ -250,6 +263,20 @@ mod tests {
         std::fs::write(&path, "garbage").unwrap();
         let m3 = super::load_cached_or_seed(&home);
         assert_eq!(m3.voices.len(), 2);
+    }
+
+    #[test]
+    fn md5_hex_matches_known_value() {
+        // md5("abc") = 900150983cd24fb0d6963f7d28e17f72
+        assert_eq!(super::md5_hex(b"abc"), "900150983cd24fb0d6963f7d28e17f72");
+    }
+
+    #[test]
+    fn voice_in_manifest_finds_by_id() {
+        use crate::services::voice::registry::seed_voice_manifest;
+        let m = seed_voice_manifest();
+        assert!(super::voice_in_manifest(&m, "es_ES-davefx-medium").is_some());
+        assert!(super::voice_in_manifest(&m, "nope").is_none());
     }
 
     #[test]

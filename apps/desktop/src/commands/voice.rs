@@ -429,28 +429,30 @@ pub fn import_piper_binary(state: State<'_, AppState>, source_path: String) -> C
 }
 
 /// Download a Piper voice (ONNX model + its `.onnx.json` config), emitting
-/// `voice.download.progress` for the model file.
+/// `voice.download.progress` for the model file. Looks up the voice from the
+/// manifest (cached or seed), so any manifest voice can be downloaded, not
+/// just the 2 hardcoded ones. Verifies md5 when present.
 #[tauri::command]
 pub async fn download_voice_voice(
     app: AppHandle,
     state: State<'_, AppState>,
     voice_id: String,
 ) -> CmdResult<()> {
-    let voice =
-        voice_by_id(&voice_id).ok_or_else(|| AppError::NotFound(format!("voice {voice_id}")))?;
-    let onnx_url = voice.onnx_url.to_string();
-    let config_url = format!("{}.json", voice.onnx_url);
-    let onnx_dest = state.resources.voice_file_path(voice.onnx_filename);
-    let config_dest = state
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+    let manifest = crate::services::voice::catalog::load_cached_or_seed(&home);
+    let voice = crate::services::voice::catalog::voice_in_manifest(&manifest, &voice_id)
+        .ok_or_else(|| AppError::NotFound(format!("voice {voice_id}")))?
+        .clone();
+
+    let onnx_dest = state.resources.voice_file_path(&format!("{voice_id}.onnx"));
+    let cfg_dest = state
         .resources
-        .voice_file_path(&voice_config_filename(voice));
+        .voice_file_path(&format!("{voice_id}.onnx.json"));
     let app2 = app.clone();
     let id = voice_id.clone();
 
     tauri::async_runtime::spawn_blocking(move || -> CmdResult<()> {
-        // Config first (tiny), then the model with progress.
-        download_to_file(&config_url, &config_dest, None, |_, _| {})?;
-        download_to_file(&onnx_url, &onnx_dest, None, |downloaded, total| {
+        download_to_file(&voice.onnx_url, &onnx_dest, None, |downloaded, total| {
             let _ = app2.emit(
                 "voice.download.progress",
                 DownloadProgress {
@@ -459,7 +461,18 @@ pub async fn download_voice_voice(
                     total,
                 },
             );
-        })
+        })?;
+        download_to_file(&voice.config_url, &cfg_dest, None, |_, _| {})?;
+
+        if let Some(expected) = voice.onnx_md5.as_deref() {
+            let got = crate::services::voice::catalog::md5_hex(&std::fs::read(&onnx_dest)?);
+            if !got.eq_ignore_ascii_case(expected) {
+                let _ = std::fs::remove_file(&onnx_dest);
+                let _ = std::fs::remove_file(&cfg_dest);
+                return Err(AppError::Unexpected(format!("md5 mismatch en {id}")));
+            }
+        }
+        Ok(())
     })
     .await
     .map_err(|e| AppError::Unexpected(format!("descarga: {e}")))?
