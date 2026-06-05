@@ -3,10 +3,15 @@
 //! re-decodifica el buffer y emite un parcial; al detectar fin de frase emite el
 //! final y resetea. El motor concreto se inyecta como `Transcriber` (mockeable).
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::error::AppResult;
+use crate::services::asr::ASRService;
+use crate::services::voice::registry::recommended_model;
+use crate::services::voice::server::WhisperServerManager;
 use crate::services::voice::stream_planner::{PlanAction, StreamPlanner};
+use crate::services::DraffityHome;
 
 /// Transcribe un buffer PCM16 mono completo a texto. Abstrae whisper para tests.
 pub trait Transcriber: Send + Sync {
@@ -85,6 +90,76 @@ impl WhisperStreamSession {
             .unwrap_or_default()
             .trim()
             .to_string()
+    }
+}
+
+/// `Transcriber` real: escribe el buffer PCM16 a un WAV temporal y transcribe con
+/// whisper-server (modelo residente → decodes repetidos rápidos) o, si no está o
+/// falla, con el CLI batch (`ASRService::transcribe_file`).
+pub struct WhisperTranscriber {
+    home: DraffityHome,
+    server: Arc<WhisperServerManager>,
+    asr: Arc<dyn ASRService>,
+}
+
+impl WhisperTranscriber {
+    pub fn new(
+        home: DraffityHome,
+        server: Arc<WhisperServerManager>,
+        asr: Arc<dyn ASRService>,
+    ) -> Self {
+        Self { home, server, asr }
+    }
+
+    /// Modelo recomendado si está instalado; si no, el primer `.bin` que haya.
+    fn select_model(&self) -> Option<PathBuf> {
+        if let Some(rec) = recommended_model() {
+            let p = self.home.model_path(rec.filename);
+            if p.exists() {
+                return Some(p);
+            }
+        }
+        std::fs::read_dir(self.home.models_dir())
+            .ok()?
+            .flatten()
+            .map(|e| e.path())
+            .find(|p| p.extension().is_some_and(|x| x == "bin"))
+    }
+}
+
+impl Transcriber for WhisperTranscriber {
+    fn transcribe(&self, pcm: &[i16], sample_rate: u32) -> AppResult<String> {
+        if pcm.is_empty() {
+            return Ok(String::new());
+        }
+        // PCM16 little-endian a bytes.
+        let mut bytes = Vec::with_capacity(pcm.len() * 2);
+        for &s in pcm {
+            bytes.extend_from_slice(&s.to_le_bytes());
+        }
+        let tmp = self.home.tmp_dir();
+        std::fs::create_dir_all(&tmp)?;
+        let path = tmp.join(format!("stream{}.wav", crate::domain::now_ms()));
+        crate::commands::voice::write_pcm16_wav(&path, &bytes, sample_rate)?;
+
+        let model = self.select_model();
+        let result = (|| -> AppResult<String> {
+            // Camino rápido: whisper-server con el modelo resuelto.
+            if let Some(ref m) = model {
+                if self.server.available() {
+                    let wav = std::fs::read(&path)?;
+                    if let Ok(t) = self.server.transcribe(m, &wav) {
+                        return Ok(t.text);
+                    }
+                }
+            }
+            // Fallback: CLI batch (resuelve el modelo internamente).
+            self.asr
+                .transcribe_file(&path.to_string_lossy())
+                .map(|t| t.text)
+        })();
+        let _ = std::fs::remove_file(&path);
+        result
     }
 }
 
