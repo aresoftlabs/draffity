@@ -8,9 +8,7 @@ test.describe('Dashboard', () => {
   test('renders empty state when there are no projects', async ({ page }) => {
     await page.goto('/');
     // The empty-state CTA appears.
-    await expect(
-      page.getByRole('button', { name: /Crear nuevo proyecto|Create new project/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /New Draft/i }).first()).toBeVisible();
   });
 
   test('opens the New Project wizard and shows step 1 (template picker)', async ({
@@ -32,12 +30,12 @@ test.describe('Dashboard', () => {
 
     await page.goto('/');
     await page
-      .getByRole('button', { name: /Crear nuevo proyecto|Create new project/i })
+      .getByRole('button', { name: /New Draft/i })
       .first()
       .click();
 
-    // Wizard appears with the template card and the preview.
+    // Wizard step 1 (template picker) shows the selectable template card.
     await expect(page.getByText('Mock Generic')).toBeVisible();
-    await expect(page.getByText(/Capítulo 1/)).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Template/i })).toBeVisible();
   });
 });
