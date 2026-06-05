@@ -172,22 +172,23 @@ export interface VoiceTranscribeProgress {
   progress: number;
 }
 
-/** A voice or model entry in the available models catalog. */
-export interface AvailableModelEntry {
+/** A voice entry in the dynamic voice catalog (H). */
+export interface CatalogVoice {
   id: string;
   name: string;
   lang: string;
+  quality: string;
   sizeMb: number;
   recommended: boolean;
   installed: boolean;
-  diskBytes: number;
-  kind: 'voice' | 'model';
 }
 
-/** A group of available models by language. */
-export interface LanguageGroup {
+/** A language group in the dynamic voice catalog (H). */
+export interface CatalogLang {
   lang: string;
-  items: AvailableModelEntry[];
+  langName: string;
+  featured: boolean;
+  voices: CatalogVoice[];
 }
 
 /** Per-model disk usage. */
@@ -264,6 +265,7 @@ export const ipc = {
   downloadVoiceModel: (modelId: string) => invoke<void>('download_voice_model', { modelId }),
   downloadVoiceBinary: (binaryId: string) => invoke<void>('download_voice_binary', { binaryId }),
   deleteVoiceModel: (modelId: string) => invoke<void>('delete_voice_model', { modelId }),
+  deleteVoiceVoice: (voiceId: string) => invoke<void>('delete_voice_voice', { voiceId }),
   importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
   transcribeAudio: (wav: Uint8Array, sampleRate?: number | null) =>
     invoke<Transcript>('transcribe_audio', {
@@ -289,11 +291,11 @@ export const ipc = {
     }),
   listVoiceNotes: (projectId: string) => invoke<MediaAsset[]>('list_voice_notes', { projectId }),
   deleteVoiceNote: (id: string) => invoke<void>('delete_voice_note', { id }),
-  listAvailableModels: () => invoke<LanguageGroup[]>('list_available_models'),
   testSynthesize: (voiceId: string, text: string) =>
     invoke<string>('test_synthesize', { voiceId, text }),
   getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
   getAccelStatus: () => invoke<AccelStatus>('get_accel_status'),
+  getVoiceCatalog: () => invoke<CatalogLang[]>('get_voice_catalog'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

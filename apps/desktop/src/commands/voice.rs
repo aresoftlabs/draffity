@@ -14,6 +14,9 @@ use tauri::{AppHandle, Emitter, State};
 use crate::domain::{now_ms, MediaAsset};
 use crate::error::AppError;
 use crate::services::tts::SynthesizedAudio;
+use crate::services::voice::catalog::{
+    build_catalog, load_cached_or_seed, refresh_manifest_cache, CatalogLang,
+};
 use crate::services::voice::{
     download_and_extract_binary, download_and_extract_whisper, download_to_file, model_by_id,
     model_url, piper_voices, voice_by_id, voice_config_filename, whisper_models,
@@ -243,6 +246,35 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
     Ok(())
 }
 
+/// Borra los archivos de una voz instalada (`<id>.onnx` + `<id>.onnx.json`).
+/// Idempotente: ausencia no es error. Helper puro para testear sin `State`.
+pub fn remove_voice_files(home: &DraffityHome, voice_id: &str) -> CmdResult<()> {
+    // Defensa contra path traversal: el id es el stem del archivo, nunca una ruta.
+    if voice_id.is_empty()
+        || voice_id.contains('/')
+        || voice_id.contains('\\')
+        || voice_id.contains("..")
+    {
+        return Err(AppError::Invariant(format!(
+            "voice id inválido: {voice_id}"
+        )));
+    }
+    let onnx = home.voice_file_path(&format!("{voice_id}.onnx"));
+    let cfg = home.voice_file_path(&format!("{voice_id}.onnx.json"));
+    for p in [onnx, cfg] {
+        if p.exists() {
+            std::fs::remove_file(&p)?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_voice_voice(state: State<'_, AppState>, voice_id: String) -> CmdResult<()> {
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+    remove_voice_files(&home, &voice_id)
+}
+
 /// Modelos instalados (ids cuyo `.bin` existe en el dir de modelos).
 fn installed_model_ids(state: &AppState) -> Vec<&'static str> {
     crate::services::voice::whisper_models()
@@ -397,28 +429,30 @@ pub fn import_piper_binary(state: State<'_, AppState>, source_path: String) -> C
 }
 
 /// Download a Piper voice (ONNX model + its `.onnx.json` config), emitting
-/// `voice.download.progress` for the model file.
+/// `voice.download.progress` for the model file. Looks up the voice from the
+/// manifest (cached or seed), so any manifest voice can be downloaded, not
+/// just the 2 hardcoded ones. Verifies md5 when present.
 #[tauri::command]
 pub async fn download_voice_voice(
     app: AppHandle,
     state: State<'_, AppState>,
     voice_id: String,
 ) -> CmdResult<()> {
-    let voice =
-        voice_by_id(&voice_id).ok_or_else(|| AppError::NotFound(format!("voice {voice_id}")))?;
-    let onnx_url = voice.onnx_url.to_string();
-    let config_url = format!("{}.json", voice.onnx_url);
-    let onnx_dest = state.resources.voice_file_path(voice.onnx_filename);
-    let config_dest = state
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+    let manifest = crate::services::voice::catalog::load_cached_or_seed(&home);
+    let voice = crate::services::voice::catalog::voice_in_manifest(&manifest, &voice_id)
+        .ok_or_else(|| AppError::NotFound(format!("voice {voice_id}")))?
+        .clone();
+
+    let onnx_dest = state.resources.voice_file_path(&format!("{voice_id}.onnx"));
+    let cfg_dest = state
         .resources
-        .voice_file_path(&voice_config_filename(voice));
+        .voice_file_path(&format!("{voice_id}.onnx.json"));
     let app2 = app.clone();
     let id = voice_id.clone();
 
     tauri::async_runtime::spawn_blocking(move || -> CmdResult<()> {
-        // Config first (tiny), then the model with progress.
-        download_to_file(&config_url, &config_dest, None, |_, _| {})?;
-        download_to_file(&onnx_url, &onnx_dest, None, |downloaded, total| {
+        download_to_file(&voice.onnx_url, &onnx_dest, None, |downloaded, total| {
             let _ = app2.emit(
                 "voice.download.progress",
                 DownloadProgress {
@@ -427,7 +461,18 @@ pub async fn download_voice_voice(
                     total,
                 },
             );
-        })
+        })?;
+        download_to_file(&voice.config_url, &cfg_dest, None, |_, _| {})?;
+
+        if let Some(expected) = voice.onnx_md5.as_deref() {
+            let got = crate::services::voice::catalog::md5_hex(&std::fs::read(&onnx_dest)?);
+            if !got.eq_ignore_ascii_case(expected) {
+                let _ = std::fs::remove_file(&onnx_dest);
+                let _ = std::fs::remove_file(&cfg_dest);
+                return Err(AppError::Unexpected(format!("md5 mismatch en {id}")));
+            }
+        }
+        Ok(())
     })
     .await
     .map_err(|e| AppError::Unexpected(format!("descarga: {e}")))?
@@ -565,26 +610,6 @@ pub async fn save_voice_note(
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AvailableModelEntry {
-    pub id: String,
-    pub name: String,
-    pub lang: String,
-    pub size_mb: u32,
-    pub recommended: bool,
-    pub installed: bool,
-    pub disk_bytes: u64,
-    pub kind: &'static str, // "voice" or "model"
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LanguageGroup {
-    pub lang: String,
-    pub items: Vec<AvailableModelEntry>,
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct DiskUsageEntry {
     pub id: String,
     pub bytes: u64,
@@ -624,81 +649,35 @@ pub fn get_disk_usage(state: State<'_, AppState>) -> Vec<DiskUsageEntry> {
     entries
 }
 
-/// Pure: group voices + models by language. Takes pre-computed installed status
-/// so the function is testable without filesystem access.
-pub fn group_available_models<'v>(
-    voices: impl Iterator<Item = (&'v crate::services::voice::PiperVoiceInfo, bool, u64)>,
-    models: impl Iterator<Item = (&'v crate::services::voice::WhisperModelInfo, bool, u64)>,
-) -> Vec<LanguageGroup> {
-    let entries: Vec<AvailableModelEntry> = voices
-        .map(|(v, installed, bytes)| AvailableModelEntry {
-            id: v.id.to_string(),
-            name: v.name.to_string(),
-            lang: v.lang.to_string(),
-            size_mb: v.size_mb,
-            recommended: v.recommended,
-            installed,
-            disk_bytes: bytes,
-            kind: "voice",
+/// Voces TTS instaladas (id ⇒ `<id>.onnx` y `<id>.onnx.json` presentes).
+fn installed_voice_ids(
+    state: &AppState,
+    m: &crate::services::voice::registry::VoiceManifest,
+) -> std::collections::HashSet<String> {
+    m.voices
+        .iter()
+        .filter(|v| {
+            state
+                .resources
+                .voice_file_path(&format!("{}.onnx", v.id))
+                .exists()
+                && state
+                    .resources
+                    .voice_file_path(&format!("{}.onnx.json", v.id))
+                    .exists()
         })
-        .chain(models.map(|(m, installed, bytes)| AvailableModelEntry {
-            id: m.id.to_string(),
-            name: m.filename.to_string(),
-            lang: "other".to_string(),
-            size_mb: m.size_mb,
-            recommended: m.recommended,
-            installed,
-            disk_bytes: bytes,
-            kind: "model",
-        }))
-        .collect();
-
-    // Group by lang preserving order of first occurrence.
-    let mut groups: Vec<LanguageGroup> = Vec::new();
-    for entry in entries {
-        if let Some(g) = groups
-            .iter_mut()
-            .find(|g: &&mut LanguageGroup| g.lang == entry.lang)
-        {
-            g.items.push(entry);
-        } else {
-            groups.push(LanguageGroup {
-                lang: entry.lang.clone(),
-                items: vec![entry],
-            });
-        }
-    }
-    groups
+        .map(|v| v.id.clone())
+        .collect()
 }
 
 #[tauri::command]
-pub fn list_available_models(state: State<'_, AppState>) -> Vec<LanguageGroup> {
-    let voices = piper_voices().iter().map(|v| {
-        let installed = state.resources.voice_file_path(v.onnx_filename).exists()
-            && state
-                .resources
-                .voice_file_path(&voice_config_filename(v))
-                .exists();
-        let bytes = if installed {
-            std::fs::metadata(state.resources.voice_file_path(v.onnx_filename))
-                .map(|m| m.len())
-                .unwrap_or(0)
-        } else {
-            0
-        };
-        (v, installed, bytes)
-    });
-    let models = whisper_models().iter().map(|m| {
-        let p = state.resources.model_path(m.filename);
-        let installed = p.exists();
-        let bytes = if installed {
-            std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0)
-        } else {
-            0
-        };
-        (m, installed, bytes)
-    });
-    group_available_models(voices, models)
+pub async fn get_voice_catalog(state: State<'_, AppState>) -> CmdResult<Vec<CatalogLang>> {
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+    let home2 = DraffityHome::with_root(home.root().to_path_buf());
+    let _ = tauri::async_runtime::spawn_blocking(move || refresh_manifest_cache(&home2)).await;
+    let manifest = load_cached_or_seed(&home);
+    let installed = installed_voice_ids(&state, &manifest);
+    Ok(build_catalog(&manifest, &installed))
 }
 
 #[tauri::command]
@@ -717,84 +696,6 @@ pub fn delete_voice_note(state: State<'_, AppState>, id: String) -> CmdResult<()
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn groups_voices_and_models_by_language() {
-        use crate::services::voice::{PiperVoiceInfo, WhisperModelInfo};
-
-        let voice = PiperVoiceInfo {
-            id: "es_ES-carlfm",
-            name: "Carl (es)",
-            lang: "es",
-            onnx_filename: "es_ES-carlfm.onnx",
-            onnx_url: "",
-            size_mb: 42,
-            recommended: false,
-        };
-        let model = WhisperModelInfo {
-            id: "base",
-            filename: "ggml-base.bin",
-            size_mb: 142,
-            recommended: false,
-            sha256: None,
-        };
-        let groups = group_available_models(
-            [(&voice, true, 44000)].into_iter(),
-            [(&model, false, 0)].into_iter(),
-        );
-
-        assert_eq!(groups.len(), 2);
-        let es = groups.iter().find(|g| g.lang == "es").unwrap();
-        assert_eq!(es.items.len(), 1);
-        assert_eq!(es.items[0].id, "es_ES-carlfm");
-        assert!(es.items[0].installed);
-        assert_eq!(es.items[0].disk_bytes, 44000);
-        assert_eq!(es.items[0].kind, "voice");
-
-        let other = groups.iter().find(|g| g.lang == "other").unwrap();
-        assert_eq!(other.items.len(), 1);
-        assert_eq!(other.items[0].id, "base");
-        assert!(!other.items[0].installed);
-        assert_eq!(other.items[0].kind, "model");
-    }
-
-    #[test]
-    fn empty_input_returns_empty_groups() {
-        let groups = group_available_models(std::iter::empty(), std::iter::empty());
-        assert!(groups.is_empty());
-    }
-
-    #[test]
-    fn models_from_same_language_group_together() {
-        use crate::services::voice::PiperVoiceInfo;
-
-        let v1 = PiperVoiceInfo {
-            id: "en_US-amy-medium",
-            name: "Amy (en)",
-            lang: "en",
-            onnx_filename: "en_US-amy-medium.onnx",
-            onnx_url: "",
-            size_mb: 63,
-            recommended: false,
-        };
-        let v2 = PiperVoiceInfo {
-            id: "en_GB-alan-medium",
-            name: "Alan (en)",
-            lang: "en",
-            onnx_filename: "en_GB-alan-medium.onnx",
-            onnx_url: "",
-            size_mb: 60,
-            recommended: false,
-        };
-        let groups = group_available_models(
-            [(&v1, false, 0), (&v2, false, 0)].into_iter(),
-            std::iter::empty(),
-        );
-        let en = groups.iter().find(|g| g.lang == "en").unwrap();
-        assert_eq!(en.items.len(), 2);
-        assert_eq!(en.items[0].id, "en_US-amy-medium");
-        assert_eq!(en.items[1].id, "en_GB-alan-medium");
-    }
 
     #[test]
     fn encode_wav_pcm16_produces_valid_header() {
@@ -898,5 +799,36 @@ mod tests {
         assert_eq!(&file_bytes[40..44], &0u32.to_le_bytes());
 
         let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn delete_voice_voice_removes_onnx_and_config() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
+        let onnx = home.voice_file_path("es_ES-davefx-medium.onnx");
+        let cfg = home.voice_file_path("es_ES-davefx-medium.onnx.json");
+        std::fs::create_dir_all(onnx.parent().unwrap()).unwrap();
+        std::fs::write(&onnx, b"x").unwrap();
+        std::fs::write(&cfg, b"{}").unwrap();
+
+        super::remove_voice_files(&home, "es_ES-davefx-medium").unwrap();
+
+        assert!(!onnx.exists());
+        assert!(!cfg.exists());
+    }
+
+    #[test]
+    fn delete_voice_voice_is_idempotent_when_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
+        super::remove_voice_files(&home, "en_US-amy-medium").unwrap();
+    }
+
+    #[test]
+    fn remove_voice_files_rejects_path_traversal() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
+        assert!(super::remove_voice_files(&home, "../evil").is_err());
+        assert!(super::remove_voice_files(&home, "a/b").is_err());
     }
 }

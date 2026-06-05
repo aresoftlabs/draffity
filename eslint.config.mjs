@@ -149,6 +149,17 @@ export default [
     },
   },
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.node, fetch: 'readonly' },
+    },
+    rules: {
+      'no-undef': 'off',
+    },
+  },
+  {
     files: ['packages/shared-types/**/*.ts'],
     languageOptions: {
       parser: tsParser,

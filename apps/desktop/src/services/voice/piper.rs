@@ -14,7 +14,7 @@ use crate::error::{AppError, AppResult};
 use crate::services::tts::{SynthesizedAudio, TTSService, Voice};
 use crate::services::DraffityHome;
 
-use super::registry::{piper_voices, recommended_voice, voice_by_id};
+use super::registry::recommended_voice;
 
 pub struct PiperTTSService {
     home: DraffityHome,
@@ -33,31 +33,47 @@ impl PiperTTSService {
         onnx.exists() && cfg.exists()
     }
 
-    /// Resolve the ONNX path to use: the requested voice if installed, else the
-    /// recommended one, else the first installed voice.
-    fn select_voice(&self, voice_id: &str) -> Option<std::path::PathBuf> {
-        if !voice_id.is_empty() {
-            if let Some(v) = voice_by_id(voice_id) {
-                if self.voice_installed(v.onnx_filename) {
-                    return Some(self.home.voice_file_path(v.onnx_filename));
+    /// Stems of installed voices on disk (`<stem>.onnx` + `<stem>.onnx.json`).
+    fn installed_voice_stems(&self) -> Vec<String> {
+        let mut out = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(self.home.voices_dir()) {
+            for e in entries.flatten() {
+                let name = e.file_name().to_string_lossy().into_owned();
+                if let Some(stem) = name.strip_suffix(".onnx") {
+                    if self.voice_installed(&name) {
+                        out.push(stem.to_string());
+                    }
                 }
             }
         }
+        out.sort();
+        out
+    }
+
+    /// Resolve the ONNX path to use: the requested voice if installed (any
+    /// downloaded voice), else the recommended seed, else any installed voice.
+    fn select_voice(&self, voice_id: &str) -> Option<std::path::PathBuf> {
+        // 1. Exact requested voice, resolved from disk (any downloaded voice).
+        if !voice_id.is_empty() {
+            let fname = format!("{voice_id}.onnx");
+            if self.voice_installed(&fname) {
+                return Some(self.home.voice_file_path(&fname));
+            }
+        }
+        // 2. Recommended seed, if installed.
         if let Some(rec) = recommended_voice() {
             if self.voice_installed(rec.onnx_filename) {
                 return Some(self.home.voice_file_path(rec.onnx_filename));
             }
         }
-        piper_voices()
-            .iter()
-            .find(|v| self.voice_installed(v.onnx_filename))
-            .map(|v| self.home.voice_file_path(v.onnx_filename))
+        // 3. Any installed voice on disk.
+        self.installed_voice_stems()
+            .first()
+            .map(|stem| self.home.voice_file_path(&format!("{stem}.onnx")))
     }
 
     fn any_voice_installed(&self) -> bool {
-        piper_voices()
-            .iter()
-            .any(|v| self.voice_installed(v.onnx_filename))
+        !self.installed_voice_stems().is_empty()
     }
 }
 
@@ -67,13 +83,16 @@ impl TTSService for PiperTTSService {
     }
 
     fn voices(&self) -> Vec<Voice> {
-        piper_voices()
-            .iter()
-            .filter(|v| self.voice_installed(v.onnx_filename))
-            .map(|v| Voice {
-                id: v.id.to_string(),
-                name: v.name.to_string(),
-                lang: v.lang.to_string(),
+        self.installed_voice_stems()
+            .into_iter()
+            .map(|stem| {
+                // Piper id format: "{lang}_{REGION}-{speaker}-{quality}"
+                let lang = stem.split('_').next().unwrap_or("").to_string();
+                Voice {
+                    id: stem.clone(),
+                    name: stem,
+                    lang,
+                }
             })
             .collect()
     }
@@ -215,6 +234,24 @@ pub fn parse_wav_pcm16(bytes: &[u8]) -> Option<(Vec<i16>, u32)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::DraffityHome;
+
+    #[test]
+    fn select_voice_resolves_downloaded_voice_from_disk() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = DraffityHome::with_root(dir.path().to_path_buf());
+        let svc = PiperTTSService::new(&home);
+        let onnx = home.voice_file_path("de_DE-thorsten-medium.onnx");
+        std::fs::create_dir_all(onnx.parent().unwrap()).unwrap();
+        std::fs::write(&onnx, b"x").unwrap();
+        std::fs::write(
+            home.voice_file_path("de_DE-thorsten-medium.onnx.json"),
+            b"{}",
+        )
+        .unwrap();
+        assert!(svc.any_voice_installed());
+        assert_eq!(svc.select_voice("de_DE-thorsten-medium").unwrap(), onnx);
+    }
 
     /// Build a minimal 16-bit WAV for tests.
     fn build_wav(samples: &[i16], channels: u16, sample_rate: u32) -> Vec<u8> {
