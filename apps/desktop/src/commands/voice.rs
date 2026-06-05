@@ -17,6 +17,7 @@ use crate::services::tts::SynthesizedAudio;
 use crate::services::voice::catalog::{
     build_catalog, load_cached_or_seed, refresh_manifest_cache, CatalogLang,
 };
+use crate::services::voice::stream::StreamEvent;
 use crate::services::voice::{
     download_and_extract_binary, download_and_extract_whisper, download_to_file, model_by_id,
     model_url, piper_voices, voice_by_id, voice_config_filename, whisper_models,
@@ -362,6 +363,75 @@ pub async fn transcribe_audio(
     .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
     let _ = std::fs::remove_file(&path);
     result
+}
+
+#[derive(Clone, serde::Serialize)]
+struct StreamPartial {
+    text: String,
+}
+#[derive(Clone, serde::Serialize)]
+struct StreamFinal {
+    text: String,
+    seq: u64,
+}
+
+fn emit_stream_events(app: &AppHandle, events: Vec<StreamEvent>) {
+    for ev in events {
+        match ev {
+            StreamEvent::Partial(text) => {
+                let _ = app.emit("voice.stream.partial", StreamPartial { text });
+            }
+            StreamEvent::Final { text, seq } => {
+                let _ = app.emit("voice.stream.final", StreamFinal { text, seq });
+            }
+        }
+    }
+}
+
+/// Inicia una sesión de dictado en streaming. `sample_rate` del audio que se
+/// enviará por `dictation_stream_feed` (típicamente 16000).
+#[tauri::command]
+pub async fn dictation_stream_start(state: State<'_, AppState>, sample_rate: u32) -> CmdResult<()> {
+    if !state.asr.available() {
+        return Err(AppError::Unsupported(
+            "el dictado no está disponible".into(),
+        ));
+    }
+    state.dictation_stream.start(sample_rate);
+    Ok(())
+}
+
+/// Alimenta PCM16 mono a la sesión activa y emite los eventos resultantes.
+#[tauri::command]
+pub async fn dictation_stream_feed(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    pcm: Vec<i16>,
+) -> CmdResult<()> {
+    let mgr = state.dictation_stream.clone();
+    let events = tauri::async_runtime::spawn_blocking(move || mgr.feed(&pcm))
+        .await
+        .map_err(|e| AppError::Unexpected(format!("stream feed: {e}")))?;
+    emit_stream_events(&app, events);
+    Ok(())
+}
+
+/// Cierra la sesión: vacía la última frase (final) y descarta la sesión.
+#[tauri::command]
+pub async fn dictation_stream_stop(app: AppHandle, state: State<'_, AppState>) -> CmdResult<()> {
+    let mgr = state.dictation_stream.clone();
+    let events = tauri::async_runtime::spawn_blocking(move || mgr.stop())
+        .await
+        .map_err(|e| AppError::Unexpected(format!("stream stop: {e}")))?;
+    emit_stream_events(&app, events);
+    Ok(())
+}
+
+/// Descarta la sesión activa sin emitir nada.
+#[tauri::command]
+pub async fn dictation_stream_cancel(state: State<'_, AppState>) -> CmdResult<()> {
+    state.dictation_stream.cancel();
+    Ok(())
 }
 
 /// Write raw PCM16 samples to a WAV file with proper RIFF header.

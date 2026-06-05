@@ -79,7 +79,6 @@ pub struct AppState {
     /// Server whisper caliente (motor rápido). Arranque perezoso.
     pub whisper_server: std::sync::Arc<WhisperServerManager>,
     /// Sesión de dictado en streaming (pseudo-streaming whisper). Arranque perezoso.
-    #[allow(dead_code)]
     pub dictation_stream:
         std::sync::Arc<crate::services::voice::stream_manager::DictationStreamManager>,
     /// Resources root (DraffityHome) — all path resolution goes through this.
