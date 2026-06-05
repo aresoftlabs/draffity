@@ -18,7 +18,7 @@ describe('dictation settings resolvers', () => {
   });
 
   it('falls back safely when there is no active pinia', () => {
-    // @ts-expect-error forzamos sin pinia activa
+    // Sin pinia activa: useVoiceSettingsStore() lanza y los resolvers caen al default.
     setActivePinia(undefined);
     expect(resolveAsrModelId()).toBeNull();
     expect(resolveInputDeviceId()).toBeNull();
