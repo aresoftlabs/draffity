@@ -845,5 +845,18 @@
     "words": "palabras",
     "session": "Sesión",
     "goal": "Objetivo"
+  },
+  "updater": {
+    "available": "Draffity {version} disponible",
+    "updateNow": "Actualizar ahora",
+    "later": "Más tarde",
+    "downloading": "Descargando… {percent}%",
+    "restart": "Reiniciar para aplicar",
+    "checkButton": "Buscar actualizaciones",
+    "checking": "Buscando…",
+    "upToDate": "Estás al día",
+    "error": "No se pudo buscar actualizaciones",
+    "currentVersion": "Versión actual",
+    "section": "Actualizaciones"
   }
 }
