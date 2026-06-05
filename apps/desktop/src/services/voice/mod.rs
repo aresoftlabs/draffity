@@ -11,6 +11,7 @@ pub mod accel;
 pub mod catalog;
 pub mod download;
 pub mod piper;
+pub mod proc;
 pub mod registry;
 pub mod server;
 pub mod whisper;

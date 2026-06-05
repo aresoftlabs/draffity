@@ -67,7 +67,9 @@ impl ASRService for WhisperLocalASR {
         std::fs::create_dir_all(&tmp_dir)?;
         let base = tmp_dir.join(format!("t{}", now_ms()));
 
-        let output = Command::new(&bin)
+        let mut cmd = Command::new(&bin);
+        super::proc::no_window(&mut cmd);
+        let output = cmd
             .arg("-m")
             .arg(&model)
             .arg("-f")
@@ -115,7 +117,9 @@ impl ASRService for WhisperLocalASR {
         std::fs::create_dir_all(&tmp_dir)?;
         let base = tmp_dir.join(format!("t{}", now_ms()));
 
-        let mut child = Command::new(&bin)
+        let mut cmd = Command::new(&bin);
+        super::proc::no_window(&mut cmd);
+        let mut child = cmd
             .arg("-m")
             .arg(&model)
             .arg("-f")
