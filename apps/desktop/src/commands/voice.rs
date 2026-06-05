@@ -674,7 +674,11 @@ fn installed_voice_ids(
 pub async fn get_voice_catalog(state: State<'_, AppState>) -> CmdResult<Vec<CatalogLang>> {
     let home = DraffityHome::with_root(state.resources.root().to_path_buf());
     let home2 = DraffityHome::with_root(home.root().to_path_buf());
-    let _ = tauri::async_runtime::spawn_blocking(move || refresh_manifest_cache(&home2)).await;
+    if let Err(e) =
+        tauri::async_runtime::spawn_blocking(move || refresh_manifest_cache(&home2)).await
+    {
+        tracing::warn!(error = %e, "voice manifest refresh task failed");
+    }
     let manifest = load_cached_or_seed(&home);
     let installed = installed_voice_ids(&state, &manifest);
     Ok(build_catalog(&manifest, &installed))
