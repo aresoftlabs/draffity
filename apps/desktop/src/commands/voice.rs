@@ -14,6 +14,9 @@ use tauri::{AppHandle, Emitter, State};
 use crate::domain::{now_ms, MediaAsset};
 use crate::error::AppError;
 use crate::services::tts::SynthesizedAudio;
+use crate::services::voice::catalog::{
+    build_catalog, load_cached_or_seed, refresh_manifest_cache, CatalogLang,
+};
 use crate::services::voice::{
     download_and_extract_binary, download_and_extract_whisper, download_to_file, model_by_id,
     model_url, piper_voices, voice_by_id, voice_config_filename, whisper_models,
@@ -728,6 +731,37 @@ pub fn list_available_models(state: State<'_, AppState>) -> Vec<LanguageGroup> {
         (m, installed, bytes)
     });
     group_available_models(voices, models)
+}
+
+/// Voces TTS instaladas (id ⇒ `<id>.onnx` y `<id>.onnx.json` presentes).
+fn installed_voice_ids(
+    state: &AppState,
+    m: &crate::services::voice::registry::VoiceManifest,
+) -> std::collections::HashSet<String> {
+    m.voices
+        .iter()
+        .filter(|v| {
+            state
+                .resources
+                .voice_file_path(&format!("{}.onnx", v.id))
+                .exists()
+                && state
+                    .resources
+                    .voice_file_path(&format!("{}.onnx.json", v.id))
+                    .exists()
+        })
+        .map(|v| v.id.clone())
+        .collect()
+}
+
+#[tauri::command]
+pub async fn get_voice_catalog(state: State<'_, AppState>) -> CmdResult<Vec<CatalogLang>> {
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+    let home2 = DraffityHome::with_root(home.root().to_path_buf());
+    let _ = tauri::async_runtime::spawn_blocking(move || refresh_manifest_cache(&home2)).await;
+    let manifest = load_cached_or_seed(&home);
+    let installed = installed_voice_ids(&state, &manifest);
+    Ok(build_catalog(&manifest, &installed))
 }
 
 #[tauri::command]

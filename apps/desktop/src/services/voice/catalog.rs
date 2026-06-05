@@ -3,7 +3,9 @@
 
 use std::collections::HashSet;
 
-use crate::services::voice::registry::{lang_display_name, VoiceManifest};
+use crate::services::voice::registry::{
+    lang_display_name, seed_voice_manifest, VoiceManifest, VOICE_MANIFEST_URL,
+};
 use crate::services::DraffityHome;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -95,6 +97,41 @@ pub fn cached_manifest_path(home: &DraffityHome) -> std::path::PathBuf {
     home.root().join("cache").join("voice-manifest.json")
 }
 
+/// Lee el manifest cacheado; si falta o está corrupto, devuelve la semilla.
+pub fn load_cached_or_seed(home: &DraffityHome) -> VoiceManifest {
+    let path = cached_manifest_path(home);
+    if let Ok(raw) = std::fs::read_to_string(&path) {
+        if let Ok(m) = parse_manifest(&raw) {
+            return m;
+        }
+    }
+    seed_voice_manifest()
+}
+
+/// Refresca el cache desde R2 (best-effort). Errores de red se ignoran: el
+/// llamador sigue con cache/semilla. Bloqueante (correr en spawn_blocking).
+pub fn refresh_manifest_cache(home: &DraffityHome) {
+    let resp = match reqwest::blocking::Client::new()
+        .get(VOICE_MANIFEST_URL)
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+    {
+        Ok(r) if r.status().is_success() => r,
+        _ => return,
+    };
+    let body = match resp.text() {
+        Ok(b) => b,
+        Err(_) => return,
+    };
+    if parse_manifest(&body).is_ok() {
+        let path = cached_manifest_path(home);
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(&path, body);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,6 +221,35 @@ mod tests {
         let cat = build_catalog(&m, &installed);
         assert_eq!(cat[0].lang, "de");
         assert_eq!(cat[0].lang_name, "Deutsch");
+    }
+
+    #[test]
+    fn load_manifest_prefers_cache_then_seed() {
+        use crate::services::DraffityHome;
+        let dir = tempfile::tempdir().unwrap();
+        let home = DraffityHome::with_root(dir.path().to_path_buf());
+
+        // Sin cache ⇒ semilla (2 voces).
+        let m = super::load_cached_or_seed(&home);
+        assert_eq!(m.voices.len(), 2);
+
+        // Con cache válido ⇒ usa cache.
+        let path = super::cached_manifest_path(&home);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(
+            &path,
+            r#"{"schemaVersion":1,"featured":[],"voices":[
+            {"id":"x","name":"X","lang":"es","sizeMb":1,"onnxUrl":"o","configUrl":"c"}]}"#,
+        )
+        .unwrap();
+        let m2 = super::load_cached_or_seed(&home);
+        assert_eq!(m2.voices.len(), 1);
+        assert_eq!(m2.voices[0].id, "x");
+
+        // Cache corrupto ⇒ vuelve a la semilla.
+        std::fs::write(&path, "garbage").unwrap();
+        let m3 = super::load_cached_or_seed(&home);
+        assert_eq!(m3.voices.len(), 2);
     }
 
     #[test]

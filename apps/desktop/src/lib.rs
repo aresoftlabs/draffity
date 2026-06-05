@@ -138,6 +138,7 @@ pub fn run() {
             commands::test_synthesize,
             commands::get_disk_usage,
             commands::list_available_models,
+            commands::get_voice_catalog,
             commands::save_voice_note,
             commands::list_voice_notes,
             commands::delete_voice_note,
