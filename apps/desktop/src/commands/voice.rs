@@ -243,6 +243,25 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
     Ok(())
 }
 
+/// Borra los archivos de una voz instalada (`<id>.onnx` + `<id>.onnx.json`).
+/// Idempotente: ausencia no es error. Helper puro para testear sin `State`.
+pub fn remove_voice_files(home: &DraffityHome, voice_id: &str) -> CmdResult<()> {
+    let onnx = home.voice_file_path(&format!("{voice_id}.onnx"));
+    let cfg = home.voice_file_path(&format!("{voice_id}.onnx.json"));
+    for p in [onnx, cfg] {
+        if p.exists() {
+            std::fs::remove_file(&p)?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_voice_voice(state: State<'_, AppState>, voice_id: String) -> CmdResult<()> {
+    let home = DraffityHome::with_root(state.resources.root().to_path_buf());
+    remove_voice_files(&home, &voice_id)
+}
+
 /// Modelos instalados (ids cuyo `.bin` existe en el dir de modelos).
 fn installed_model_ids(state: &AppState) -> Vec<&'static str> {
     crate::services::voice::whisper_models()
@@ -898,5 +917,28 @@ mod tests {
         assert_eq!(&file_bytes[40..44], &0u32.to_le_bytes());
 
         let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn delete_voice_voice_removes_onnx_and_config() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
+        let onnx = home.voice_file_path("es_ES-davefx-medium.onnx");
+        let cfg = home.voice_file_path("es_ES-davefx-medium.onnx.json");
+        std::fs::create_dir_all(onnx.parent().unwrap()).unwrap();
+        std::fs::write(&onnx, b"x").unwrap();
+        std::fs::write(&cfg, b"{}").unwrap();
+
+        super::remove_voice_files(&home, "es_ES-davefx-medium").unwrap();
+
+        assert!(!onnx.exists());
+        assert!(!cfg.exists());
+    }
+
+    #[test]
+    fn delete_voice_voice_is_idempotent_when_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
+        super::remove_voice_files(&home, "en_US-amy-medium").unwrap();
     }
 }

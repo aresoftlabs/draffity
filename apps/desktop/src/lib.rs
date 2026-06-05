@@ -133,6 +133,7 @@ pub fn run() {
             commands::list_voice_voices,
             commands::import_piper_binary,
             commands::download_voice_voice,
+            commands::delete_voice_voice,
             commands::synthesize_speech,
             commands::test_synthesize,
             commands::get_disk_usage,
