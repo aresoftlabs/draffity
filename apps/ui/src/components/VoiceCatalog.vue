@@ -107,15 +107,19 @@ const otherCount = computed(() => others.value.reduce((n, g) => n + g.voices.len
     </template>
 
     <div v-if="others.length" class="mt-3">
-      <button class="text-xs opacity-70 hover:opacity-100" @click="showAll = !showAll">
+      <button
+        class="text-xs opacity-70 hover:opacity-100"
+        data-test="toggle-all-langs"
+        @click="showAll = !showAll"
+      >
         {{ GLOBE }} {{ t('settings.voiceCatalogAllLangs', { count: String(otherCount) }) }}
         {{ chevron }}
       </button>
-      <template v-for="group in others" :key="group.lang">
-        <h4 class="text-xs font-semibold opacity-70 mt-3 mb-1">
-          {{ group.langName }} <span class="opacity-50">· {{ group.voices.length }}</span>
-        </h4>
-        <template v-if="showAll || query">
+      <template v-if="showAll || query">
+        <template v-for="group in others" :key="group.lang">
+          <h4 class="text-xs font-semibold opacity-70 mt-3 mb-1">
+            {{ group.langName }} <span class="opacity-50">· {{ group.voices.length }}</span>
+          </h4>
           <div
             v-for="v in group.voices"
             :key="v.id"

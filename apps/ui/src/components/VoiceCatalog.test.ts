@@ -69,11 +69,19 @@ const catalog: CatalogLang[] = [
 const globalOpts = { plugins: [i18n, PrimeVue, ToastService] };
 
 describe('VoiceCatalog', () => {
-  it('lists featured langs first and shows their voices', () => {
+  it('shows featured langs with voices and hides others behind a disclosure', async () => {
     const w = mount(VoiceCatalog, { props: { catalog, downloadPct: {} }, global: globalOpts });
+    // Featured group visible with its voices
+    expect(w.text()).toContain('Español');
+    expect(w.text()).toContain('Dave');
+    // Non-featured language hidden by default (behind the disclosure)
+    expect(w.text()).not.toContain('Thorsten');
+    expect(w.text()).not.toContain('Deutsch');
+    // Clicking the disclosure reveals them, after the featured ones
+    await w.find('[data-test="toggle-all-langs"]').trigger('click');
     const text = w.text();
-    expect(text).toContain('Español');
-    expect(text).toContain('Dave');
+    expect(text).toContain('Deutsch');
+    expect(text).toContain('Thorsten');
     expect(text.indexOf('Español')).toBeLessThan(text.indexOf('Deutsch'));
   });
 
