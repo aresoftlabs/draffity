@@ -14,6 +14,7 @@ pub mod piper;
 pub mod proc;
 pub mod registry;
 pub mod server;
+pub mod stream_planner;
 pub mod whisper;
 
 pub use accel::{detect_backend, Backend};
