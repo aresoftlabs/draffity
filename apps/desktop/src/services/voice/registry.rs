@@ -156,10 +156,11 @@ const BINARY_INFOS: &[BinaryInfo] = &[BinaryInfo {
 
 use crate::services::voice::accel::Backend;
 
-/// Base de descarga: binarios compilados por nuestro CI, publicados en un
-/// release propio. Pinear el tag al release vigente.
-pub const WHISPER_BINS_BASE: &str =
-    "https://github.com/aresoftlabs/draffity/releases/download/whisper-bins-v1/";
+/// Base de descarga: binarios vendor (whisper.cpp) compilados por nuestro CI y
+/// servidos desde Cloudflare R2 con path versionado e inmutable. Los Releases de
+/// GitHub quedan solo para el producto (auto-update). Bumpear `v1` al cambiar la
+/// matriz/whisper.cpp (y re-pinear los sha256).
+pub const WHISPER_BINS_BASE: &str = "https://bins.draffity.com/whisper/v1/";
 
 #[derive(Debug, Clone)]
 pub struct WhisperBinary {

@@ -1,11 +1,19 @@
 name: build-whisper
-# Compila whisper.cpp (cli + server) por plataforma/backend y publica binarios.
-# - push de tag `whisper-bins-*` → publica un release con los binarios.
-# - workflow_dispatch / PR que toque este archivo → smoke build (sin publicar).
+# Compila whisper.cpp (cli + server) por plataforma/backend y publica los binarios
+# vendor a Cloudflare R2 (https://bins.draffity.com/whisper/<version>/), NO a los
+# GitHub Releases del producto. Paths versionados e inmutables.
+# - push de tag `whisper-bins-vN` → sube a R2 bajo `whisper/vN/`.
+# - workflow_dispatch con `version` → sube a R2 bajo `whisper/<version>/`.
+# - workflow_dispatch sin `version` / PR que toque este archivo → smoke (sin subir).
 on:
   push:
     tags: ['whisper-bins-*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a publicar en R2 (ej. v1). Vacío = smoke build sin subir.'
+        required: false
+        default: ''
   pull_request:
     paths: ['.github/workflows/build-whisper.yml']
 
@@ -13,7 +21,7 @@ env:
   WHISPER_TAG: v1.8.6 # pineado (Vulkan estable >=1.8.3)
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -134,11 +142,23 @@ jobs:
             *.tar.gz
             *.sha256
 
-      - name: Publish to release (on tag)
-        if: startsWith(github.ref, 'refs/tags/whisper-bins-')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            *.zip
-            *.tar.gz
-            *.sha256
+      - name: Publish to R2 (vendor binaries)
+        # Vendor binaries → Cloudflare R2 (bins.draffity.com), no a los Releases del
+        # producto. Path versionado e inmutable: whisper/<version>/. La AWS CLI v2
+        # viene preinstalada en los runners de GitHub (Linux/Windows/macOS).
+        if: github.event.inputs.version != '' || startsWith(github.ref, 'refs/tags/whisper-bins-')
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          [ -z "$VERSION" ] && VERSION="${GITHUB_REF_NAME#whisper-bins-}"
+          echo "Publishing to s3://draffity-bins/whisper/$VERSION/"
+          for f in *.zip *.tar.gz *.zip.sha256 *.tar.gz.sha256; do
+            [ -f "$f" ] || continue
+            echo "  -> $f"
+            aws s3 cp "$f" "s3://draffity-bins/whisper/$VERSION/$f" --endpoint-url "$R2_ENDPOINT"
+          done
