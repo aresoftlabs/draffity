@@ -18,35 +18,30 @@
 El instalador y el manifiesto deben ser **accesibles públicamente sin autenticación**
 (la app los baja con un cliente HTTP sin token). Ese es el prerequisito duro.
 
-## Prerequisitos (en orden de dependencia)
+## Cómo está implementado en Draffity
 
-1. **Releases públicas.** La app debe poder bajar manifiesto + instalador sin token.
-   Hoy el repo es **privado** → los assets de release dan **404** sin auth (es la
-   misma causa por la que la descarga de binarios whisper falla). Se resuelve
-   haciendo el repo **público** (requiere el readiness de open-source: licencia con
-   titular correcto, THIRD-PARTY-NOTICES, escaneo de secretos en el historial) **o**
-   sirviendo los artefactos desde un host público aparte (release de un repo público
-   dedicado, bucket/CDN, GitHub Pages).
-2. **Par de claves de firma.** `tauri signer generate` → clave privada + password.
-   - Privada + password como **secrets de CI** (`TAURI_SIGNING_PRIVATE_KEY`,
-     `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) en `aresoftlabs/draffity`.
-   - Pública en `tauri.conf.json → plugins.updater.pubkey`.
-   - ⚠️ La clave privada **no** se commitea y **no** se rota sin re-firmar todo.
-3. **Build de los 3 OS en el pipeline de release.** Hoy `release.yml` buildea solo
-   **Windows + Linux**; falta **macOS** (target M-chip). `tauri-action` puede generar
-   el manifiesto del updater (`includeUpdaterJson: true`) y adjuntarlo al release.
-4. **Plugin + config.** Agregar el plugin (Rust + JS), `plugins.updater` con
-   `endpoints` apuntando al `latest.json` del release público, y la UI de "buscar/
-   instalar actualización".
+- **Endpoint en R2 (no GitHub Releases).** El tag `v*` dispara `release.yml`, que
+  buildea + firma (minisign) los instaladores y los sube a Cloudflare R2 (bucket
+  `bins-draffity`), versionados en `app/<version>/`. Un job de agregación arma
+  `app/stable/latest.json`. La app lee ese manifiesto **público** (sin auth), lo que
+  sortea el bloqueante de repo privado (los assets de un GitHub Release dan 404 sin
+  token). Mismo patrón que el vendoreo de binarios whisper/voces.
+- **Manifiesto propio.** En vez de `includeUpdaterJson` de `tauri-action`, el
+  manifiesto se arma con `scripts/build-update-manifest.mjs` (subcomandos
+  `fragment` por plataforma y `assemble`), con pruebas en
+  `scripts/build-update-manifest.test.mjs`.
+- **Firma minisign.** Pública en `tauri.conf.json → plugins.updater.pubkey`; privada +
+  password como secrets de CI (`TAURI_SIGNING_PRIVATE_KEY`,
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). La privada **no** se commitea ni se rota sin
+  re-firmar todo.
+- **Windows NSIS per-user** (`bundle.windows.nsis.installMode: currentUser` + updater
+  `windows.installMode: passive`): el auto-update se aplica **sin prompt de UAC**.
+  **Linux AppImage** se reemplaza in-place.
+- **UI:** `useUpdater` (composable, máquina de estados) + `UpdateBanner` (aviso no
+  intrusivo, chequeo silencioso al inicio) + `SettingsUpdates` (chequeo manual +
+  versión actual).
 
-## Enfoque recomendado
-
-- **Updater plugin de Tauri + GitHub Releases como endpoint** (camino más trillado):
-  `tauri-action` con `includeUpdaterJson: true` publica `latest.json` + instaladores
-  firmados en el release del tag `v*`. `endpoints` apunta a la URL pública de ese
-  `latest.json`. Firma con **minisign** vía los secrets de CI.
-- Mantener el `release.yml` actual (ya usa `tauri-action`); sumarle macOS, la firma,
-  y `includeUpdaterJson`. Quitar `releaseDraft`/`prerelease` cuando se publique en serio.
+El diseño completo está en `docs/specs/2026-06-05-auto-update-tauri-design.md`.
 
 ## Checklist de implementación
 
