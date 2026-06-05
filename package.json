@@ -18,6 +18,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter @draffity/ui test:e2e",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "lint": "pnpm lint:js && pnpm lint:rs",
     "lint:js": "eslint .",
     "lint:rs": "cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings",
