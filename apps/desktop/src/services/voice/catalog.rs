@@ -15,7 +15,7 @@ pub struct CatalogVoice {
     pub name: String,
     pub lang: String,
     pub quality: String,
-    pub size_mb: u32,
+    pub size_mb: f32,
     pub recommended: bool,
     pub installed: bool,
 }
@@ -130,18 +130,35 @@ pub fn refresh_manifest_cache(home: &DraffityHome) {
         .send()
     {
         Ok(r) if r.status().is_success() => r,
-        _ => return,
+        Ok(r) => {
+            tracing::warn!(status = %r.status(), "voice manifest: non-2xx, keeping cache/seed");
+            return;
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "voice manifest: fetch failed, keeping cache/seed");
+            return;
+        }
     };
     let body = match resp.text() {
         Ok(b) => b,
-        Err(_) => return,
-    };
-    if parse_manifest(&body).is_ok() {
-        let path = cached_manifest_path(home);
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+        Err(e) => {
+            tracing::warn!(error = %e, "voice manifest: body read failed");
+            return;
         }
-        let _ = std::fs::write(&path, body);
+    };
+    match parse_manifest(&body) {
+        Ok(m) => {
+            let path = cached_manifest_path(home);
+            if let Some(parent) = path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            if let Err(e) = std::fs::write(&path, &body) {
+                tracing::warn!(error = %e, "voice manifest: cache write failed");
+            } else {
+                tracing::debug!(voices = m.voices.len(), "voice manifest cached");
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "voice manifest: parse failed, keeping cache/seed"),
     }
 }
 
@@ -158,7 +175,7 @@ mod tests {
             lang_name: String::new(),
             locale: String::new(),
             quality: "medium".into(),
-            size_mb: 60,
+            size_mb: 60.0,
             onnx_url: "u".into(),
             config_url: "c".into(),
             onnx_md5: None,

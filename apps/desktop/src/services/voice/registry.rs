@@ -139,8 +139,9 @@ pub struct ManifestVoice {
     pub locale: String,
     #[serde(default)]
     pub quality: String,
+    /// f32 (no u32): el manifest reporta MB con decimales (p. ej. 60.3).
     #[serde(default)]
-    pub size_mb: u32,
+    pub size_mb: f32,
     pub onnx_url: String,
     pub config_url: String,
     #[serde(default)]
@@ -172,7 +173,7 @@ pub fn seed_voice_manifest() -> VoiceManifest {
             lang_name: lang_display_name(v.lang).to_string(),
             locale: String::new(),
             quality: "medium".to_string(),
-            size_mb: v.size_mb,
+            size_mb: v.size_mb as f32,
             onnx_url: v.onnx_url.to_string(),
             config_url: format!("{}.json", v.onnx_url),
             onnx_md5: None,
