@@ -65,8 +65,10 @@ async function main() {
     const onnxFile = findFile(files, '.onnx');
     const configFile = findFile(files, '.onnx.json');
 
-    // Skip entries that lack an .onnx file (malformed or metadata-only).
-    if (!onnxFile) continue;
+    // Skip entries that lack BOTH an .onnx model and its .onnx.json config —
+    // the Rust parser requires both fields as non-optional strings; a single
+    // null url would cause serde to reject the entire manifest.
+    if (!onnxFile || !configFile) continue;
 
     const sizeMb = onnxFile.size_bytes
       ? Math.round((onnxFile.size_bytes / 1_048_576) * 10) / 10
@@ -81,9 +83,9 @@ async function main() {
       quality: entry.quality ?? '',
       sizeMb,
       onnxUrl: `${HF_BASE}/${onnxFile.path}`,
-      configUrl: configFile ? `${HF_BASE}/${configFile.path}` : null,
+      configUrl: `${HF_BASE}/${configFile.path}`,
       onnxMd5: onnxFile.md5_digest ?? null,
-      configMd5: configFile?.md5_digest ?? null,
+      configMd5: configFile.md5_digest ?? null,
       recommended: RECOMMENDED.has(id),
     };
 
