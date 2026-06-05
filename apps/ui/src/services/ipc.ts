@@ -190,6 +190,25 @@ export interface LanguageGroup {
   items: AvailableModelEntry[];
 }
 
+/** A voice entry in the dynamic voice catalog (H). */
+export interface CatalogVoice {
+  id: string;
+  name: string;
+  lang: string;
+  quality: string;
+  sizeMb: number;
+  recommended: boolean;
+  installed: boolean;
+}
+
+/** A language group in the dynamic voice catalog (H). */
+export interface CatalogLang {
+  lang: string;
+  langName: string;
+  featured: boolean;
+  voices: CatalogVoice[];
+}
+
 /** Per-model disk usage. */
 export interface DiskUsageEntry {
   id: string;
@@ -295,6 +314,7 @@ export const ipc = {
     invoke<string>('test_synthesize', { voiceId, text }),
   getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
   getAccelStatus: () => invoke<AccelStatus>('get_accel_status'),
+  getVoiceCatalog: () => invoke<CatalogLang[]>('get_voice_catalog'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),
