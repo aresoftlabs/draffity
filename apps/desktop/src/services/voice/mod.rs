@@ -15,6 +15,7 @@ pub mod proc;
 pub mod registry;
 pub mod server;
 pub mod stream;
+pub mod stream_manager;
 pub mod stream_planner;
 pub mod whisper;
 
