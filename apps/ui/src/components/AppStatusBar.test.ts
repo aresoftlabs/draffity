@@ -37,6 +37,7 @@ function mountBar(extra: Record<string, unknown> = {}) {
         PacemakerWidget: true,
         PomodoroWidget: true,
         GoalProgress: true,
+        AppVersion: true,
       },
     },
   });

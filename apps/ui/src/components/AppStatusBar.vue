@@ -4,6 +4,7 @@ import SaveIndicator from '@/components/SaveIndicator.vue';
 import GoalProgress from '@/components/GoalProgress.vue';
 import PacemakerWidget from '@/components/PacemakerWidget.vue';
 import PomodoroWidget from '@/components/PomodoroWidget.vue';
+import AppVersion from '@/components/AppVersion.vue';
 import type { SaveState } from '@/stores/document';
 
 /** Barra de estado inferior presentacional. Todas las entradas por props; emite
@@ -114,5 +115,7 @@ const { t } = useI18n();
     />
 
     <PomodoroWidget />
+
+    <AppVersion />
   </footer>
 </template>
