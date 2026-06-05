@@ -60,6 +60,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Draffity ${{ github.ref_name }}'
@@ -79,3 +81,83 @@ jobs:
           prerelease: true
           projectPath: apps/desktop
           args: ${{ matrix.args }}
+
+      - name: Upload installer to R2 + build manifest fragment
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUNDLE="apps/desktop/target/release/bundle"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            KEY="windows-x86_64"
+            INSTALLER=$(ls "$BUNDLE"/nsis/*-setup.exe | head -n1)
+          else
+            KEY="linux-x86_64"
+            INSTALLER=$(ls "$BUNDLE"/appimage/*.AppImage | head -n1)
+          fi
+          BASENAME=$(basename "$INSTALLER")
+          echo "Uploading $BASENAME -> s3://bins-draffity/app/$VERSION/"
+          aws s3 cp "$INSTALLER" "s3://bins-draffity/app/$VERSION/$BASENAME" --endpoint-url "$R2_ENDPOINT"
+          mkdir -p fragments
+          node scripts/build-update-manifest.mjs fragment \
+            --key "$KEY" \
+            --url "https://bins.draffity.com/app/$VERSION/$BASENAME" \
+            --sig-file "$INSTALLER.sig" \
+            --out "fragments/$KEY.json"
+
+      - name: Upload manifest fragment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-fragment-${{ runner.os }}
+          path: fragments/*.json
+          if-no-files-found: error
+
+  manifest:
+    name: Assemble & publish update manifest
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download manifest fragments
+        uses: actions/download-artifact@v4
+        with:
+          path: fragments
+          pattern: update-fragment-*
+          merge-multiple: true
+
+      - name: Build latest.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          node scripts/build-update-manifest.mjs assemble \
+            --fragments fragments \
+            --version "$VERSION" \
+            --notes "Draffity $VERSION" \
+            --pub-date "$PUB_DATE" \
+            --out latest.json
+          echo "----- latest.json -----"
+          cat latest.json
+
+      - name: Publish latest.json to R2
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          aws s3 cp latest.json s3://bins-draffity/app/stable/latest.json --endpoint-url "$R2_ENDPOINT"
