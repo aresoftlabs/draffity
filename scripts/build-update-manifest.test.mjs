@@ -49,6 +49,32 @@ test('buildManifest throws when version is missing', () => {
   );
 });
 
+test('buildManifest throws when pubDate is missing', () => {
+  assert.throws(
+    () =>
+      buildManifest({
+        version: '0.13.0',
+        platforms: [{ key: 'k', url: 'u', signature: 's' }],
+      }),
+    /pubDate is required/,
+  );
+});
+
+test('buildManifest throws on a duplicate platform key', () => {
+  assert.throws(
+    () =>
+      buildManifest({
+        version: '0.13.0',
+        pubDate: 'x',
+        platforms: [
+          { key: 'windows-x86_64', url: 'u1', signature: 's1' },
+          { key: 'windows-x86_64', url: 'u2', signature: 's2' },
+        ],
+      }),
+    /duplicate platform key "windows-x86_64"/,
+  );
+});
+
 test('buildManifest throws when there are no platforms', () => {
   assert.throws(
     () => buildManifest({ version: '0.13.0', pubDate: 'x', platforms: [] }),
