@@ -122,6 +122,90 @@ pub fn recommended_voice() -> Option<&'static PiperVoiceInfo> {
     piper_voices().iter().find(|v| v.recommended)
 }
 
+/// URL del manifest curado en R2 (espejo del catálogo completo de Piper).
+pub const VOICE_MANIFEST_URL: &str = "https://bins.draffity.com/voices/v1/manifest.json";
+
+/// Una voz tal como viene en el manifest. Campos opcionales toleran semillas
+/// y manifests parciales (md5 ausente ⇒ descarga sin verificar, como hoy).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestVoice {
+    pub id: String,
+    pub name: String,
+    pub lang: String,
+    #[serde(default)]
+    pub lang_name: String,
+    #[serde(default)]
+    pub locale: String,
+    #[serde(default)]
+    pub quality: String,
+    pub size_mb: u32,
+    pub onnx_url: String,
+    pub config_url: String,
+    #[serde(default)]
+    pub onnx_md5: Option<String>,
+    #[serde(default)]
+    pub config_md5: Option<String>,
+    #[serde(default)]
+    pub recommended: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceManifest {
+    pub schema_version: u32,
+    #[serde(default)]
+    pub featured: Vec<String>,
+    pub voices: Vec<ManifestVoice>,
+}
+
+/// Manifest semilla (fallback offline) construido desde `piper_voices()`.
+/// Sin md5 (descarga best-effort). `config_url` = `onnx_url` + ".json".
+pub fn seed_voice_manifest() -> VoiceManifest {
+    let voices = piper_voices()
+        .iter()
+        .map(|v| ManifestVoice {
+            id: v.id.to_string(),
+            name: v.name.to_string(),
+            lang: v.lang.to_string(),
+            lang_name: lang_display_name(v.lang).to_string(),
+            locale: String::new(),
+            quality: "medium".to_string(),
+            size_mb: v.size_mb,
+            onnx_url: v.onnx_url.to_string(),
+            config_url: format!("{}.json", v.onnx_url),
+            onnx_md5: None,
+            config_md5: None,
+            recommended: v.recommended,
+        })
+        .collect();
+    VoiceManifest {
+        schema_version: 1,
+        featured: vec!["es".to_string(), "en".to_string(), "pt".to_string()],
+        voices,
+    }
+}
+
+/// Nombre legible de un código de idioma (ISO 639-1). Cubre los frecuentes;
+/// desconocido ⇒ el propio código.
+pub fn lang_display_name(code: &str) -> &str {
+    match code {
+        "es" => "Español",
+        "en" => "English",
+        "pt" => "Português",
+        "de" => "Deutsch",
+        "fr" => "Français",
+        "it" => "Italiano",
+        "ca" => "Català",
+        "zh" => "中文",
+        "ar" => "العربية",
+        "ru" => "Русский",
+        "nl" => "Nederlands",
+        "pl" => "Polski",
+        _ => code,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Binary info for Piper TTS (auto-download). The URLs below point to the
 // latest stable release archives per platform.

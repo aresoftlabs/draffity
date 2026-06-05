@@ -8,6 +8,7 @@
 //! `WhisperLocalASR::available()` is `false` and the UI offers nothing.
 
 pub mod accel;
+pub mod catalog;
 pub mod download;
 pub mod piper;
 pub mod registry;
@@ -15,6 +16,7 @@ pub mod server;
 pub mod whisper;
 
 pub use accel::{detect_backend, Backend};
+pub use catalog::{CatalogLang, CatalogVoice};
 pub use download::download_to_file;
 pub use piper::{parse_wav_pcm16, PiperTTSService};
 pub use registry::{
