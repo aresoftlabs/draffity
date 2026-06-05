@@ -1036,7 +1036,7 @@ dependencies = [
 
 [[package]]
 name = "draffity-desktop"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
