@@ -50,7 +50,7 @@
   "plugins": {
     "updater": {
       "endpoints": ["https://bins.draffity.com/app/stable/latest.json"],
-      "pubkey": "REPLACE_WITH_TASK_1_PUBKEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVBNUIxQTFDQjI1RUYzQTYKUldTbTgxNnlIQnBiNnBrTWNHY0MxYWg4U1Y1VVBMR2Uyc2NYaFk3dndWUmhvMkQyWDQyR0MxQUwK",
       "windows": {
         "installMode": "passive"
       }
