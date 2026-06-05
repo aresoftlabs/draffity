@@ -246,6 +246,16 @@ pub fn delete_voice_model(state: State<'_, AppState>, model_id: String) -> CmdRe
 /// Borra los archivos de una voz instalada (`<id>.onnx` + `<id>.onnx.json`).
 /// Idempotente: ausencia no es error. Helper puro para testear sin `State`.
 pub fn remove_voice_files(home: &DraffityHome, voice_id: &str) -> CmdResult<()> {
+    // Defensa contra path traversal: el id es el stem del archivo, nunca una ruta.
+    if voice_id.is_empty()
+        || voice_id.contains('/')
+        || voice_id.contains('\\')
+        || voice_id.contains("..")
+    {
+        return Err(AppError::Invariant(format!(
+            "voice id inválido: {voice_id}"
+        )));
+    }
     let onnx = home.voice_file_path(&format!("{voice_id}.onnx"));
     let cfg = home.voice_file_path(&format!("{voice_id}.onnx.json"));
     for p in [onnx, cfg] {
@@ -940,5 +950,13 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
         super::remove_voice_files(&home, "en_US-amy-medium").unwrap();
+    }
+
+    #[test]
+    fn remove_voice_files_rejects_path_traversal() {
+        let dir = tempfile::tempdir().unwrap();
+        let home = crate::services::DraffityHome::with_root(dir.path().to_path_buf());
+        assert!(super::remove_voice_files(&home, "../evil").is_err());
+        assert!(super::remove_voice_files(&home, "a/b").is_err());
     }
 }
