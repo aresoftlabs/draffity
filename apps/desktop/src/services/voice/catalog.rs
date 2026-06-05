@@ -35,7 +35,11 @@ pub fn parse_manifest(raw: &str) -> Result<VoiceManifest, serde_json::Error> {
 /// ordenado alfabéticamente por nombre legible. Puro y testeable.
 pub fn build_catalog(m: &VoiceManifest, installed: &HashSet<String>) -> Vec<CatalogLang> {
     use std::collections::BTreeMap;
+
+    // Collect voices by lang; also record the first non-empty lang_name per lang
+    // from the manifest so obscure languages display their native name.
     let mut by_lang: BTreeMap<String, Vec<CatalogVoice>> = BTreeMap::new();
+    let mut manifest_lang_names: BTreeMap<String, String> = BTreeMap::new();
     for v in &m.voices {
         by_lang
             .entry(v.lang.clone())
@@ -49,11 +53,24 @@ pub fn build_catalog(m: &VoiceManifest, installed: &HashSet<String>) -> Vec<Cata
                 recommended: v.recommended,
                 installed: installed.contains(&v.id),
             });
+        if !v.lang_name.is_empty() {
+            manifest_lang_names
+                .entry(v.lang.clone())
+                .or_insert_with(|| v.lang_name.clone());
+        }
     }
+
+    // Resolve display name: manifest value wins, hardcoded fallback otherwise.
+    let resolve_name = |lang: &str| -> String {
+        manifest_lang_names
+            .get(lang)
+            .cloned()
+            .unwrap_or_else(|| lang_display_name(lang).to_string())
+    };
 
     let mk = |lang: &str, voices: Vec<CatalogVoice>, featured: bool| CatalogLang {
         lang: lang.to_string(),
-        lang_name: lang_display_name(lang).to_string(),
+        lang_name: resolve_name(lang),
         featured,
         voices,
     };
@@ -129,6 +146,44 @@ mod tests {
         let installed: std::collections::HashSet<String> = ["es_x".to_string()].into();
         let cat = build_catalog(&m, &installed);
         assert!(cat[0].voices[0].installed);
+    }
+
+    fn voice_with_lang_name(id: &str, lang: &str, lang_name: &str) -> ManifestVoice {
+        ManifestVoice {
+            lang_name: lang_name.into(),
+            ..voice(id, lang)
+        }
+    }
+
+    #[test]
+    fn build_catalog_uses_manifest_lang_name_when_present() {
+        let m = VoiceManifest {
+            schema_version: 1,
+            featured: vec![],
+            voices: vec![
+                voice_with_lang_name("fi_x", "fi", "suomi"),
+                // second voice for the same lang should NOT override the first
+                voice_with_lang_name("fi_y", "fi", "should-be-ignored"),
+            ],
+        };
+        let installed = std::collections::HashSet::new();
+        let cat = build_catalog(&m, &installed);
+        assert_eq!(cat[0].lang, "fi");
+        assert_eq!(cat[0].lang_name, "suomi");
+    }
+
+    #[test]
+    fn build_catalog_falls_back_to_hardcoded_when_manifest_lang_name_empty() {
+        let m = VoiceManifest {
+            schema_version: 1,
+            featured: vec![],
+            // lang_name is "" (default from voice())
+            voices: vec![voice("de_x", "de")],
+        };
+        let installed = std::collections::HashSet::new();
+        let cat = build_catalog(&m, &installed);
+        assert_eq!(cat[0].lang, "de");
+        assert_eq!(cat[0].lang_name, "Deutsch");
     }
 
     #[test]
