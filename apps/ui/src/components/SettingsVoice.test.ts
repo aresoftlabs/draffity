@@ -10,6 +10,7 @@ import SettingsVoice from './SettingsVoice.vue';
 // The component subscribes to a Tauri event on mount; stub it.
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}) }));
 vi.mock('@tauri-apps/plugin-fs', () => ({ readFile: vi.fn() }));
+vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }));
 
 let mediaRecorderMock: {
   start: ReturnType<typeof vi.fn>;
@@ -52,12 +53,18 @@ const i18n = createI18n({
       settings: {
         voiceTitle: 'Voz',
         voiceHint: 'hint',
+        voiceDictation: 'Dictado',
+        voiceManageModels: 'Administrar modelos',
         voiceBinaryInstalled: 'Whisper instalado',
         voiceBinaryMissing: 'Falta Whisper',
+        voiceBinaryImported: 'Binario importado',
+        voiceDownloadBinary: 'Descargar binario',
         voiceImportBinary: 'Importar binario',
         voiceRecommended: 'Recomendado',
         voiceModelDownload: 'Descargar',
+        voiceModelDownloaded: 'Descargado',
         voiceModelDelete: 'Eliminar',
+        voiceModelError: 'Error de descarga',
         voiceReadAloud: 'Lectura en voz alta',
         voicePiperInstalled: 'Piper instalado',
         voicePiperMissing: 'Falta Piper',
@@ -71,7 +78,7 @@ const i18n = createI18n({
         voiceDiskNone: 'Sin datos de voz en disco',
         voiceTestPlay: 'Probar voz',
         voiceTestPlaying: 'Reproduciendo…',
-        voiceTestInstallFirst: 'Instalar voz primero',
+        voiceTestError: 'Error al probar',
         voiceAsrTestRecord: 'Grabar prueba',
         voiceAsrTestStop: 'Detener',
         voiceAsrTestResult: 'Transcripción',
@@ -83,12 +90,9 @@ const i18n = createI18n({
         voiceInputDeviceUnnamed: 'Micrófono {n}',
         voiceInputDeviceRefresh: 'Actualizar lista de micrófonos',
         voiceInputDeviceHint: 'Elegí qué micrófono usar para el dictado.',
-        voiceCatalog: 'Catálogo de voces',
-        voiceCatalogByLang: 'Voces en {lang}',
-        voiceCatalogEmpty: 'No hay voces disponibles',
-        voiceCatalogRetry: 'Reintentar',
-        voiceCatalogSize: '{size} MB',
-        voiceDownloadFailed: 'Descarga fallida',
+        voiceCatalogSearch: 'Buscar voz',
+        voiceCatalogAllLangs: 'Otros idiomas ({count})',
+        voiceDelete: 'Eliminar voz',
         voiceAutoStopSilence: 'Detener tras silencio',
         voiceAutoStopSilenceHint: 'Finaliza la grabación sola tras silencio.',
         voiceAccel: 'Aceleración',
@@ -104,6 +108,20 @@ const i18n = createI18n({
 
 function mountVoice() {
   return mount(SettingsVoice, { global: { plugins: [i18n, PrimeVue, ToastService] } });
+}
+
+function stubInvoke(over: Partial<Record<string, unknown>> = {}) {
+  const defaults: Record<string, unknown> = {
+    get_voice_status: { binaryInstalled: true, piperInstalled: false },
+    list_voice_models: [],
+    get_disk_usage: [],
+    get_accel_status: null,
+    get_voice_catalog: [],
+  };
+  const table = { ...defaults, ...over };
+  invokeMock.mockImplementation((cmd: string) =>
+    cmd in table ? Promise.resolve(table[cmd]) : Promise.resolve(undefined),
+  );
 }
 
 describe('SettingsVoice', () => {
@@ -146,67 +164,52 @@ describe('SettingsVoice', () => {
         getUserMedia: vi.fn().mockResolvedValue({
           getTracks: vi.fn(() => [{ stop: vi.fn() }]),
         }),
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
       },
       writable: true,
     });
   });
 
-  it('lists models and binary status when voice is enabled', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models')
-        return Promise.resolve([
-          { id: 'ggml-base', sizeMb: 142, recommended: true, installed: false },
-        ]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
-    });
+  it('renders the section title and both child blocks', async () => {
+    stubInvoke();
     const w = mountVoice();
     await flushPromises();
     expect(w.text()).toContain('Voz');
+    expect(w.findComponent({ name: 'DictationSettings' }).exists()).toBe(true);
+    expect(w.findComponent({ name: 'ReadAloudSettings' }).exists()).toBe(true);
+  });
+
+  it('lists models and binary status in the dictation block', async () => {
+    stubInvoke({
+      list_voice_models: [{ id: 'ggml-base', sizeMb: 142, recommended: true, installed: false }],
+    });
+    const w = mountVoice();
+    await flushPromises();
     expect(w.text()).toContain('Whisper instalado');
     expect(w.text()).toContain('ggml-base');
     expect(w.text()).toContain('Descargar');
   });
 
   it('shows ASR model selector with installed voice models', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models')
-        return Promise.resolve([
-          { id: 'ggml-base', sizeMb: 142, recommended: true, installed: true },
-          { id: 'ggml-small', sizeMb: 466, recommended: false, installed: true },
-        ]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
+    stubInvoke({
+      list_voice_models: [
+        { id: 'ggml-base', sizeMb: 142, recommended: true, installed: true },
+        { id: 'ggml-small', sizeMb: 466, recommended: false, installed: true },
+      ],
     });
     const w = mountVoice();
     await flushPromises();
-    // Should show the selector heading
     expect(w.text()).toContain('Selector de modelo ASR');
-    // Should show the select label referencing the store-wired model
     expect(w.text()).toContain('Modelo de dictado');
-    // Should NOT have "not installed" badge when no model selected
     expect(w.text()).not.toContain('No instalado');
   });
 
   it('shows "not installed" badge when selected ASR model is not in installed list', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models')
-        return Promise.resolve([
-          { id: 'ggml-base', sizeMb: 142, recommended: true, installed: true },
-        ]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
+    stubInvoke({
+      list_voice_models: [{ id: 'ggml-base', sizeMb: 142, recommended: true, installed: true }],
     });
-    // Pre-set store with a model that is NOT in the installed list
     const { useVoiceSettingsStore } = await import('@/stores/voiceSettings');
     const store = useVoiceSettingsStore();
     store.asrModelId = 'ggml-large';
@@ -216,233 +219,67 @@ describe('SettingsVoice', () => {
   });
 
   it('shows disk usage summary line when models are installed', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: true });
-      if (cmd === 'list_voice_models')
-        return Promise.resolve([
-          { id: 'ggml-base', sizeMb: 142, recommended: true, installed: true },
-        ]);
-      if (cmd === 'list_voice_voices')
-        return Promise.resolve([
-          {
-            id: 'es_ES-carlfm',
-            name: 'Carl (FM)',
-            lang: 'es',
-            sizeMb: 42,
-            recommended: true,
-            installed: true,
-          },
-        ]);
-      if (cmd === 'get_disk_usage')
-        return Promise.resolve([
-          { id: 'ggml-base', bytes: 148_897_792 },
-          { id: 'es_ES-carlfm', bytes: 44_040_192 },
-        ]);
-      return Promise.resolve(undefined);
+    stubInvoke({
+      get_voice_status: { binaryInstalled: true, piperInstalled: true },
+      list_voice_models: [{ id: 'ggml-base', sizeMb: 142, recommended: true, installed: true }],
+      get_disk_usage: [
+        { id: 'ggml-base', bytes: 148_897_792 },
+        { id: 'es_ES-carlfm', bytes: 44_040_192 },
+      ],
     });
     const w = mountVoice();
     await flushPromises();
-    // Summary line shows count and human-readable size
     expect(w.text()).toContain('Datos de voz');
     expect(w.text()).toMatch(/2 modelos/);
-    // Should show per-model breakdown
-    expect(w.text()).toContain('En disco');
-    expect(w.text()).toContain('142');
-    expect(w.text()).toContain('42');
   });
 
   it('shows "no voice data" when disk is empty', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
-    });
+    stubInvoke();
     const w = mountVoice();
     await flushPromises();
     expect(w.text()).toContain('Sin datos de voz en disco');
   });
 
-  it('shows play button per installed voice', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: true });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices')
-        return Promise.resolve([
-          {
-            id: 'es_ES-carlfm',
-            name: 'Carl (FM)',
-            lang: 'es',
-            sizeMb: 42,
-            recommended: true,
-            installed: true,
-          },
-          {
-            id: 'en_US-amy',
-            name: 'Amy (US)',
-            lang: 'en',
-            sizeMb: 35,
-            recommended: false,
-            installed: false,
-          },
-        ]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
+  it('hosts the dynamic voice catalog in the read-aloud block', async () => {
+    stubInvoke({
+      get_voice_status: { binaryInstalled: true, piperInstalled: true },
+      get_voice_catalog: [
+        {
+          lang: 'es',
+          langName: 'Español',
+          featured: true,
+          voices: [
+            {
+              id: 'es_ES-carlfm',
+              name: 'Carl (FM)',
+              lang: 'es',
+              quality: 'medium',
+              sizeMb: 42,
+              recommended: true,
+              installed: false,
+            },
+          ],
+        },
+      ],
     });
     const w = mountVoice();
     await flushPromises();
-    // Installed voice should have a pi-play icon (play button for testing)
-    const playBtns = w.findAll('button').filter((b) => b.text().includes('Probar voz'));
-    expect(playBtns).toHaveLength(1);
-  });
-
-  it('synthesizes and plays via Web Audio on play button click', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: true });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices')
-        return Promise.resolve([
-          {
-            id: 'es_ES-carlfm',
-            name: 'Carl (FM)',
-            lang: 'es',
-            sizeMb: 42,
-            recommended: true,
-            installed: true,
-          },
-        ]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      if (cmd === 'synthesize_speech')
-        return Promise.resolve({ samplesPcm16: [0, 1, -1], sampleRate: 22050 });
-      return Promise.resolve(undefined);
-    });
-    const w = mountVoice();
-    await flushPromises();
-    const playBtn = w.findAll('button').find((b) => b.text().includes('Probar voz'));
-    expect(playBtn).toBeDefined();
-    await playBtn!.trigger('click');
-    await flushPromises();
-    // Plays in-process via synthesize_speech (PCM16) — no temp-file readFile.
-    const synthCall = invokeMock.mock.calls.find((c) => c[0] === 'synthesize_speech');
-    expect(synthCall).toBeDefined();
-    expect(synthCall![1]).toEqual({
-      voiceId: 'es_ES-carlfm',
-      text: 'Hello, this is a test voice.',
-    });
-    expect(audioContextMock.createBufferSource).toHaveBeenCalled();
+    expect(w.findComponent({ name: 'VoiceCatalog' }).exists()).toBe(true);
+    expect(w.text()).toContain('Carl (FM)');
+    expect(w.text()).toContain('Piper instalado');
   });
 
   it('shows ASR test recorder section', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
-    });
+    stubInvoke();
     const w = mountVoice();
     await flushPromises();
     expect(w.text()).toContain('Probar dictado');
     expect(w.text()).toContain('Grabar prueba');
   });
 
-  it('shows record/stop button for ASR test', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      return Promise.resolve(undefined);
-    });
-    const w = mountVoice();
-    await flushPromises();
-    const recordBtn = w.findAll('button').find((b) => b.text().includes('Grabar prueba'));
-    expect(recordBtn).toBeDefined();
-  });
-
-  it('shows voice catalog section with language groups', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: true });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      if (cmd === 'list_available_models')
-        return Promise.resolve([
-          {
-            lang: 'es',
-            items: [
-              {
-                id: 'es_ES-carlfm',
-                name: 'Carl (FM)',
-                lang: 'es',
-                sizeMb: 42,
-                recommended: true,
-                installed: false,
-                diskBytes: 0,
-                kind: 'voice',
-              },
-            ],
-          },
-          {
-            lang: 'en',
-            items: [
-              {
-                id: 'en_US-amy',
-                name: 'Amy (US)',
-                lang: 'en',
-                sizeMb: 35,
-                recommended: false,
-                installed: true,
-                diskBytes: 36_700_160,
-                kind: 'voice',
-              },
-            ],
-          },
-        ]);
-      return Promise.resolve(undefined);
-    });
-    const w = mountVoice();
-    await flushPromises();
-    expect(w.text()).toContain('Catálogo de voces');
-    expect(w.text()).toContain('Carl (FM)');
-    expect(w.text()).toContain('Amy (US)');
-    expect(w.text()).toContain('Instalada');
-    expect(w.text()).toContain('Descargar');
-  });
-
-  it('shows empty catalog message', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: true });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      if (cmd === 'list_available_models') return Promise.resolve([]);
-      return Promise.resolve(undefined);
-    });
-    const w = mountVoice();
-    await flushPromises();
-    expect(w.text()).toContain('No hay voces disponibles');
-  });
-
   it('shows the detected acceleration backend', async () => {
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === 'get_voice_status')
-        return Promise.resolve({ binaryInstalled: true, piperInstalled: false });
-      if (cmd === 'list_voice_models') return Promise.resolve([]);
-      if (cmd === 'list_voice_voices') return Promise.resolve([]);
-      if (cmd === 'get_disk_usage') return Promise.resolve([]);
-      if (cmd === 'get_accel_status')
-        return Promise.resolve({ backend: 'vulkan', model: 'small', serverAvailable: true });
-      return Promise.resolve(undefined);
+    stubInvoke({
+      get_accel_status: { backend: 'vulkan', model: 'small', serverAvailable: true },
     });
     const w = mountVoice();
     await flushPromises();

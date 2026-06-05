@@ -172,24 +172,6 @@ export interface VoiceTranscribeProgress {
   progress: number;
 }
 
-/** A voice or model entry in the available models catalog. */
-export interface AvailableModelEntry {
-  id: string;
-  name: string;
-  lang: string;
-  sizeMb: number;
-  recommended: boolean;
-  installed: boolean;
-  diskBytes: number;
-  kind: 'voice' | 'model';
-}
-
-/** A group of available models by language. */
-export interface LanguageGroup {
-  lang: string;
-  items: AvailableModelEntry[];
-}
-
 /** A voice entry in the dynamic voice catalog (H). */
 export interface CatalogVoice {
   id: string;
@@ -309,7 +291,6 @@ export const ipc = {
     }),
   listVoiceNotes: (projectId: string) => invoke<MediaAsset[]>('list_voice_notes', { projectId }),
   deleteVoiceNote: (id: string) => invoke<void>('delete_voice_note', { id }),
-  listAvailableModels: () => invoke<LanguageGroup[]>('list_available_models'),
   testSynthesize: (voiceId: string, text: string) =>
     invoke<string>('test_synthesize', { voiceId, text }),
   getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
