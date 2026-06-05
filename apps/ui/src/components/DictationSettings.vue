@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -34,6 +34,7 @@ const voiceModels = ref<VoiceModel[]>([]);
 const accel = ref<AccelStatus | null>(null);
 const inputDevices = ref<{ label: string; value: string }[]>([]);
 const importingBinary = ref(false);
+const downloadingBinary = ref(false);
 const asrResult = ref<string | null>(null);
 const asrMicDenied = ref(false);
 
@@ -86,6 +87,7 @@ function isSelectedAsrModelMissing(): boolean {
 }
 
 async function onDownloadBinary() {
+  downloadingBinary.value = true;
   try {
     await ipc.downloadVoiceBinary('whisper');
     notifyDownloaded();
@@ -99,6 +101,7 @@ async function onDownloadBinary() {
       life: 8000,
     });
   } finally {
+    downloadingBinary.value = false;
     emit('reload');
   }
 }
@@ -244,6 +247,10 @@ onMounted(async () => {
   await refreshInputDevices();
   navigator.mediaDevices?.addEventListener?.('devicechange', refreshInputDevices);
 });
+
+onBeforeUnmount(() => {
+  navigator.mediaDevices?.removeEventListener?.('devicechange', refreshInputDevices);
+});
 </script>
 
 <template>
@@ -272,11 +279,18 @@ onMounted(async () => {
         }}
       </span>
       <div class="flex items-center gap-2">
+        <span
+          v-if="props.downloadPct['whisper'] !== undefined"
+          class="text-xs font-mono opacity-70 mr-2"
+          >{{ `${props.downloadPct['whisper']}%` }}</span
+        >
         <Button
           v-if="!props.voiceStatus?.binaryInstalled"
           :label="t('settings.voiceDownloadBinary')"
           icon="pi pi-download"
           size="small"
+          :loading="downloadingBinary"
+          :disabled="downloadingBinary"
           @click="onDownloadBinary"
         />
         <Button

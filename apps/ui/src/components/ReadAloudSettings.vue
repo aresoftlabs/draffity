@@ -26,6 +26,7 @@ const toast = useToast();
 const catalog = ref<CatalogLang[]>([]);
 const testingVoiceId = ref<string | null>(null);
 const importingPiper = ref(false);
+const downloadingBinary = ref(false);
 // Reused across test plays so we don't leak AudioContext instances.
 let ttsCtx: AudioContext | null = null;
 
@@ -94,6 +95,7 @@ async function onTest(id: string) {
 }
 
 async function onDownloadBinary() {
+  downloadingBinary.value = true;
   try {
     await ipc.downloadVoiceBinary('piper');
   } catch (e: unknown) {
@@ -106,6 +108,7 @@ async function onDownloadBinary() {
       life: 8000,
     });
   } finally {
+    downloadingBinary.value = false;
     emit('reload');
   }
 }
@@ -140,7 +143,6 @@ async function onImportPiper() {
 }
 
 onMounted(loadCatalog);
-defineExpose({ loadCatalog });
 </script>
 
 <template>
@@ -167,11 +169,18 @@ defineExpose({ loadCatalog });
         }}
       </span>
       <div class="flex items-center gap-2">
+        <span
+          v-if="props.downloadPct['piper'] !== undefined"
+          class="text-xs font-mono opacity-70 mr-2"
+          >{{ `${props.downloadPct['piper']}%` }}</span
+        >
         <Button
           v-if="!props.voiceStatus?.piperInstalled"
           :label="t('settings.voiceDownloadBinary')"
           icon="pi pi-download"
           size="small"
+          :loading="downloadingBinary"
+          :disabled="downloadingBinary"
           @click="onDownloadBinary"
         />
         <Button
