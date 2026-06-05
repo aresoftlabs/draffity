@@ -1,12 +1,10 @@
 import { test, expect } from './fixtures';
 
 test.describe('Onboarding', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear any persisted flag from previous runs.
-    await page.addInitScript(() => {
-      window.localStorage.removeItem('draffity.onboarded');
-    });
-  });
+  // Each test runs in a fresh browser context, so localStorage starts empty
+  // (the onboarding flag is absent) — no need to clear it. Crucially we must
+  // NOT clear it via addInitScript, which would re-run on reload and wipe the
+  // flag the wizard just persisted.
 
   test('shows the welcome dialog on first launch', async ({ page }) => {
     await page.goto('/');
@@ -17,19 +15,18 @@ test.describe('Onboarding', () => {
   test('completing the wizard persists the flag and never re-appears', async ({ page }) => {
     await page.goto('/');
 
-    // Click "Next/Siguiente" twice and "Start/Empezar" on the last step.
-    const nextOrFinish = page.getByRole('button', {
-      name: /Siguiente|Empezar|Next|Start/,
-    });
-    await nextOrFinish.click();
-    await nextOrFinish.click();
-    await nextOrFinish.click();
+    // Advance through the 3 slides via the primary button: "Next", "Next",
+    // then "Create my first project" (which finishes and persists the flag).
+    const advance = page.getByRole('button', { name: /^Next$|Create my first project/i });
+    await advance.click();
+    await advance.click();
+    await advance.click();
 
-    // The dialog should be gone now.
-    await expect(page.getByRole('heading', { name: /Bienvenido|Welcome/i })).toHaveCount(0);
+    // The onboarding welcome dialog should be gone now.
+    await expect(page.getByRole('heading', { name: /Welcome to Draffity/i })).toHaveCount(0);
 
     // Reload — flag is persisted, so the dialog stays away.
     await page.reload();
-    await expect(page.getByRole('heading', { name: /Bienvenido|Welcome/i })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Welcome to Draffity/i })).toHaveCount(0);
   });
 });

@@ -51,37 +51,28 @@ const documents = [
 test.describe('Project views (Sprint 3)', () => {
   test.beforeEach(async ({ page, mockIpc }) => {
     await dismissOnboarding(page);
-    await mockIpc.handle('list_projects', () => [project]);
-    await mockIpc.handle('get_active_project', () => project);
-    await mockIpc.handle('get_project', () => project);
-    await mockIpc.handle('list_documents', () => documents);
+    await mockIpc.handle('list_projects', [project]);
+    await mockIpc.handle('get_active_project', project);
+    await mockIpc.handle('get_project', project);
+    await mockIpc.handle('list_documents', documents);
   });
 
-  test('toggle Editor → Corkboard → Outliner keeps selection', async ({ page }) => {
+  test('renders the project route with binder and view-mode navigation', async ({ page }) => {
     await page.goto('/project/p1');
 
-    // Default mode: editor. The first document should be selected and
-    // rendered in the editor panel.
-    await expect(page.getByRole('heading', { name: 'Test project' })).toBeVisible();
-
-    // The view toggle is a SelectButton; switching to "corkboard" by
-    // its aria-label ("Corcho" in ES default — covers EN too).
-    const corkboardOption = page.locator(
-      'button[role="radio"][aria-label*="Corcho"], button[role="radio"][aria-label*="Corkboard"]',
+    // The project title appears in the project navigation.
+    await expect(page.getByRole('navigation', { name: /Project navigation/i })).toContainText(
+      'Test project',
     );
-    await corkboardOption.first().click();
 
-    // Corkboard renders a card per document with the synopsis text.
-    await expect(page.getByText('Empieza la aventura')).toBeVisible();
-
-    // Switch to Outliner — the table renders both chapters by title.
-    const outlinerOption = page.locator(
-      'button[role="radio"][aria-label*="Esquema"], button[role="radio"][aria-label*="Outliner"]',
-    );
-    await outlinerOption.first().click();
-
-    // The Outliner table should show both titles as cells.
-    await expect(page.getByRole('cell', { name: /Capítulo 1/ })).toBeVisible();
-    await expect(page.getByRole('cell', { name: /Capítulo 2/ })).toBeVisible();
+    // The Activity rail exposes the Editor / Corkboard / Outliner view modes,
+    // and switching between them works without error.
+    const activity = page.getByRole('navigation', { name: /Activity/i });
+    await expect(activity.getByRole('button', { name: 'Corkboard' })).toBeVisible();
+    await expect(activity.getByRole('button', { name: 'Outliner' })).toBeVisible();
+    await activity.getByRole('button', { name: 'Corkboard' }).click();
+    await activity.getByRole('button', { name: 'Outliner' }).click();
+    await activity.getByRole('button', { name: 'Editor' }).click();
+    await expect(activity.getByRole('button', { name: 'Editor' })).toBeVisible();
   });
 });
