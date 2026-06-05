@@ -12,6 +12,7 @@ declare module 'vue' {
     AppRail: typeof import('./components/AppRail.vue')['default']
     AppStatusBar: typeof import('./components/AppStatusBar.vue')['default']
     AppTopBar: typeof import('./components/AppTopBar.vue')['default']
+    AppVersion: typeof import('./components/AppVersion.vue')['default']
     BibliographyDialog: typeof import('./components/BibliographyDialog.vue')['default']
     Binder: typeof import('./components/Binder.vue')['default']
     CitationPickerDialog: typeof import('./components/CitationPickerDialog.vue')['default']
