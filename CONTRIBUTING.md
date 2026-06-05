@@ -12,7 +12,7 @@ Modelo de ramas, naming y flujo de release completos en **[docs/WORKFLOW.md](./d
    - `pnpm typecheck`
    - `pnpm test`
 4. PR **hacia `develop`**, pequeño y de foco único. Si una historia toca >5 archivos, considéralo un indicio de que se puede dividir.
-5. Merge cuando el **CI esté verde**. Las releases salen de `develop` → `main` (PR) y se taggean en `main`.
+5. Merge cuando el **CI esté verde**. Las releases son un **fast-forward** de `main` a un commit verde de `develop` + tag `vX.Y.Z` en `main` (ver [WORKFLOW](./docs/WORKFLOW.md)).
 
 ## Reglas de oro del proyecto
 

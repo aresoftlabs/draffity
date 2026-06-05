@@ -11,20 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  guard-main-source:
-    name: Guard main PR source
-    # PRs into main may only come from develop or hotfix/* branches.
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Only develop or hotfix/* may target main
-        run: |
-          head="${{ github.head_ref }}"
-          if [[ "$head" != "develop" && "$head" != hotfix/* ]]; then
-            echo "::error::PRs a main deben venir de 'develop' o 'hotfix/*' (recibido '$head')."
-            exit 1
-          fi
-
   lint-and-test-js:
     name: Lint & test (JS)
     runs-on: ubuntu-latest
@@ -173,9 +159,9 @@ jobs:
 
   build-tauri:
     name: Build (${{ matrix.os }})
-    # Installer build only matters at the main boundary (PRs into main and
-    # pushes to main) — develop / feature PRs skip it to stay fast.
-    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    # main is fast-forwarded from develop (no PRs to main), so the installer
+    # build runs as a smoke check on the push to main. develop stays fast.
+    if: github.ref == 'refs/heads/main'
     needs: [lint-and-test-js, lint-and-test-rs, e2e]
     strategy:
       fail-fast: false
