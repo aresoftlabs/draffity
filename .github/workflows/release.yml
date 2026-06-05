@@ -63,7 +63,18 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Draffity ${{ github.ref_name }}'
-          releaseBody: 'See CHANGELOG.md for details. Manual sanity-check before publishing.'
+          releaseBody: |
+            ## Instalación
+            Descargá el instalable de tu sistema (abajo). **Builds sin firmar** (prerelease).
+            - **Windows** (`.msi`): si SmartScreen avisa "editor desconocido" → _Más información → Ejecutar de todos modos_.
+            - **Linux** (`.AppImage`): `chmod +x <archivo> && ./<archivo>`.
+
+            ## Incluye
+            Escritura multi-formato · export EPUB · IA por BYOK (OpenRouter) · **voz 100 % local** (dictado Whisper + lectura Piper, catálogo dinámico de voces).
+
+            > ⚠️ Prerelease: sin firma de código, sin build macOS y sin auto-update todavía (instalación/actualización manual).
+
+            **Cambios:** https://github.com/aresoftlabs/draffity/commits/${{ github.ref_name }}
           releaseDraft: true
           prerelease: true
           projectPath: apps/desktop
