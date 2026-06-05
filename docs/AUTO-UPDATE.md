@@ -1,9 +1,9 @@
-# Auto-update — preparación (feature futura)
+# Auto-update
 
-> **Estado: NO implementado.** Este documento deja el terreno preparado para
-> implementar la auto-actualización más adelante. Hoy el código **no** referencia
-> ningún updater (sin `tauri-plugin-updater`, sin `plugins.updater` en
-> `tauri.conf.json`, sin claves de firma). Repo definitivo: `aresoftlabs/draffity`.
+> **Estado: IMPLEMENTADO.** Auto-update activo para Windows (NSIS per-user) y
+> Linux (AppImage), sirviendo manifiesto + instaladores firmados desde
+> `bins.draffity.com/app/`. Diseño: `docs/specs/2026-06-05-auto-update-tauri-design.md`.
+> Pendiente: macOS y firma OS-level (diferidos). Repo: `aresoftlabs/draffity`.
 
 ## Cómo funciona el auto-update en Tauri 2
 
@@ -48,18 +48,18 @@ El instalador y el manifiesto deben ser **accesibles públicamente sin autentica
 - Mantener el `release.yml` actual (ya usa `tauri-action`); sumarle macOS, la firma,
   y `includeUpdaterJson`. Quitar `releaseDraft`/`prerelease` cuando se publique en serio.
 
-## Checklist para implementar (cuando se decida)
+## Checklist de implementación
 
-- [ ] Decidir y ejecutar **releases públicas** (repo público con readiness, o host público).
-- [ ] `tauri signer generate`; cargar privada+password como secrets de CI; pública en config.
-- [ ] Agregar `tauri-plugin-updater` (Rust) y `@tauri-apps/plugin-updater` (JS).
-- [ ] `plugins.updater` en `tauri.conf.json` (`endpoints` + `pubkey`).
-- [ ] Sumar **macOS** a `release.yml` + `includeUpdaterJson: true` + firma.
-- [ ] UI mínima: chequeo de updates, descarga, "reiniciar para actualizar".
-- [ ] Probar el ciclo end-to-end (vX → vX+1) en las 3 plataformas.
+- [x] Decidir y ejecutar **releases públicas** (host público `bins.draffity.com/app/`).
+- [x] `tauri signer generate`; cargar privada+password como secrets de CI; pública en config.
+- [x] Agregar `tauri-plugin-updater` (Rust) y `@tauri-apps/plugin-updater` (JS).
+- [x] `plugins.updater` en `tauri.conf.json` (`endpoints` + `pubkey`).
+- [x] UI mínima: chequeo de updates, descarga, "reiniciar para actualizar".
+- [x] Script de manifiesto (`scripts/build-update-manifest.mjs`) y pruebas.
+- [ ] Sumar **macOS** a `release.yml` + firma OS-level (diferido).
+- [ ] Probar el ciclo end-to-end (vX → vX+1) en las 3 plataformas (pendiente macOS).
 
-## Bloqueante actual relacionado
+## Pendientes diferidos
 
-Mientras el repo siga **privado**, tanto el auto-update como la **descarga de binarios
-de voz** (whisper) fallan con 404 para clientes sin token. Resolver la distribución
-pública desbloquea **ambos** a la vez.
+macOS y la firma a nivel OS (Gatekeeper notarization) están diferidos para después del
+open-source prep. Véase la nota en `memory/release-ci-deferred.md`.
