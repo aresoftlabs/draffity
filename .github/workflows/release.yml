@@ -91,15 +91,24 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
           VERSION="${GITHUB_REF_NAME#v}"
           BUNDLE="apps/desktop/target/release/bundle"
           if [ "$RUNNER_OS" = "Windows" ]; then
             KEY="windows-x86_64"
-            INSTALLER=$(ls "$BUNDLE"/nsis/*-setup.exe | head -n1)
+            matches=("$BUNDLE"/nsis/*-setup.exe)
           else
             KEY="linux-x86_64"
-            INSTALLER=$(ls "$BUNDLE"/appimage/*.AppImage | head -n1)
+            matches=("$BUNDLE"/appimage/*.AppImage)
           fi
+          # Fail loud if the build produced no installer, instead of letting a
+          # later command choke on an empty path. (Glob-array + nullglob avoids
+          # the `ls | head` SIGPIPE-under-pipefail trap.)
+          if [ ${#matches[@]} -eq 0 ]; then
+            echo "::error::no installer found for $KEY under $BUNDLE" >&2
+            exit 1
+          fi
+          INSTALLER="${matches[0]}"
           BASENAME=$(basename "$INSTALLER")
           echo "Uploading $BASENAME -> s3://bins-draffity/app/$VERSION/"
           aws s3 cp "$INSTALLER" "s3://bins-draffity/app/$VERSION/$BASENAME" --endpoint-url "$R2_ENDPOINT"
