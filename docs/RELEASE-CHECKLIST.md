@@ -10,7 +10,7 @@ Pasos manuales para verificar antes de cortar una release alpha.
 - [ ] `pnpm test` (Vitest) verde.
 - [ ] `cargo test --manifest-path apps/desktop/Cargo.toml` verde.
 - [ ] `cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings` verde.
-- [ ] `pnpm tauri:build` produce un MSI en `apps/desktop/target/release/bundle/msi/` y/o un AppImage en `apps/desktop/target/release/bundle/appimage/`.
+- [ ] `pnpm tauri:build` produce un instalador NSIS en `apps/desktop/target/release/bundle/nsis/` (`*-setup.exe`) y/o un AppImage en `apps/desktop/target/release/bundle/appimage/`.
 - [ ] El instalable abre la app sin crash.
 
 ## 2. Smoke test E2E manual
@@ -57,7 +57,7 @@ Ejecutar en el binario empaquetado (no en `tauri:dev`).
 
 ## 5. Post-release
 
-- [ ] Verificar descargas: bajar el MSI/AppImage de la release y reproducir el smoke test E2E.
+- [ ] Verificar descargas: bajar el instalador NSIS (`.exe`)/AppImage de la release y reproducir el smoke test E2E.
 - [ ] Anunciar en el canal correspondiente.
 - [ ] Crear nuevo issue de tracking para la siguiente versión.
 

@@ -845,5 +845,18 @@
     "words": "words",
     "session": "Session",
     "goal": "Goal"
+  },
+  "updater": {
+    "available": "Draffity {version} available",
+    "updateNow": "Update now",
+    "later": "Later",
+    "downloading": "Downloading… {percent}%",
+    "restart": "Restart to apply",
+    "checkButton": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You're up to date",
+    "error": "Couldn't check for updates",
+    "currentVersion": "Current version",
+    "section": "Updates"
   }
 }

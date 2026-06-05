@@ -18,6 +18,7 @@ import SettingsBackups from '@/components/SettingsBackups.vue';
 import SettingsAI from '@/components/SettingsAI.vue';
 import SettingsVoice from '@/components/SettingsVoice.vue';
 import SettingsStats from '@/components/SettingsStats.vue';
+import SettingsUpdates from '@/components/SettingsUpdates.vue';
 import { useUiStore } from '@/stores/ui';
 import { useProjectStore } from '@/stores/project';
 import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
@@ -487,6 +488,8 @@ const navSections: { id: SettingsSection; key: string }[] = [
 
         <!-- ACERCA DE -->
         <div v-show="activeSection === 'about'" class="space-y-8">
+          <SettingsUpdates />
+
           <section v-if="crashReportingActive" class="flex items-center justify-between gap-4">
             <div>
               <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70">

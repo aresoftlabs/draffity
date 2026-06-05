@@ -7,6 +7,8 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import AppTopBar from '@/components/AppTopBar.vue';
 import OnboardingDialog from '@/components/OnboardingDialog.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
+import UpdateBanner from '@/components/UpdateBanner.vue';
+import { useUpdater } from '@/composables/useUpdater';
 import { registerCommands } from '@/composables/useCommandRegistry';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -16,6 +18,7 @@ const router = useRouter();
 const { t } = useI18n();
 const palette = useCommandPalette();
 const ui = useUiStore();
+const updater = useUpdater();
 
 // Atajo global âŒ˜K (la acciÃ³n `commandPalette` ya existe en keybindings).
 useShortcuts({ commandPalette: () => palette.toggle() });
@@ -23,6 +26,7 @@ useShortcuts({ commandPalette: () => palette.toggle() });
 // Comandos globales: disponibles en cualquier pantalla.
 let offGlobalCmds: (() => void) | null = null;
 onMounted(() => {
+  void updater.check({ silent: true });
   offGlobalCmds = registerCommands([
     {
       id: 'global.dashboard',
@@ -76,5 +80,6 @@ onBeforeUnmount(() => offGlobalCmds?.());
     <Toast position="bottom-right" />
     <ConfirmDialog />
     <CommandPalette />
+    <UpdateBanner />
   </div>
 </template>

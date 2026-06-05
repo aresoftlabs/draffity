@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Draffity",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "identifier": "com.draffity.app",
   "build": {
     "beforeDevCommand": "pnpm --filter @draffity/ui dev",
@@ -29,7 +29,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "appimage"],
+    "targets": ["nsis", "appimage"],
+    "createUpdaterArtifacts": true,
     "category": "Productivity",
     "shortDescription": "Asistente de escritura multi-formato",
     "longDescription": "Aplicación de escritura desktop multi-formato (novela, paper, manga, artículo, guion).",
@@ -39,6 +40,20 @@
       "icons/128x128@2x.png",
       "icons/icon.png",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://bins.draffity.com/app/stable/latest.json"],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVBNUIxQTFDQjI1RUYzQTYKUldTbTgxNnlIQnBiNnBrTWNHY0MxYWg4U1Y1VVBMR2Uyc2NYaFk3dndWUmhvMkQyWDQyR0MxQUwK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

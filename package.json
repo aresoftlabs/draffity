@@ -1,6 +1,6 @@
 {
   "name": "draffity",
-  "version": "0.12.0-beta.0",
+  "version": "0.13.0",
   "private": true,
   "description": "Asistente de escritura desktop multi-formato (Tauri 2 + Rust + Vue 3)",
   "license": "GPL-3.0-or-later",
@@ -18,6 +18,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter @draffity/ui test:e2e",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "lint": "pnpm lint:js && pnpm lint:rs",
     "lint:js": "eslint .",
     "lint:rs": "cargo clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings",

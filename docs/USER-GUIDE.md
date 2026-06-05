@@ -4,8 +4,10 @@
 
 ## Instalación
 
-- **Windows**: descarga `draffity_<version>_x64_en-US.msi` y ejecuta el instalador.
-- **Linux**: descarga `draffity_<version>_amd64.AppImage`, dale permisos de ejecución (`chmod +x ...`) y ábrelo.
+- **Windows**: descarga `Draffity_<version>_x64-setup.exe` y ejecútalo (instalador NSIS; se instala para tu usuario, sin pedir permisos de administrador).
+- **Linux**: descarga `Draffity_<version>_amd64.AppImage`, dale permisos de ejecución (`chmod +x ...`) y ábrelo.
+
+La app se **actualiza sola**: al abrir avisa si hay una versión nueva y te deja instalarla con un clic.
 
 Al primer arranque verás un onboarding con 3 pantallas — síguelo o sáltalo.
 
