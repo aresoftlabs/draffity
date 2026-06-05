@@ -23,7 +23,15 @@ const dismissed = ref(false); // dismissed for this session only
 
 let pending: Update | null = null;
 
-const bannerVisible = computed(() => status.value === 'available' && !dismissed.value);
+// Single source of truth for "is the banner on screen". It stays up through the
+// whole flow — an available (non-dismissed) update, the download, and the
+// ready-to-restart state — so the component never has to re-derive visibility.
+const bannerVisible = computed(
+  () =>
+    (status.value === 'available' && !dismissed.value) ||
+    status.value === 'downloading' ||
+    status.value === 'ready',
+);
 
 export function useUpdater() {
   /** Check the endpoint. `silent` swallows errors (startup / offline). */
@@ -46,10 +54,11 @@ export function useUpdater() {
         status.value = 'uptodate';
       }
     } catch (e) {
-      status.value = 'error';
       errorMessage.value = e instanceof Error ? e.message : String(e);
-      // `silent` is intentional: a failed startup check must not nag the user.
-      void silent;
+      // A failed *silent* check (startup / offline) must not nag the user: stay
+      // 'idle' and keep the message only for diagnostics. A manual check
+      // surfaces 'error' so the Settings panel can show it.
+      status.value = silent ? 'idle' : 'error';
     }
   }
 
@@ -60,21 +69,30 @@ export function useUpdater() {
     progress.value = 0;
     let total = 0;
     let received = 0;
-    await pending.downloadAndInstall((event: DownloadEvent) => {
-      switch (event.event) {
-        case 'Started':
-          total = event.data.contentLength ?? 0;
-          break;
-        case 'Progress':
-          received += event.data.chunkLength ?? 0;
-          progress.value = total > 0 ? Math.min(100, Math.round((received / total) * 100)) : 0;
-          break;
-        case 'Finished':
-          progress.value = 100;
-          break;
-      }
-    });
-    status.value = 'ready';
+    try {
+      await pending.downloadAndInstall((event: DownloadEvent) => {
+        switch (event.event) {
+          case 'Started':
+            total = event.data.contentLength ?? 0;
+            break;
+          case 'Progress':
+            received += event.data.chunkLength ?? 0;
+            progress.value = total > 0 ? Math.min(100, Math.round((received / total) * 100)) : 0;
+            break;
+          case 'Finished':
+            progress.value = 100;
+            break;
+        }
+      });
+      status.value = 'ready';
+    } catch (e) {
+      // Surface the failure and keep the machine recoverable: if we left status
+      // at 'downloading', the re-entry guard would block every future check().
+      // Re-throw so the banner/Settings can react.
+      status.value = 'error';
+      errorMessage.value = e instanceof Error ? e.message : String(e);
+      throw e;
+    }
   }
 
   /** Restart the app to run the freshly installed version. */
