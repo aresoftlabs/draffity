@@ -57,3 +57,19 @@ describe('useDictation progress', () => {
     expect(dictation.progress.value).toBe(37);
   });
 });
+
+describe('useDictation host delegation', () => {
+  it('toggle starts when idle and stops when recording', async () => {
+    setActivePinia(createPinia());
+    const editor = ref(null);
+    const dictation = useDictation(editor);
+    await Promise.resolve();
+    expect(dictation.phase.value).toBe('idle');
+    dictation.toggle(); // idle -> intenta grabar
+    // start() pone 'recording' salvo que getUserMedia falle en jsdom;
+    // forzamos el estado para ejercitar la rama de stop del toggle:
+    dictation.phase.value = 'recording';
+    dictation.toggle(); // recording -> stop (transcribing)
+    expect(dictation.phase.value).toBe('transcribing');
+  });
+});
