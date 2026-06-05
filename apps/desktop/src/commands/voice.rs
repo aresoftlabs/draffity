@@ -610,26 +610,6 @@ pub async fn save_voice_note(
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AvailableModelEntry {
-    pub id: String,
-    pub name: String,
-    pub lang: String,
-    pub size_mb: u32,
-    pub recommended: bool,
-    pub installed: bool,
-    pub disk_bytes: u64,
-    pub kind: &'static str, // "voice" or "model"
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LanguageGroup {
-    pub lang: String,
-    pub items: Vec<AvailableModelEntry>,
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct DiskUsageEntry {
     pub id: String,
     pub bytes: u64,
@@ -667,83 +647,6 @@ pub fn get_disk_usage(state: State<'_, AppState>) -> Vec<DiskUsageEntry> {
     }
 
     entries
-}
-
-/// Pure: group voices + models by language. Takes pre-computed installed status
-/// so the function is testable without filesystem access.
-pub fn group_available_models<'v>(
-    voices: impl Iterator<Item = (&'v crate::services::voice::PiperVoiceInfo, bool, u64)>,
-    models: impl Iterator<Item = (&'v crate::services::voice::WhisperModelInfo, bool, u64)>,
-) -> Vec<LanguageGroup> {
-    let entries: Vec<AvailableModelEntry> = voices
-        .map(|(v, installed, bytes)| AvailableModelEntry {
-            id: v.id.to_string(),
-            name: v.name.to_string(),
-            lang: v.lang.to_string(),
-            size_mb: v.size_mb,
-            recommended: v.recommended,
-            installed,
-            disk_bytes: bytes,
-            kind: "voice",
-        })
-        .chain(models.map(|(m, installed, bytes)| AvailableModelEntry {
-            id: m.id.to_string(),
-            name: m.filename.to_string(),
-            lang: "other".to_string(),
-            size_mb: m.size_mb,
-            recommended: m.recommended,
-            installed,
-            disk_bytes: bytes,
-            kind: "model",
-        }))
-        .collect();
-
-    // Group by lang preserving order of first occurrence.
-    let mut groups: Vec<LanguageGroup> = Vec::new();
-    for entry in entries {
-        if let Some(g) = groups
-            .iter_mut()
-            .find(|g: &&mut LanguageGroup| g.lang == entry.lang)
-        {
-            g.items.push(entry);
-        } else {
-            groups.push(LanguageGroup {
-                lang: entry.lang.clone(),
-                items: vec![entry],
-            });
-        }
-    }
-    groups
-}
-
-#[tauri::command]
-pub fn list_available_models(state: State<'_, AppState>) -> Vec<LanguageGroup> {
-    let voices = piper_voices().iter().map(|v| {
-        let installed = state.resources.voice_file_path(v.onnx_filename).exists()
-            && state
-                .resources
-                .voice_file_path(&voice_config_filename(v))
-                .exists();
-        let bytes = if installed {
-            std::fs::metadata(state.resources.voice_file_path(v.onnx_filename))
-                .map(|m| m.len())
-                .unwrap_or(0)
-        } else {
-            0
-        };
-        (v, installed, bytes)
-    });
-    let models = whisper_models().iter().map(|m| {
-        let p = state.resources.model_path(m.filename);
-        let installed = p.exists();
-        let bytes = if installed {
-            std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0)
-        } else {
-            0
-        };
-        (m, installed, bytes)
-    });
-    group_available_models(voices, models)
 }
 
 /// Voces TTS instaladas (id ⇒ `<id>.onnx` y `<id>.onnx.json` presentes).
@@ -793,84 +696,6 @@ pub fn delete_voice_note(state: State<'_, AppState>, id: String) -> CmdResult<()
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn groups_voices_and_models_by_language() {
-        use crate::services::voice::{PiperVoiceInfo, WhisperModelInfo};
-
-        let voice = PiperVoiceInfo {
-            id: "es_ES-carlfm",
-            name: "Carl (es)",
-            lang: "es",
-            onnx_filename: "es_ES-carlfm.onnx",
-            onnx_url: "",
-            size_mb: 42,
-            recommended: false,
-        };
-        let model = WhisperModelInfo {
-            id: "base",
-            filename: "ggml-base.bin",
-            size_mb: 142,
-            recommended: false,
-            sha256: None,
-        };
-        let groups = group_available_models(
-            [(&voice, true, 44000)].into_iter(),
-            [(&model, false, 0)].into_iter(),
-        );
-
-        assert_eq!(groups.len(), 2);
-        let es = groups.iter().find(|g| g.lang == "es").unwrap();
-        assert_eq!(es.items.len(), 1);
-        assert_eq!(es.items[0].id, "es_ES-carlfm");
-        assert!(es.items[0].installed);
-        assert_eq!(es.items[0].disk_bytes, 44000);
-        assert_eq!(es.items[0].kind, "voice");
-
-        let other = groups.iter().find(|g| g.lang == "other").unwrap();
-        assert_eq!(other.items.len(), 1);
-        assert_eq!(other.items[0].id, "base");
-        assert!(!other.items[0].installed);
-        assert_eq!(other.items[0].kind, "model");
-    }
-
-    #[test]
-    fn empty_input_returns_empty_groups() {
-        let groups = group_available_models(std::iter::empty(), std::iter::empty());
-        assert!(groups.is_empty());
-    }
-
-    #[test]
-    fn models_from_same_language_group_together() {
-        use crate::services::voice::PiperVoiceInfo;
-
-        let v1 = PiperVoiceInfo {
-            id: "en_US-amy-medium",
-            name: "Amy (en)",
-            lang: "en",
-            onnx_filename: "en_US-amy-medium.onnx",
-            onnx_url: "",
-            size_mb: 63,
-            recommended: false,
-        };
-        let v2 = PiperVoiceInfo {
-            id: "en_GB-alan-medium",
-            name: "Alan (en)",
-            lang: "en",
-            onnx_filename: "en_GB-alan-medium.onnx",
-            onnx_url: "",
-            size_mb: 60,
-            recommended: false,
-        };
-        let groups = group_available_models(
-            [(&v1, false, 0), (&v2, false, 0)].into_iter(),
-            std::iter::empty(),
-        );
-        let en = groups.iter().find(|g| g.lang == "en").unwrap();
-        assert_eq!(en.items.len(), 2);
-        assert_eq!(en.items[0].id, "en_US-amy-medium");
-        assert_eq!(en.items[1].id, "en_GB-alan-medium");
-    }
 
     #[test]
     fn encode_wav_pcm16_produces_valid_header() {
