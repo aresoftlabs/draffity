@@ -61,7 +61,7 @@ describe('StreamingDictationMode', () => {
     const mode = createStreamingDictationMode();
     const ctx = makeCtx();
     await mode.start(ctx);
-    expect(ipc.dictationStreamStart).toHaveBeenCalledWith(16000);
+    expect(ipc.dictationStreamStart).toHaveBeenCalledWith(16000, expect.any(String));
     expect(capture.start).toHaveBeenCalled();
     expect(ctx.setPhase).toHaveBeenCalledWith('recording');
   });

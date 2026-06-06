@@ -308,8 +308,8 @@ export const ipc = {
   getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
   getAccelStatus: () => invoke<AccelStatus>('get_accel_status'),
   getVoiceCatalog: () => invoke<CatalogLang[]>('get_voice_catalog'),
-  dictationStreamStart: (sampleRate: number) =>
-    invoke<void>('dictation_stream_start', { sampleRate }),
+  dictationStreamStart: (sampleRate: number, language?: string | null) =>
+    invoke<void>('dictation_stream_start', { sampleRate, language: language ?? null }),
   dictationStreamFeed: (pcm: Int16Array) =>
     invoke<void>('dictation_stream_feed', { pcm: Array.from(pcm) }),
   dictationStreamStop: () => invoke<VoiceStreamFinal[]>('dictation_stream_stop'),

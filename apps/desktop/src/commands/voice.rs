@@ -395,13 +395,17 @@ fn emit_stream_events(app: &AppHandle, events: Vec<StreamEvent>) {
 /// Inicia una sesión de dictado en streaming. `sample_rate` del audio que se
 /// enviará por `dictation_stream_feed` (típicamente 16000).
 #[tauri::command]
-pub async fn dictation_stream_start(state: State<'_, AppState>, sample_rate: u32) -> CmdResult<()> {
+pub async fn dictation_stream_start(
+    state: State<'_, AppState>,
+    sample_rate: u32,
+    language: Option<String>,
+) -> CmdResult<()> {
     if !state.asr.available() {
         return Err(AppError::Unsupported(
             "el dictado no está disponible".into(),
         ));
     }
-    state.dictation_stream.start(sample_rate);
+    state.dictation_stream.start(sample_rate, language);
     Ok(())
 }
 

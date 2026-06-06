@@ -24,9 +24,9 @@ impl DictationStreamManager {
     }
 
     /// Inicia una sesión nueva (reemplaza cualquiera previa).
-    pub fn start(&self, sample_rate: u32) {
+    pub fn start(&self, sample_rate: u32, language: Option<String>) {
         let t = (self.make_transcriber)();
-        *self.session.lock().unwrap() = Some(WhisperStreamSession::new(t, sample_rate));
+        *self.session.lock().unwrap() = Some(WhisperStreamSession::new(t, sample_rate, language));
     }
 
     /// Alimenta PCM; devuelve los eventos (vacío si no hay sesión).
@@ -59,7 +59,7 @@ mod tests {
 
     struct Mock;
     impl Transcriber for Mock {
-        fn transcribe(&self, _pcm: &[i16], _sr: u32) -> AppResult<String> {
+        fn transcribe(&self, _pcm: &[i16], _sr: u32, _language: Option<&str>) -> AppResult<String> {
             Ok("texto".into())
         }
     }
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn start_then_feed_emits_and_stop_flushes() {
         let m = manager();
-        m.start(16000);
+        m.start(16000, None);
         // Suficiente voz para un parcial (partial_every = 11200 @ 16 kHz).
         let ev = m.feed(&vec![8000i16; 11200]);
         assert!(ev.iter().any(|e| matches!(e, StreamEvent::Partial(_))));
@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn cancel_drops_session_without_events() {
         let m = manager();
-        m.start(16000);
+        m.start(16000, None);
         m.feed(&vec![8000i16; 4000]);
         m.cancel();
         assert!(m.feed(&[8000; 16000]).is_empty());
