@@ -1,6 +1,7 @@
 import { toRaw, type Ref } from 'vue';
 import type { SingleCommands } from '@tiptap/core';
 import '@/editor/extensions/dictation-placeholder';
+import '@/editor/extensions/dictation-ghost';
 import type { EditorDictationBuffer } from './types';
 
 /** Interfaz mínima del Editor que este buffer necesita. */
@@ -32,6 +33,18 @@ export function createEditorBuffer(editor: Ref<EditorLike | null>): EditorDictat
     },
     clearPending() {
       rawEditor()?.commands.clearDictationPlaceholder?.();
+    },
+    setGhost(text: string) {
+      rawEditor()?.commands.setDictationGhost?.(text);
+    },
+    clearGhost() {
+      rawEditor()?.commands.clearDictationGhost?.();
+    },
+    commitStreaming(text: string): boolean {
+      const ed = rawEditor();
+      if (!ed) return false;
+      ed.commands.clearDictationGhost?.();
+      return ed.commands.insertContent(text) ?? false;
     },
   };
 }

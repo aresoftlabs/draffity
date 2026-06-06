@@ -3,6 +3,7 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { ref } from 'vue';
 import { DictationPlaceholder } from '@/editor/extensions/dictation-placeholder';
+import { DictationGhost } from '@/editor/extensions/dictation-ghost';
 import { createEditorBuffer } from './editorBuffer';
 
 function makeEditor(content: string) {
@@ -43,5 +44,21 @@ describe('createEditorBuffer', () => {
     expect(() => buf.beginPending()).not.toThrow();
     expect(buf.commit('x')).toBe(false);
     expect(() => buf.clearPending()).not.toThrow();
+  });
+});
+
+describe('createEditorBuffer streaming', () => {
+  it('setGhost/clearGhost toggles the ghost; commitStreaming inserts and clears ghost', () => {
+    const ed = new Editor({
+      extensions: [StarterKit, DictationPlaceholder, DictationGhost],
+      content: '<p>Hola</p>',
+    });
+    ed.commands.setTextSelection(5); // tras "Hola" (pos 5 = fin del texto)
+    const buf = createEditorBuffer(ref(ed));
+    buf.setGhost('mundo');
+    buf.commitStreaming(' mundo ');
+    expect(ed.getText()).toContain('Hola mundo ');
+    buf.clearGhost();
+    ed.destroy();
   });
 });

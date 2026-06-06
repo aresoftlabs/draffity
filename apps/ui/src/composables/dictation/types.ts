@@ -19,6 +19,12 @@ export interface EditorDictationBuffer {
   commit(text: string): boolean;
   /** Descarta el ancla/marcador sin insertar. */
   clearPending(): void;
+  /** Streaming: muestra/actualiza el fantasma gris en el cursor. */
+  setGhost(text: string): void;
+  /** Streaming: limpia el fantasma. */
+  clearGhost(): void;
+  /** Streaming: inserta texto confirmado en el cursor (avanza el cursor). */
+  commitStreaming(text: string): boolean;
 }
 
 /** Handle del grabador tal como lo expone `useVoiceRecorder`. */

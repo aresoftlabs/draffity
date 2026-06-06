@@ -10,7 +10,14 @@ import { ipc } from '@/services/ipc';
 
 function makeCtx(over: Partial<DictationContext> = {}): DictationContext {
   return {
-    editor: { beginPending: vi.fn(), commit: vi.fn(() => true), clearPending: vi.fn() },
+    editor: {
+      beginPending: vi.fn(),
+      commit: vi.fn(() => true),
+      clearPending: vi.fn(),
+      setGhost: vi.fn(),
+      clearGhost: vi.fn(),
+      commitStreaming: vi.fn(() => true),
+    },
     recorder: {
       start: vi.fn(async () => {}),
       stop: vi.fn(async () => ({ wav: new Uint8Array(), durationMs: 1000 })),
@@ -72,7 +79,14 @@ describe('ManualDictationMode', () => {
     });
     const mode = createManualDictationMode();
     const ctx = makeCtx({
-      editor: { beginPending: vi.fn(), commit: vi.fn(() => false), clearPending: vi.fn() },
+      editor: {
+        beginPending: vi.fn(),
+        commit: vi.fn(() => false),
+        clearPending: vi.fn(),
+        setGhost: vi.fn(),
+        clearGhost: vi.fn(),
+        commitStreaming: vi.fn(() => false),
+      },
     });
     await mode.start(ctx);
     await mode.stop(ctx);
