@@ -45,10 +45,8 @@ None of them transmit data without a deliberate action from you.
 
 ## Your right to delete
 
-To remove all Draffity data, delete the `<app_data>/Draffity`
-folder (the exact path depends on your OS — `~/Library/Application
-Support/Draffity/` on macOS, `%APPDATA%\Draffity\` on Windows,
-`~/.local/share/Draffity/` on Linux). The binary uninstaller does
+To remove all Draffity data, delete the `~/.draffity/` folder (on
+Windows: `%USERPROFILE%\.draffity\`). The binary uninstaller does
 not touch that folder so upgrades don't erase your work.
 
 ## Changes to this policy
@@ -58,13 +56,13 @@ the release CHANGELOG mentions the change.
 
 ## Data controller
 
-The data controller is **Aresoft SpA** (hola@aresoft.cl), the
+The data controller is **Aresoft SpA** (hello@draffity.com), the
 organisation that owns and maintains Draffity.
 
 ## Contact
 
 Bugs and privacy questions: open an issue on the Draffity repository
-or write to [hola@aresoft.cl](mailto:hola@aresoft.cl).
+or write to [hello@draffity.com](mailto:hello@draffity.com).
 
 ---
 

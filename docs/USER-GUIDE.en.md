@@ -60,7 +60,7 @@ In the Inspector, **Versions** section:
 ## Export
 
 1. From the project header, click **Export**.
-2. Choose a format: `Markdown`, `Word (DOCX)` or `EPUB`.
+2. Choose a format: `Markdown`, `Word (DOCX)`, `EPUB` or `PDF` (print-ready).
 3. Pick a destination on disk.
 
 The exporter walks the whole document tree in display order.
@@ -68,7 +68,7 @@ The exporter walks the whole document tree in display order.
 ## Settings
 
 - **Theme** — light, dark or follow OS.
-- **Language** — Spanish or English (full UI).
+- **Language** — global across 5 languages (English · Español · Français · Italiano · Português), applied to the UI and voice.
 - **Editor font** — serif (Lora), sans (Inter) or monospace (JetBrains Mono).
 - **Auto-save interval** — 200 ms to 3 seconds.
 - **Writing habit** — current and longest streak (consecutive days).
@@ -95,15 +95,15 @@ You can also import binaries manually if you already have the files.
 
 ## Data & privacy
 
-- Everything is stored on your local disk: a single SQLite file at `<app data folder>/draffity.db` (on Windows: `%APPDATA%\cl.aresoft.draffity`).
-- Logs go to `<app data folder>/logs/draffity.log` with daily rotation.
+- Everything is stored on your local disk, under `~/.draffity/` (on Windows: `%USERPROFILE%\.draffity\`): a single SQLite file `draffity.db`, plus `voice/`, `media/`, `backups/`, `templates/` and `logs/`.
+- Logs go to `~/.draffity/logs/draffity.log` with daily rotation.
 - No telemetry or external servers.
 
 ## Known issues in beta
 
-- PDF export is not yet available — coming in a follow-up iteration.
-- macOS is not supported in this beta (planned for v1.0).
+- PDF export produces a print-ready HTML page; convert it to PDF from your browser's print dialog ("Save as PDF").
+- macOS is not supported yet (planned for v1.0).
 
 ## Reporting a bug
 
-Check `<app data folder>/logs/draffity.log` and open an issue in the repository, attaching the log and steps to reproduce.
+Check `~/.draffity/logs/draffity.log` and open an issue in the repository, attaching the log and steps to reproduce.

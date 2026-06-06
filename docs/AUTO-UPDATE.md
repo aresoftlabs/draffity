@@ -2,8 +2,8 @@
 
 > **Estado: IMPLEMENTADO.** Auto-update activo para Windows (NSIS per-user) y
 > Linux (AppImage), sirviendo manifiesto + instaladores firmados desde
-> `bins.draffity.com/app/`. Diseño: `docs/specs/2026-06-05-auto-update-tauri-design.md`.
-> Pendiente: macOS y firma OS-level (diferidos). Repo: `aresoftlabs/draffity`.
+> `bins.draffity.com/app/`. Pendiente: macOS y firma OS-level (diferidos).
+> Repo open-source público: `aresoftlabs/draffity`.
 
 ## Cómo funciona el auto-update en Tauri 2
 
@@ -23,9 +23,10 @@ El instalador y el manifiesto deben ser **accesibles públicamente sin autentica
 - **Endpoint en R2 (no GitHub Releases).** El tag `v*` dispara `release.yml`, que
   buildea + firma (minisign) los instaladores y los sube a Cloudflare R2 (bucket
   `bins-draffity`), versionados en `app/<version>/`. Un job de agregación arma
-  `app/stable/latest.json`. La app lee ese manifiesto **público** (sin auth), lo que
-  sortea el bloqueante de repo privado (los assets de un GitHub Release dan 404 sin
-  token). Mismo patrón que el vendoreo de binarios whisper/voces.
+  `app/stable/latest.json`. La app lee ese manifiesto **público** (sin auth) servido
+  desde un dominio propio sobre R2. Servir desde R2 nos da control total del path,
+  evita el baile de draft/prerelease de GitHub Releases y reusa el mismo patrón que
+  el vendoreo de binarios whisper/voces.
 - **Manifiesto propio.** En vez de `includeUpdaterJson` de `tauri-action`, el
   manifiesto se arma con `scripts/build-update-manifest.mjs` (subcomandos
   `fragment` por plataforma y `assemble`), con pruebas en
@@ -41,8 +42,6 @@ El instalador y el manifiesto deben ser **accesibles públicamente sin autentica
   intrusivo, chequeo silencioso al inicio) + `SettingsUpdates` (chequeo manual +
   versión actual).
 
-El diseño completo está en `docs/specs/2026-06-05-auto-update-tauri-design.md`.
-
 ## Checklist de implementación
 
 - [x] Decidir y ejecutar **releases públicas** (host público `bins.draffity.com/app/`).
@@ -56,5 +55,7 @@ El diseño completo está en `docs/specs/2026-06-05-auto-update-tauri-design.md`
 
 ## Pendientes diferidos
 
-macOS y la firma a nivel OS (Gatekeeper notarization) están diferidos para después del
-open-source prep. Véase la nota en `memory/release-ci-deferred.md`.
+macOS y la firma de código a nivel OS (SmartScreen en Windows, Gatekeeper /
+notarization en macOS) quedan diferidos: el auto-update ya funciona sin ellos en
+Windows y Linux. Hasta entonces, los instaladores son **sin firma OS-level** y el
+usuario puede ver un aviso de "editor desconocido" en la primera instalación.

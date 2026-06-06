@@ -59,7 +59,7 @@ the release CHANGELOG mentions the change.
 ## 8. Owner
 
 Draffity is developed and maintained by **Aresoft SpA**. Contact:
-[hola@aresoft.cl](mailto:hola@aresoft.cl).
+[hello@draffity.com](mailto:hello@draffity.com).
 
 ---
 

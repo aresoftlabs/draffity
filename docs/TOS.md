@@ -58,7 +58,7 @@ arriba se actualiza y el CHANGELOG del release lo menciona.
 ## 8. Titular
 
 Draffity es desarrollado y mantenido por **Aresoft SpA**. Consultas:
-[hola@aresoft.cl](mailto:hola@aresoft.cl).
+[hello@draffity.com](mailto:hello@draffity.com).
 
 ---
 

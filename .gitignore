@@ -57,10 +57,13 @@ CLAUDE.md
 CLAUDE.local.md
 AGENTS.md
 .claude/
+.atl/
 .gga
 backlog-v*.md
 
 # Superpowers visual brainstorming (local, not versioned)
 .superpowers/
 docs/superpowers/
+docs/plans/
+docs/specs/
 .sdd/

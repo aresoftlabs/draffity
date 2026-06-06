@@ -1,6 +1,8 @@
-# Release Checklist — v0.x.y-alpha
+# Release Checklist — v0.x.y (beta)
 
-Pasos manuales para verificar antes de cortar una release alpha.
+Pasos manuales para verificar antes de cortar una release. La distribución y el
+auto-update se sirven desde Cloudflare R2 (`bins.draffity.com`), no desde GitHub
+Releases — ver [`AUTO-UPDATE.md`](./AUTO-UPDATE.md).
 
 ## 1. Pre-flight (local)
 
@@ -30,7 +32,7 @@ Ejecutar en el binario empaquetado (no en `tauri:dev`).
 - [ ] **Export DOCX** → abre en Word/LibreOffice con headings y formato.
 - [ ] **Export EPUB** → opcional: validar con `epubcheck` (`epubcheck mi-novela.epub`).
 - [ ] **Snapshot manual**: en Inspector pulsar `+`, dar etiqueta, guardar. Editar, luego pulsar restore. El contenido vuelve a la versión guardada y aparece un nuevo `auto-restore` snapshot.
-- [ ] Cambiar idioma a English y de vuelta a Español. Toda la UI cambia.
+- [ ] Cambiar el idioma global (English · Español · Français · Italiano · Português) y volver. Toda la UI (y la voz) cambia.
 - [ ] Cambiar tema (claro / oscuro / sistema). Persiste tras reinicio.
 - [ ] Eliminar un proyecto archivado → se elimina con confirmación.
 - [ ] Revisar `<app_data>/logs/draffity.log` — al menos una línea `tracing initialised` está presente.
@@ -47,17 +49,21 @@ Ejecutar en el binario empaquetado (no en `tauri:dev`).
 
 ## 4. Tag y release
 
-- [ ] Commit de release: `chore(release): vX.Y.Z-alpha`.
-- [ ] `git tag vX.Y.Z-alpha`.
-- [ ] `git push origin main --tags`.
-- [ ] El workflow `release.yml` (`tauri-action`) correrá la matrix `windows-latest` + `ubuntu-latest` y subirá los artefactos a la GitHub Release como **draft**.
-- [ ] Editar la draft release con las release notes (copiar de `CHANGELOG.md`).
-- [ ] Marcar como `pre-release` (mientras siga en alpha/beta).
-- [ ] Publicar.
+- [ ] Commit de release: `chore(release): vX.Y.Z`.
+- [ ] `git tag vX.Y.Z`.
+- [ ] `git push origin develop --tags` (la rama principal es `develop`).
+- [ ] El workflow `release.yml` corre la matrix `windows-latest` + `ubuntu-latest` y, por plataforma:
+  - buildea y **firma con minisign** los instaladores (NSIS `.exe` / `.AppImage`);
+  - los sube a **Cloudflare R2** en `s3://bins-draffity/app/<version>/` (público vía `bins.draffity.com`);
+  - genera un fragmento de manifiesto con `scripts/build-update-manifest.mjs`.
+  - (`tauri-action` también crea una GitHub Release **draft / prerelease** como espejo de los binarios — opcional, no es el canal de updates.)
+- [ ] El job `manifest` ensambla `app/stable/latest.json` y lo publica en R2. **Esto es lo que activa el auto-update** para los usuarios existentes.
 
 ## 5. Post-release
 
-- [ ] Verificar descargas: bajar el instalador NSIS (`.exe`)/AppImage de la release y reproducir el smoke test E2E.
+- [ ] Verificar que `https://bins.draffity.com/app/stable/latest.json` lista la nueva versión y apunta a los instaladores de `app/<version>/`.
+- [ ] Bajar el instalador NSIS (`.exe`)/AppImage desde R2 (o [draffity.com](https://draffity.com)) y reproducir el smoke test E2E.
+- [ ] Verificar el **ciclo de auto-update**: abrir una versión anterior y confirmar que detecta e instala la nueva.
 - [ ] Anunciar en el canal correspondiente.
 - [ ] Crear nuevo issue de tracking para la siguiente versión.
 
@@ -65,6 +71,7 @@ Ejecutar en el binario empaquetado (no en `tauri:dev`).
 
 Si se descubre un bug bloqueante después de publicar:
 
-1. Mover la release a `draft` (los assets dejan de ser públicos).
-2. Comunicar en el canal pidiendo a los usuarios no actualizar.
-3. Preparar fix → bump patch → repetir el flujo.
+1. **Republicar `app/stable/latest.json` apuntando a la versión anterior** (el manifiesto en R2 es la fuente de verdad del updater, no la GitHub Release). Con esto los clientes dejan de ofrecer la versión defectuosa.
+2. Opcional: borrar los artefactos de `app/<version>/` de la versión rota.
+3. Comunicar en el canal pidiendo a quienes ya actualizaron que esperen el fix.
+4. Preparar fix → bump patch → repetir el flujo.
