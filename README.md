@@ -1,93 +1,150 @@
-# Draffity
+<h1 align="center">Draffity</h1>
 
-> Asistente de escritura desktop multi-formato — novela, paper, manga, artículo, guion.
-> **Tauri 2 + Rust + Vue 3 + TypeScript + PrimeVue + Tailwind + TipTap + SQLite.**
+<p align="center">
+  <strong>The free, local-first writing studio for every format.</strong><br>
+  Novels · papers · manga · articles · screenplays — one fast desktop app, yours forever.
+</p>
 
-[![CI](https://github.com/aresoftlabs/draffity/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
+<p align="center">
+  <a href="https://github.com/aresoftlabs/draffity/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/aresoftlabs/draffity/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="./LICENSE"><img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg"></a>
+  <a href="https://draffity.com"><img alt="Version" src="https://img.shields.io/badge/version-0.14.0--beta-7c3aed"></a>
+  <a href="https://draffity.com"><img alt="Platforms" src="https://img.shields.io/badge/platforms-Windows%20%C2%B7%20Linux-2563eb"></a>
+  <img alt="Free & open source" src="https://img.shields.io/badge/free%20%26%20open%20source-forever-16a34a">
+</p>
 
-Draffity es una aplicación desktop ligera y rápida para escritores que trabajan en distintos formatos. Inspirada en Scrivener, repensada con stack moderno. **100% gratuita y de código abierto**: editor completo, IA con BYOK (OpenRouter), voz local — sin tiers, sin suscripciones, sin gates de funcionalidad.
+<p align="center">
+  <a href="https://tauri.app"><img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white"></a>
+  <a href="https://www.rust-lang.org"><img alt="Rust" src="https://img.shields.io/badge/Rust-stable-000000?logo=rust&logoColor=white"></a>
+  <a href="https://vuejs.org"><img alt="Vue 3" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white"></a>
+  <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white"></a>
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white">
+</p>
 
-## Estado
+<p align="center">
+  <strong>English</strong> · <a href="./README.es.md">Español</a> &nbsp;|&nbsp;
+  <a href="https://draffity.com"><strong>Download →</strong></a>
+</p>
 
-**v0.12.0-beta.** Editor TipTap completo, binder con vistas Scrivener-like, codex, export/import DOCX/EPUB/MD/PDF, backups, plantillas, stats, a11y. Editor IA inline con BYOK (OpenRouter) — continuar/expandir/reescribir/describir con streaming y diff. Voz local (TTS + dictado) integrada. Ver `CHANGELOG.md` para el detalle.
+---
 
-Guía de usuario: [ES](./docs/USER-GUIDE.md) · [EN](./docs/USER-GUIDE.en.md).
+Draffity is a fast, lightweight desktop writing studio for long-form work in **any
+format** — novels, academic papers, manga, articles, screenplays. It pairs a
+**structured binder** and a **worldbuilding codex** with a full rich-text editor,
+optional AI assistance (bring your own key), and **100% local voice**. Everything runs
+on your machine, offline-first. **No tiers, no subscriptions, no feature gates.**
 
-## Características
+## Why Draffity
 
-- ✍️ Editor TipTap completo, multi-formato (novela, paper, manga, artículo, guion).
-- 🗂️ Binder con vistas tipo Scrivener + codex de worldbuilding.
-- 🤖 IA inline con **BYOK** (OpenRouter): continuar / expandir / reescribir / describir, con streaming y diff.
-- 🎙️ Voz **local**: dictado (ASR) + lectura (TTS), con aceleración por GPU.
-- 📤 Export / import DOCX · EPUB · Markdown · PDF.
-- 💾 Backups, plantillas, estadísticas, accesibilidad.
-- 🆓 100% gratis, sin tiers ni suscripciones. Local-first, sin telemetría.
+- 🆓 **Free & open source, forever.** GPL-3, no premium plan, no paywalled features, no upsells.
+- 🔒 **Local-first & private.** Your manuscripts live in a single file on your disk. No telemetry, no accounts, no servers.
+- 🗂️ **A multi-format writing studio.** One tool for the whole spectrum of long-form writing — structured binder, outline and codex included.
+- 🤖 **AI on your terms + local voice.** Inline AI with your own OpenRouter key, plus fully on-device dictation and read-aloud.
 
-## Instalación
+## Status
 
-Binarios firmados vía **Releases** — _próximamente_. Por ahora, **build from source** (ver [Desarrollo](#desarrollo)).
+**v0.14.0 (beta).** Complete TipTap editor, binder with structured outline views, codex,
+DOCX/EPUB/Markdown/PDF export & import, backups, templates, statistics, and accessibility.
+Inline AI editing with BYOK (OpenRouter) — continue / expand / rewrite / describe, with
+streaming and diff. Local voice (TTS + dictation, including live streaming dictation).
+Global language across UI **and** voice in 5 languages. See [`CHANGELOG.md`](./CHANGELOG.md)
+for the full history.
 
-## Requisitos
+The app **updates itself**: Windows and Linux receive signed auto-updates served from
+`bins.draffity.com`. macOS and OS-level code signing are on the roadmap.
+
+User guide: [English](./docs/USER-GUIDE.en.md) · [Español](./docs/USER-GUIDE.md).
+
+## Download & install
+
+Get the latest build from **[draffity.com](https://draffity.com)**:
+
+- **Windows** — `*-setup.exe` (NSIS installer; per-user, no admin rights required).
+- **Linux** — `*.AppImage` (`chmod +x` and run).
+
+Builds are signed for the in-app updater; OS-level code signing is not in place yet, so
+Windows SmartScreen may warn on first launch (_More info → Run anyway_). macOS is coming.
+Prefer to build it yourself? See [Development](#development).
+
+## Features
+
+- ✍️ Full rich-text editor (TipTap), multi-format: novel, paper, manga, article, screenplay.
+- 🗂️ Structured binder (outline + folders) with a worldbuilding codex.
+- 🤖 Inline AI with **BYOK** (OpenRouter): continue / expand / rewrite / describe, with streaming and diff.
+- 🎙️ **Local** voice: dictation (Whisper ASR, with live streaming) + read-aloud (Piper TTS), GPU-accelerated.
+- 📤 Export / import: DOCX · EPUB · Markdown · PDF (print-ready).
+- 🌍 5 languages across UI and voice: English · Español · Français · Italiano · Português.
+- 💾 Backups, templates, statistics, accessibility.
+- 🆓 100% free, no tiers or subscriptions. Local-first, no telemetry.
+
+## Requirements (to build from source)
 
 - **Node.js** ≥ 20
 - **pnpm** ≥ 10
-- **Rust** estable (≥ 1.77)
-- **Tauri CLI** 2.x (`cargo install tauri-cli --version "^2"` o vendrá con `pnpm install`)
-- En Linux: dependencias de WebKit (ver [docs Tauri prerequisites](https://tauri.app/start/prerequisites/))
+- **Rust** stable (≥ 1.77)
+- **Tauri CLI** 2.x (`cargo install tauri-cli --version "^2"`, or comes with `pnpm install`)
+- On Linux: WebKit dependencies (see [Tauri prerequisites](https://tauri.app/start/prerequisites/))
 
-## Desarrollo
+## Development
 
 ```bash
-pnpm install         # instala todas las deps del workspace
-pnpm tauri:dev       # arranca Vite + ventana Tauri en hot reload
+pnpm install         # install all workspace deps
+pnpm tauri:dev       # start Vite + Tauri window with hot reload
 ```
 
-## Scripts útiles
+## Useful scripts
 
-| Script             | Acción                                         |
-| ------------------ | ---------------------------------------------- |
-| `pnpm dev`         | Solo el frontend Vue (Vite)                    |
-| `pnpm tauri:dev`   | App completa Tauri + Vue en modo dev           |
-| `pnpm tauri:build` | Build instalable (MSI Windows, AppImage Linux) |
-| `pnpm test`        | Tests unit Rust + Vitest                       |
-| `pnpm test:e2e`    | E2E con Playwright                             |
-| `pnpm lint`        | ESLint + clippy                                |
-| `pnpm fmt`         | Prettier + rustfmt                             |
-| `pnpm typecheck`   | `vue-tsc --noEmit`                             |
+| Script             | Action                                           |
+| ------------------ | ------------------------------------------------ |
+| `pnpm dev`         | Frontend only (Vite)                             |
+| `pnpm tauri:dev`   | Full Tauri + Vue app in dev mode                 |
+| `pnpm tauri:build` | Installable build (NSIS Windows, AppImage Linux) |
+| `pnpm test`        | Unit tests (Rust + Vitest)                       |
+| `pnpm test:e2e`    | E2E with Playwright                              |
+| `pnpm lint`        | ESLint + clippy                                  |
+| `pnpm fmt`         | Prettier + rustfmt                               |
+| `pnpm typecheck`   | `vue-tsc --noEmit`                               |
 
-## Estructura del repo
+## Repository layout
 
 ```
 draffity/
 ├── apps/
-│   ├── desktop/       # Tauri 2 + Rust (backend, IPC, dominio)
+│   ├── desktop/       # Tauri 2 + Rust (backend, IPC, domain)
 │   └── ui/            # Vue 3 + TypeScript (frontend)
 ├── packages/
-│   ├── templates/     # Plantillas built-in (JSON)
-│   └── shared-types/  # Tipos compartidos Rust ↔ TS
-├── docs/              # ARCHITECTURE, WORKFLOW, USER-GUIDE, ADR/
+│   ├── templates/     # Built-in templates (JSON)
+│   └── shared-types/  # Shared Rust ↔ TS types
+├── docs/              # ARCHITECTURE, WORKFLOW, USER-GUIDE, AUTO-UPDATE, ADR/
 └── ...
 ```
 
-## Arquitectura
+## Architecture
 
-Ver [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). Patrones clave:
+See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). Key patterns:
 
-- **Service traits Rust** (`StorageService`, `ExportService`, `AIService`, `ASRService`, `TTSService`) con implementaciones locales intercambiables — nuevas implementaciones se conectan sin tocar el core.
-- **SQLite canónica única** (`<app_data>/draffity.db`) con migraciones versionadas aditivas. FTS5 sobre `documents` para búsqueda cross-proyecto. Invariante "1 proyecto activo" enforzado por índice parcial UNIQUE a nivel SQL. Razonamiento detallado en [ADR 0002](./docs/ADR/0002-sqlite-canonico-vs-por-proyecto.md).
-- **Plantillas como plugins** descriptas en JSON, descubiertas en `packages/templates/`.
+- **Rust service traits** (`StorageService`, `ExportService`, `AIService`, `ASRService`, `TTSService`) with swappable local implementations — new backends plug in without touching the core.
+- **Single canonical SQLite DB** (`~/.draffity/draffity.db`) with additive, versioned migrations. FTS5 over `documents` for cross-project search. The "1 active project" invariant is enforced by a partial UNIQUE index at the SQL level. Reasoning in [ADR 0002](./docs/ADR/0002-sqlite-canonico-vs-por-proyecto.md).
+- **Templates as plugins**, described in JSON and discovered under `packages/templates/`.
+- **Signed auto-update** served from a public R2 bucket. See [`docs/AUTO-UPDATE.md`](./docs/AUTO-UPDATE.md).
 
-## Modelo del producto
+## Product model
 
-Draffity es completamente gratuito. 1 proyecto activo (editable, exportable) + N proyectos archivados (read-only). Sin límite de palabras, capítulos ni exportaciones. IA con BYOK (trae tu propia key de OpenRouter). Voz local sin suscripción.
+Draffity is completely free. **1 active project** (editable, exportable) + **N archived
+projects** (read-only). No limits on words, chapters or exports. AI is BYOK (bring your own
+OpenRouter key). Voice is local, no subscription.
 
-## Contribuir
+## Contributing
 
-¡Bienvenidas las contribuciones! Leé **[CONTRIBUTING](./CONTRIBUTING.md)** y el **[workflow de ramas](./docs/WORKFLOW.md)** — branch desde `develop`, Conventional Commits, y DCO (`git commit -s`). Convivencia: [Código de Conducta](./CODE_OF_CONDUCT.md). Reporte de seguridad: [SECURITY](./SECURITY.md). Avisos de terceros: [THIRD-PARTY-NOTICES](./THIRD-PARTY-NOTICES.md).
+Contributions are welcome! Read **[CONTRIBUTING](./CONTRIBUTING.md)** and the
+**[branch workflow](./docs/WORKFLOW.md)** — branch from `develop`, use Conventional Commits,
+and sign off with DCO (`git commit -s`). Be kind: [Code of Conduct](./CODE_OF_CONDUCT.md).
+Security reports: [SECURITY](./SECURITY.md). Third-party notices:
+[THIRD-PARTY-NOTICES](./THIRD-PARTY-NOTICES.md).
 
-## Licencia
+## License
 
-GPL-3.0-or-later. Ver [`LICENSE`](./LICENSE).
+GPL-3.0-or-later. See [`LICENSE`](./LICENSE).
 
-Draffity es mantenido por **[Aresoft SpA](mailto:hola@aresoft.cl)** — proyecto open-source público, 100% gratuito para siempre, sin premium, sin monetización directa.
+Draffity is maintained by **[Aresoft SpA](mailto:hello@draffity.com)** — a public,
+open-source project, 100% free forever, with no premium tier and no direct monetization.
