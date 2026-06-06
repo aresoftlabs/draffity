@@ -113,6 +113,7 @@ impl TTSService for PiperTTSService {
         let tmp = tmp_dir.join(format!("tts{}.wav", now_ms()));
 
         let mut cmd = Command::new(&bin);
+        super::proc::no_window(&mut cmd);
         cmd.arg("--model").arg(&onnx).arg("--output_file").arg(&tmp);
 
         // Piper needs the espeak-ng phoneme data. Its bundled espeak-ng defaults

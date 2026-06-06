@@ -78,6 +78,9 @@ pub struct AppState {
     pub ai_cancel: Arc<AiCancelRegistry>,
     /// Server whisper caliente (motor rápido). Arranque perezoso.
     pub whisper_server: std::sync::Arc<WhisperServerManager>,
+    /// Sesión de dictado en streaming (pseudo-streaming whisper). Arranque perezoso.
+    pub dictation_stream:
+        std::sync::Arc<crate::services::voice::stream_manager::DictationStreamManager>,
     /// Resources root (DraffityHome) — all path resolution goes through this.
     pub resources: DraffityHome,
     /// Keeps the non-blocking log writers alive for the whole app lifecycle.
@@ -93,6 +96,23 @@ impl AppState {
         log_guards: LogGuards,
     ) -> Self {
         let whisper_server = std::sync::Arc::new(WhisperServerManager::new(&resources));
+        let dictation_stream = {
+            use crate::services::voice::stream::{Transcriber, WhisperTranscriber};
+            use crate::services::voice::stream_manager::{
+                DictationStreamManager, TranscriberFactory,
+            };
+            let home_root = resources.root().to_path_buf();
+            let server = whisper_server.clone();
+            let asr_for_stream = bundle.asr.clone();
+            let make: TranscriberFactory = std::sync::Arc::new(move || {
+                std::sync::Arc::new(WhisperTranscriber::new(
+                    crate::services::DraffityHome::with_root(home_root.clone()),
+                    server.clone(),
+                    asr_for_stream.clone(),
+                )) as std::sync::Arc<dyn Transcriber>
+            });
+            std::sync::Arc::new(DictationStreamManager::new(make))
+        };
         Self {
             storage: bundle.storage,
             project_manager: bundle.project_manager,
@@ -112,6 +132,7 @@ impl AppState {
             secrets: bundle.secrets,
             ai_cancel: Arc::new(AiCancelRegistry::default()),
             whisper_server,
+            dictation_stream,
             resources,
             _log_guards: log_guards,
         }

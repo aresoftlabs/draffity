@@ -18,6 +18,7 @@ import { LinguisticFocus } from './extensions/linguistic-focus';
 import { RepetitionHeatmap } from './extensions/repetition-heatmap';
 import { ParagraphFade } from './extensions/paragraph-fade';
 import { DictationPlaceholder } from '@/editor/extensions/dictation-placeholder';
+import { DictationGhost } from '@/editor/extensions/dictation-ghost';
 import { sanitizeUserCss, useEditorSettings } from '@/composables/useEditorSettings';
 import { useMediaStore } from '@/stores/media';
 
@@ -95,6 +96,9 @@ const editor = useEditor({
     // Dictation placeholder (Fase 3): inline node that marks the insertion
     // point while transcription is in progress.
     DictationPlaceholder,
+    // Dictation ghost (Fase 3): renders provisional grey text at cursor
+    // for live streaming mode — separate from the manual placeholder.
+    DictationGhost,
   ],
   editorProps: {
     attributes: {

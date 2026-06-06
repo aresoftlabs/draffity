@@ -160,16 +160,27 @@ export interface VoiceModel {
   installed: boolean;
 }
 
-/** Model download progress event (`voice.download.progress`). */
+/** Model download progress event (`voice:download:progress`). */
 export interface VoiceDownloadProgress {
   modelId: string;
   downloaded: number;
   total: number | null;
 }
 
-/** Progreso de transcripción (0–100), evento `voice.transcribe.progress`. */
+/** Progreso de transcripción (0–100), evento `voice:transcribe:progress`. */
 export interface VoiceTranscribeProgress {
   progress: number;
+}
+
+/** Streaming dictation partial result event (`voice:stream:partial`). */
+export interface VoiceStreamPartial {
+  text: string;
+}
+
+/** Streaming dictation final result event (`voice:stream:final`). */
+export interface VoiceStreamFinal {
+  text: string;
+  seq: number;
 }
 
 /** A voice entry in the dynamic voice catalog (H). */
@@ -296,6 +307,12 @@ export const ipc = {
   getDiskUsage: () => invoke<DiskUsageEntry[]>('get_disk_usage'),
   getAccelStatus: () => invoke<AccelStatus>('get_accel_status'),
   getVoiceCatalog: () => invoke<CatalogLang[]>('get_voice_catalog'),
+  dictationStreamStart: (sampleRate: number) =>
+    invoke<void>('dictation_stream_start', { sampleRate }),
+  dictationStreamFeed: (pcm: Int16Array) =>
+    invoke<void>('dictation_stream_feed', { pcm: Array.from(pcm) }),
+  dictationStreamStop: () => invoke<VoiceStreamFinal[]>('dictation_stream_stop'),
+  dictationStreamCancel: () => invoke<void>('dictation_stream_cancel'),
 
   // Projects
   createProject: (input: ProjectInput) => invoke<Project>('create_project', { input }),

@@ -110,7 +110,9 @@ impl WhisperServer {
             return Err(AppError::Unsupported("whisper-server no instalado".into()));
         }
         let port = pick_port().ok_or_else(|| AppError::Unexpected("sin puerto libre".into()))?;
-        let child = Command::new(bin)
+        let mut cmd = Command::new(bin);
+        super::proc::no_window(&mut cmd);
+        let child = cmd
             .args(build_server_args(model, vad_model, port))
             .stdout(Stdio::null())
             .stderr(Stdio::null())

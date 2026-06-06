@@ -9,7 +9,7 @@ import { resolveAsrModelId, useDictation } from './useDictation';
 let progressHandler: ((e: { payload: { progress: number } }) => void) | null = null;
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn((name: string, cb: (e: { payload: { progress: number } }) => void) => {
-    if (name === 'voice.transcribe.progress') progressHandler = cb;
+    if (name === 'voice:transcribe:progress') progressHandler = cb;
     return Promise.resolve(() => {});
   }),
 }));
@@ -55,5 +55,21 @@ describe('useDictation progress', () => {
     dictation.phase.value = 'idle';
     progressHandler?.({ payload: { progress: 80 } });
     expect(dictation.progress.value).toBe(37);
+  });
+});
+
+describe('useDictation host delegation', () => {
+  it('toggle starts when idle and stops when recording', async () => {
+    setActivePinia(createPinia());
+    const editor = ref(null);
+    const dictation = useDictation(editor);
+    await Promise.resolve();
+    expect(dictation.phase.value).toBe('idle');
+    dictation.toggle(); // idle -> intenta grabar
+    // start() pone 'recording' salvo que getUserMedia falle en jsdom;
+    // forzamos el estado para ejercitar la rama de stop del toggle:
+    dictation.phase.value = 'recording';
+    dictation.toggle(); // recording -> stop (transcribing)
+    expect(dictation.phase.value).toBe('transcribing');
   });
 });
