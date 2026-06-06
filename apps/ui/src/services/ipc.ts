@@ -160,24 +160,24 @@ export interface VoiceModel {
   installed: boolean;
 }
 
-/** Model download progress event (`voice.download.progress`). */
+/** Model download progress event (`voice:download:progress`). */
 export interface VoiceDownloadProgress {
   modelId: string;
   downloaded: number;
   total: number | null;
 }
 
-/** Progreso de transcripción (0–100), evento `voice.transcribe.progress`. */
+/** Progreso de transcripción (0–100), evento `voice:transcribe:progress`. */
 export interface VoiceTranscribeProgress {
   progress: number;
 }
 
-/** Streaming dictation partial result event (`voice.stream.partial`). */
+/** Streaming dictation partial result event (`voice:stream:partial`). */
 export interface VoiceStreamPartial {
   text: string;
 }
 
-/** Streaming dictation final result event (`voice.stream.final`). */
+/** Streaming dictation final result event (`voice:stream:final`). */
 export interface VoiceStreamFinal {
   text: string;
   seq: number;

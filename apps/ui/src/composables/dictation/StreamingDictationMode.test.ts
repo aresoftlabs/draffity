@@ -70,9 +70,9 @@ describe('StreamingDictationMode', () => {
     const mode = createStreamingDictationMode();
     const ctx = makeCtx();
     await mode.start(ctx);
-    handlers['voice.stream.partial']?.({ payload: { text: 'hola mun' } });
+    handlers['voice:stream:partial']?.({ payload: { text: 'hola mun' } });
     expect(ctx.editor.setGhost).toHaveBeenCalledWith('hola mun');
-    handlers['voice.stream.final']?.({ payload: { text: 'hola mundo', seq: 0 } });
+    handlers['voice:stream:final']?.({ payload: { text: 'hola mundo', seq: 0 } });
     expect(ctx.editor.clearGhost).toHaveBeenCalled();
     expect(ctx.editor.commitStreaming).toHaveBeenCalledWith('hola mundo ');
   });
@@ -115,7 +115,7 @@ describe('StreamingDictationMode', () => {
     await mode.start(ctx);
     await mode.stop(ctx);
     const callsBefore = (ctx.editor.setGhost as ReturnType<typeof vi.fn>).mock.calls.length;
-    handlers['voice.stream.partial']?.({ payload: { text: 'stale text' } });
+    handlers['voice:stream:partial']?.({ payload: { text: 'stale text' } });
     expect((ctx.editor.setGhost as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBefore);
   });
 });

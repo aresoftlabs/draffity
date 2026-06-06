@@ -48,7 +48,7 @@ async function loadShared() {
 
 onMounted(async () => {
   await loadShared();
-  unlistenVoiceProgress = await listen<VoiceDownloadProgress>('voice.download.progress', (e) => {
+  unlistenVoiceProgress = await listen<VoiceDownloadProgress>('voice:download:progress', (e) => {
     const p = e.payload;
     if (p.total && p.total > 0) {
       downloadPct.value = {

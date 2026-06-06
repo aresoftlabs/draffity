@@ -65,7 +65,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
 
   let unlistenProgress: UnlistenFn | null = null;
   let disposed = false;
-  void listen<VoiceTranscribeProgress>('voice.transcribe.progress', (e) => {
+  void listen<VoiceTranscribeProgress>('voice:transcribe:progress', (e) => {
     if (phase.value === 'transcribing') progress.value = e.payload.progress;
   }).then((un) => {
     if (disposed) un();

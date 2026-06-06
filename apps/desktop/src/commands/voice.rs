@@ -151,7 +151,7 @@ pub fn list_voice_models(state: State<'_, AppState>) -> Vec<VoiceModelDto> {
         .collect()
 }
 
-/// Download a Whisper model opt-in, emitting `voice.download.progress` events.
+/// Download a Whisper model opt-in, emitting `voice:download:progress` events.
 #[tauri::command]
 pub async fn download_voice_model(
     app: AppHandle,
@@ -169,7 +169,7 @@ pub async fn download_voice_model(
     tauri::async_runtime::spawn_blocking(move || {
         download_to_file(&url, &dest, sha, |downloaded, total| {
             let _ = app2.emit(
-                "voice.download.progress",
+                "voice:download:progress",
                 DownloadProgress {
                     model_id: id.clone(),
                     downloaded,
@@ -184,7 +184,7 @@ pub async fn download_voice_model(
 
 /// Download a binary (whisper.cpp or Piper) from GitHub releases, extract
 /// the executable, and place it in the voice bin directory.
-/// Emits `voice.download.progress` events using the binary id as the model_id.
+/// Emits `voice:download:progress` events using the binary id as the model_id.
 #[tauri::command]
 pub async fn download_voice_binary(
     app: AppHandle,
@@ -203,7 +203,7 @@ pub async fn download_voice_binary(
         return tauri::async_runtime::spawn_blocking(move || {
             download_and_extract_whisper(backend, &home, |downloaded, total| {
                 let _ = app2.emit(
-                    "voice.download.progress",
+                    "voice:download:progress",
                     DownloadProgress {
                         model_id: id.clone(),
                         downloaded,
@@ -223,7 +223,7 @@ pub async fn download_voice_binary(
     tauri::async_runtime::spawn_blocking(move || {
         download_and_extract_binary(&id, &home, |downloaded, total| {
             let _ = app2.emit(
-                "voice.download.progress",
+                "voice:download:progress",
                 DownloadProgress {
                     model_id: id.clone(),
                     downloaded,
@@ -354,7 +354,7 @@ pub async fn transcribe_audio(
     let result = tauri::async_runtime::spawn_blocking(move || {
         asr.transcribe_file_with_progress(&path_str, &mut |p| {
             let _ = app2.emit(
-                "voice.transcribe.progress",
+                "voice:transcribe:progress",
                 TranscribeProgress { progress: p },
             );
         })
@@ -379,10 +379,10 @@ fn emit_stream_events(app: &AppHandle, events: Vec<StreamEvent>) {
     for ev in events {
         match ev {
             StreamEvent::Partial(text) => {
-                let _ = app.emit("voice.stream.partial", StreamPartial { text });
+                let _ = app.emit("voice:stream:partial", StreamPartial { text });
             }
             StreamEvent::Final { text, seq } => {
-                let _ = app.emit("voice.stream.final", StreamFinal { text, seq });
+                let _ = app.emit("voice:stream:final", StreamFinal { text, seq });
             }
         }
     }
@@ -508,7 +508,7 @@ pub fn import_piper_binary(state: State<'_, AppState>, source_path: String) -> C
 }
 
 /// Download a Piper voice (ONNX model + its `.onnx.json` config), emitting
-/// `voice.download.progress` for the model file. Looks up the voice from the
+/// `voice:download:progress` for the model file. Looks up the voice from the
 /// manifest (cached or seed), so any manifest voice can be downloaded, not
 /// just the 2 hardcoded ones. Verifies md5 when present.
 #[tauri::command]
@@ -533,7 +533,7 @@ pub async fn download_voice_voice(
     tauri::async_runtime::spawn_blocking(move || -> CmdResult<()> {
         download_to_file(&voice.onnx_url, &onnx_dest, None, |downloaded, total| {
             let _ = app2.emit(
-                "voice.download.progress",
+                "voice:download:progress",
                 DownloadProgress {
                     model_id: id.clone(),
                     downloaded,

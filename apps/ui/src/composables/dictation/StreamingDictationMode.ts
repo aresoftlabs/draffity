@@ -33,10 +33,10 @@ export function createStreamingDictationMode() {
       try {
         await ipc.dictationStreamStart(SAMPLE_RATE);
         active = true;
-        unlistenPartial = await listen<VoiceStreamPartial>('voice.stream.partial', (e) => {
+        unlistenPartial = await listen<VoiceStreamPartial>('voice:stream:partial', (e) => {
           if (active) ctx.editor.setGhost(e.payload.text);
         });
-        unlistenFinal = await listen<VoiceStreamFinal>('voice.stream.final', (e) => {
+        unlistenFinal = await listen<VoiceStreamFinal>('voice:stream:final', (e) => {
           if (!active) return;
           ctx.editor.clearGhost();
           const text = e.payload.text.trim();

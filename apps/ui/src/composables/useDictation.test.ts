@@ -9,7 +9,7 @@ import { resolveAsrModelId, useDictation } from './useDictation';
 let progressHandler: ((e: { payload: { progress: number } }) => void) | null = null;
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn((name: string, cb: (e: { payload: { progress: number } }) => void) => {
-    if (name === 'voice.transcribe.progress') progressHandler = cb;
+    if (name === 'voice:transcribe:progress') progressHandler = cb;
     return Promise.resolve(() => {});
   }),
 }));
