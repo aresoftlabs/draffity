@@ -6,7 +6,7 @@ vi.mock('@/services/ipc', () => ({
   ipc: {
     dictationStreamStart: vi.fn(async () => {}),
     dictationStreamFeed: vi.fn(async () => {}),
-    dictationStreamStop: vi.fn(async () => {}),
+    dictationStreamStop: vi.fn(async () => []),
     dictationStreamCancel: vi.fn(async () => {}),
   },
 }));
@@ -96,5 +96,26 @@ describe('StreamingDictationMode', () => {
     expect(capture.stop).toHaveBeenCalled();
     expect(ipc.dictationStreamCancel).toHaveBeenCalled();
     expect(ctx.setPhase).toHaveBeenLastCalledWith('idle');
+  });
+
+  it('stop commits the final returned by the backend', async () => {
+    (ipc.dictationStreamStop as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { text: 'ultima frase', seq: 3 },
+    ]);
+    const mode = createStreamingDictationMode();
+    const ctx = makeCtx();
+    await mode.start(ctx);
+    await mode.stop(ctx);
+    expect(ctx.editor.commitStreaming).toHaveBeenCalledWith('ultima frase ');
+  });
+
+  it('stale event after stop does not call setGhost again', async () => {
+    const mode = createStreamingDictationMode();
+    const ctx = makeCtx();
+    await mode.start(ctx);
+    await mode.stop(ctx);
+    const callsBefore = (ctx.editor.setGhost as ReturnType<typeof vi.fn>).mock.calls.length;
+    handlers['voice.stream.partial']?.({ payload: { text: 'stale text' } });
+    expect((ctx.editor.setGhost as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBefore);
   });
 });

@@ -311,7 +311,7 @@ export const ipc = {
     invoke<void>('dictation_stream_start', { sampleRate }),
   dictationStreamFeed: (pcm: Int16Array) =>
     invoke<void>('dictation_stream_feed', { pcm: Array.from(pcm) }),
-  dictationStreamStop: () => invoke<void>('dictation_stream_stop'),
+  dictationStreamStop: () => invoke<VoiceStreamFinal[]>('dictation_stream_stop'),
   dictationStreamCancel: () => invoke<void>('dictation_stream_cancel'),
 
   // Projects

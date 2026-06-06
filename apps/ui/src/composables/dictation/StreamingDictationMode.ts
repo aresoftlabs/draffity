@@ -24,7 +24,6 @@ export function createStreamingDictationMode() {
     unlistenFinal?.();
     unlistenPartial = null;
     unlistenFinal = null;
-    await capture.stop();
   }
 
   const mode: DictationMode = {
@@ -48,6 +47,7 @@ export function createStreamingDictationMode() {
         });
         ctx.setPhase('recording');
       } catch (e) {
+        await capture.stop();
         await teardown();
         ctx.fail(e);
         ctx.setPhase('idle');
@@ -59,7 +59,12 @@ export function createStreamingDictationMode() {
       ctx.setPhase('transcribing');
       try {
         await capture.stop();
-        await ipc.dictationStreamStop();
+        const finals = await ipc.dictationStreamStop();
+        ctx.editor.clearGhost();
+        for (const f of finals) {
+          const text = f.text.trim();
+          if (text) ctx.editor.commitStreaming(`${text} `);
+        }
       } catch (e) {
         ctx.fail(e);
       } finally {
@@ -71,6 +76,7 @@ export function createStreamingDictationMode() {
 
     cancel(ctx) {
       if (!active) return;
+      void capture.stop();
       void ipc.dictationStreamCancel().catch(() => {});
       void teardown();
       ctx.editor.clearGhost();

@@ -370,7 +370,7 @@ struct StreamPartial {
     text: String,
 }
 #[derive(Clone, serde::Serialize)]
-struct StreamFinal {
+pub(crate) struct StreamFinal {
     text: String,
     seq: u64,
 }
@@ -416,15 +416,24 @@ pub async fn dictation_stream_feed(
     Ok(())
 }
 
-/// Cierra la sesión: vacía la última frase (final) y descarta la sesión.
+/// Cierra la sesión: vacía la última frase y la devuelve como valor de retorno.
+/// Los finales se retornan directamente en lugar de emitirse como eventos,
+/// garantizando que el frontend no los pierda si ya se desubscribió.
 #[tauri::command]
-pub async fn dictation_stream_stop(app: AppHandle, state: State<'_, AppState>) -> CmdResult<()> {
+pub async fn dictation_stream_stop(state: State<'_, AppState>) -> CmdResult<Vec<StreamFinal>> {
     let mgr = state.dictation_stream.clone();
     let events = tauri::async_runtime::spawn_blocking(move || mgr.stop())
         .await
         .map_err(|e| AppError::Unexpected(format!("stream stop: {e}")))?;
-    emit_stream_events(&app, events);
-    Ok(())
+    Ok(events
+        .into_iter()
+        .filter_map(|e| match e {
+            crate::services::voice::stream::StreamEvent::Final { text, seq } => {
+                Some(StreamFinal { text, seq })
+            }
+            crate::services::voice::stream::StreamEvent::Partial(_) => None,
+        })
+        .collect())
 }
 
 /// Descarta la sesión activa sin emitir nada.
