@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
 import { resolveAsrModelId, resolveInputDeviceId, resolveAutoStop } from './settings';
+import { resolveDictationMode } from './settings';
 
 describe('dictation settings resolvers', () => {
   afterEach(() => localStorage.clear());
@@ -23,5 +24,18 @@ describe('dictation settings resolvers', () => {
     expect(resolveAsrModelId()).toBeNull();
     expect(resolveInputDeviceId()).toBeNull();
     expect(resolveAutoStop()).toBe(false);
+  });
+});
+
+describe('resolveDictationMode', () => {
+  it('defaults to manual and reads streaming from the store', () => {
+    setActivePinia(createPinia());
+    expect(resolveDictationMode()).toBe('manual');
+    useVoiceSettingsStore().dictationMode = 'streaming';
+    expect(resolveDictationMode()).toBe('streaming');
+  });
+  it('falls back to manual without active pinia', () => {
+    setActivePinia(undefined as never);
+    expect(resolveDictationMode()).toBe('manual');
   });
 });

@@ -12,6 +12,8 @@ interface VoiceSettings {
   inputDeviceId: string | null;
   /** Auto-detener la grabación tras silencio sostenido. */
   autoStopOnSilence: boolean;
+  /** Modo de dictado: 'manual' (por defecto) o 'streaming'. */
+  dictationMode: 'manual' | 'streaming';
 }
 
 const DEFAULTS: VoiceSettings = {
@@ -21,6 +23,7 @@ const DEFAULTS: VoiceSettings = {
   spendingLimitMonthly: null,
   inputDeviceId: null,
   autoStopOnSilence: false,
+  dictationMode: 'manual',
 };
 
 function load(): VoiceSettings {
@@ -42,6 +45,7 @@ function load(): VoiceSettings {
           : null,
       inputDeviceId: 'inputDeviceId' in parsed ? (parsed.inputDeviceId ?? null) : null,
       autoStopOnSilence: 'autoStopOnSilence' in parsed ? Boolean(parsed.autoStopOnSilence) : false,
+      dictationMode: parsed.dictationMode === 'streaming' ? 'streaming' : 'manual',
     };
   } catch {
     return { ...DEFAULTS };
@@ -62,9 +66,18 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
   const spendingLimitMonthly = ref<number | null>(initial.spendingLimitMonthly);
   const inputDeviceId = ref<string | null>(initial.inputDeviceId);
   const autoStopOnSilence = ref<boolean>(initial.autoStopOnSilence);
+  const dictationMode = ref<'manual' | 'streaming'>(initial.dictationMode);
 
   watch(
-    [ttsVoiceId, asrModelId, aiModelId, spendingLimitMonthly, inputDeviceId, autoStopOnSilence],
+    [
+      ttsVoiceId,
+      asrModelId,
+      aiModelId,
+      spendingLimitMonthly,
+      inputDeviceId,
+      autoStopOnSilence,
+      dictationMode,
+    ],
     () => {
       save({
         ttsVoiceId: ttsVoiceId.value,
@@ -73,6 +86,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
         spendingLimitMonthly: spendingLimitMonthly.value,
         inputDeviceId: inputDeviceId.value,
         autoStopOnSilence: autoStopOnSilence.value,
+        dictationMode: dictationMode.value,
       });
     },
     { deep: true },
@@ -85,6 +99,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     spendingLimitMonthly.value = null;
     inputDeviceId.value = null;
     autoStopOnSilence.value = false;
+    dictationMode.value = 'manual';
   }
 
   return {
@@ -94,6 +109,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     spendingLimitMonthly,
     inputDeviceId,
     autoStopOnSilence,
+    dictationMode,
     reset,
   };
 });

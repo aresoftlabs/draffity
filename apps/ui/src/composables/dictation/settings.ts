@@ -26,3 +26,12 @@ export function resolveAutoStop(): boolean {
     return false;
   }
 }
+
+/** Modo de dictado activo. Default 'manual'. Punto único para futuras opciones. */
+export function resolveDictationMode(): 'manual' | 'streaming' {
+  try {
+    return useVoiceSettingsStore().dictationMode;
+  } catch {
+    return 'manual';
+  }
+}
