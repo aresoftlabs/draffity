@@ -79,7 +79,7 @@ export interface AiActionResult {
   completionTokens: number | null;
 }
 
-/** Live delta event payload (`ai.suggestion.received`). */
+/** Live delta event payload (`ai:suggestion:received`). */
 export interface AiDeltaEvent {
   requestId: string;
   delta: string;

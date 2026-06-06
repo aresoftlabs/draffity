@@ -6,7 +6,7 @@
 //! the plain `settings` table. Streaming runs off the main thread via
 //! `spawn_blocking` (the blocking HTTP client must not be driven from inside
 //! the Tokio runtime); each delta is relayed to the UI as an
-//! `ai.suggestion.received` event tagged with the request id.
+//! `ai:suggestion:received` event tagged with the request id.
 
 use std::sync::atomic::Ordering;
 
