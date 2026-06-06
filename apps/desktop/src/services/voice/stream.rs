@@ -15,7 +15,12 @@ use crate::services::DraffityHome;
 
 /// Transcribe un buffer PCM16 mono completo a texto. Abstrae whisper para tests.
 pub trait Transcriber: Send + Sync {
-    fn transcribe(&self, pcm: &[i16], sample_rate: u32) -> AppResult<String>;
+    fn transcribe(
+        &self,
+        pcm: &[i16],
+        sample_rate: u32,
+        language: Option<&str>,
+    ) -> AppResult<String>;
 }
 
 /// Evento emitido por la sesión.
@@ -33,16 +38,22 @@ pub struct WhisperStreamSession {
     buf: Vec<i16>,
     sample_rate: u32,
     seq: u64,
+    language: Option<String>,
 }
 
 impl WhisperStreamSession {
-    pub fn new(transcriber: Arc<dyn Transcriber>, sample_rate: u32) -> Self {
+    pub fn new(
+        transcriber: Arc<dyn Transcriber>,
+        sample_rate: u32,
+        language: Option<String>,
+    ) -> Self {
         Self {
             transcriber,
             planner: StreamPlanner::new(sample_rate),
             buf: Vec::new(),
             sample_rate,
             seq: 0,
+            language,
         }
     }
 
@@ -86,7 +97,7 @@ impl WhisperStreamSession {
 
     fn decode(&self) -> String {
         self.transcriber
-            .transcribe(&self.buf, self.sample_rate)
+            .transcribe(&self.buf, self.sample_rate, self.language.as_deref())
             .unwrap_or_default()
             .trim()
             .to_string()
@@ -128,7 +139,12 @@ impl WhisperTranscriber {
 }
 
 impl Transcriber for WhisperTranscriber {
-    fn transcribe(&self, pcm: &[i16], sample_rate: u32) -> AppResult<String> {
+    fn transcribe(
+        &self,
+        pcm: &[i16],
+        sample_rate: u32,
+        language: Option<&str>,
+    ) -> AppResult<String> {
         if pcm.is_empty() {
             return Ok(String::new());
         }
@@ -148,14 +164,14 @@ impl Transcriber for WhisperTranscriber {
             if let Some(ref m) = model {
                 if self.server.available() {
                     let wav = std::fs::read(&path)?;
-                    if let Ok(t) = self.server.transcribe(m, &wav) {
+                    if let Ok(t) = self.server.transcribe(m, &wav, language) {
                         return Ok(t.text);
                     }
                 }
             }
             // Fallback: CLI batch (resuelve el modelo internamente).
             self.asr
-                .transcribe_file(&path.to_string_lossy())
+                .transcribe_file(&path.to_string_lossy(), language)
                 .map(|t| t.text)
         })();
         let _ = std::fs::remove_file(&path);
@@ -180,7 +196,7 @@ mod tests {
         }
     }
     impl Transcriber for MockTranscriber {
-        fn transcribe(&self, _pcm: &[i16], _sr: u32) -> AppResult<String> {
+        fn transcribe(&self, _pcm: &[i16], _sr: u32, _language: Option<&str>) -> AppResult<String> {
             Ok(self
                 .replies
                 .lock()
@@ -201,7 +217,7 @@ mod tests {
     #[test]
     fn emits_partial_on_cadence() {
         let t = MockTranscriber::new(vec!["hola que tal"]);
-        let mut s = WhisperStreamSession::new(t, 16000);
+        let mut s = WhisperStreamSession::new(t, 16000, None);
         let ev = s.feed(&loud(11200)); // supera partial_every
         assert_eq!(ev, vec![StreamEvent::Partial("hola que tal".into())]);
     }
@@ -209,7 +225,7 @@ mod tests {
     #[test]
     fn final_seq_increments_per_utterance_and_resets_buffer() {
         let t = MockTranscriber::new(vec!["hola mundo", "segunda"]);
-        let mut s = WhisperStreamSession::new(t, 16000);
+        let mut s = WhisperStreamSession::new(t, 16000, None);
         s.feed(&loud(2000)); // voz, sin endpoint aún
         let ev1 = s.feed(&quiet(12000)); // silencio sostenido → endpoint
         assert_eq!(
@@ -234,7 +250,7 @@ mod tests {
     #[test]
     fn empty_transcript_emits_nothing() {
         let t = MockTranscriber::new(vec!["   "]);
-        let mut s = WhisperStreamSession::new(t, 16000);
+        let mut s = WhisperStreamSession::new(t, 16000, None);
         let ev = s.feed(&loud(11200));
         assert!(ev.is_empty());
     }
@@ -242,7 +258,7 @@ mod tests {
     #[test]
     fn finish_flushes_remaining_as_final() {
         let t = MockTranscriber::new(vec!["resto de frase"]);
-        let mut s = WhisperStreamSession::new(t, 16000);
+        let mut s = WhisperStreamSession::new(t, 16000, None);
         s.feed(&loud(2000)); // audio sin endpoint
         let ev = s.finish();
         assert_eq!(
@@ -257,7 +273,7 @@ mod tests {
     #[test]
     fn finish_on_empty_buffer_emits_nothing() {
         let t = MockTranscriber::new(vec![]);
-        let mut s = WhisperStreamSession::new(t, 16000);
+        let mut s = WhisperStreamSession::new(t, 16000, None);
         assert!(s.finish().is_empty());
     }
 }

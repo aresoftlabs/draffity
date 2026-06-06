@@ -25,6 +25,7 @@ const toast = useToast();
 
 const catalog = ref<CatalogLang[]>([]);
 const testingVoiceId = ref<string | null>(null);
+const previewText = ref<string | null>(null);
 const importingPiper = ref(false);
 const downloadingBinary = ref(false);
 // Reused across test plays so we don't leak AudioContext instances.
@@ -63,10 +64,17 @@ async function onDelete(id: string) {
   }
 }
 
+function sampleFor(voiceId: string): string {
+  const lang = catalog.value.flatMap((g) => g.voices).find((v) => v.id === voiceId)?.lang ?? 'en';
+  return t('settings.voicePreviewSample', {}, { locale: lang });
+}
+
 async function onTest(id: string) {
   testingVoiceId.value = id;
   try {
-    const audio = await ipc.synthesizeSpeech('Hello, this is a test voice.', id);
+    const sample = sampleFor(id);
+    previewText.value = sample;
+    const audio = await ipc.synthesizeSpeech(sample, id);
     if (!ttsCtx) ttsCtx = new AudioContext();
     if (ttsCtx.state === 'suspended') await ttsCtx.resume();
     const buf = ttsCtx.createBuffer(
@@ -81,6 +89,7 @@ async function onTest(id: string) {
     src.connect(ttsCtx.destination);
     src.onended = () => {
       testingVoiceId.value = null;
+      previewText.value = null;
     };
     src.start();
   } catch {
@@ -91,6 +100,7 @@ async function onTest(id: string) {
       life: 5000,
     });
     testingVoiceId.value = null;
+    previewText.value = null;
   }
 }
 
@@ -200,5 +210,6 @@ onMounted(loadCatalog);
       @delete="onDelete"
       @test="onTest"
     />
+    <p v-if="previewText" class="text-xs opacity-60 mt-1">{{ previewText }}</p>
   </section>
 </template>

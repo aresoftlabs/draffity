@@ -1,4 +1,5 @@
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
+import { i18n, type Locale } from '@/locales';
 
 /** ASR model id from settings, or null (backend uses its default). */
 export function resolveAsrModelId(): string | null {
@@ -34,4 +35,15 @@ export function resolveDictationMode(): 'manual' | 'streaming' {
   } catch {
     return 'manual';
   }
+}
+
+/** Idioma para la voz: override de voz si está, si no el idioma global. */
+export function resolveVoiceLanguage(): Locale | 'auto' {
+  try {
+    const override = useVoiceSettingsStore().voiceLanguage;
+    if (override) return override;
+  } catch {
+    /* sin pinia: cae al locale global */
+  }
+  return i18n.global.locale.value as Locale;
 }

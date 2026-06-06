@@ -39,7 +39,7 @@ pub trait ASRService: Send + Sync {
     fn available(&self) -> bool;
 
     /// Transcripción batch de un archivo de audio completo (notas de voz).
-    fn transcribe_file(&self, _path: &str) -> AppResult<Transcript> {
+    fn transcribe_file(&self, _path: &str, _language: Option<&str>) -> AppResult<Transcript> {
         Err(crate::error::AppError::Unsupported(
             "la transcripción de voz no está disponible".into(),
         ))
@@ -50,9 +50,10 @@ pub trait ASRService: Send + Sync {
     fn transcribe_file_with_progress(
         &self,
         path: &str,
+        language: Option<&str>,
         _on_progress: &mut dyn FnMut(u8),
     ) -> AppResult<Transcript> {
-        self.transcribe_file(path)
+        self.transcribe_file(path, language)
     }
 
     /// Dictado en streaming. `samples` es PCM16 mono a `sample_rate`; la impl

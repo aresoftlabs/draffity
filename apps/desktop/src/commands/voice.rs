@@ -305,6 +305,7 @@ pub async fn transcribe_audio(
     state: State<'_, AppState>,
     wav: Vec<u8>,
     sample_rate: Option<u32>,
+    language: Option<String>,
 ) -> CmdResult<Transcript> {
     if !state.asr.available() {
         return Err(AppError::Unsupported(
@@ -336,10 +337,12 @@ pub async fn transcribe_audio(
             let mgr = state.whisper_server.clone();
             let wav_owned = std::fs::read(&path).unwrap_or_default();
             let model2 = model.clone();
-            let res =
-                tauri::async_runtime::spawn_blocking(move || mgr.transcribe(&model2, &wav_owned))
-                    .await
-                    .map_err(|e| AppError::Unexpected(format!("tarea server: {e}")))?;
+            let lang_owned = language.clone();
+            let res = tauri::async_runtime::spawn_blocking(move || {
+                mgr.transcribe(&model2, &wav_owned, lang_owned.as_deref())
+            })
+            .await
+            .map_err(|e| AppError::Unexpected(format!("tarea server: {e}")))?;
             if let Ok(t) = res {
                 let _ = std::fs::remove_file(&path);
                 return Ok(t);
@@ -351,8 +354,9 @@ pub async fn transcribe_audio(
     let asr = state.asr.clone();
     let path_str = path.to_string_lossy().into_owned();
     let app2 = app.clone();
+    let lang_owned = language;
     let result = tauri::async_runtime::spawn_blocking(move || {
-        asr.transcribe_file_with_progress(&path_str, &mut |p| {
+        asr.transcribe_file_with_progress(&path_str, lang_owned.as_deref(), &mut |p| {
             let _ = app2.emit(
                 "voice:transcribe:progress",
                 TranscribeProgress { progress: p },
@@ -391,13 +395,17 @@ fn emit_stream_events(app: &AppHandle, events: Vec<StreamEvent>) {
 /// Inicia una sesión de dictado en streaming. `sample_rate` del audio que se
 /// enviará por `dictation_stream_feed` (típicamente 16000).
 #[tauri::command]
-pub async fn dictation_stream_start(state: State<'_, AppState>, sample_rate: u32) -> CmdResult<()> {
+pub async fn dictation_stream_start(
+    state: State<'_, AppState>,
+    sample_rate: u32,
+    language: Option<String>,
+) -> CmdResult<()> {
     if !state.asr.available() {
         return Err(AppError::Unsupported(
             "el dictado no está disponible".into(),
         ));
     }
-    state.dictation_stream.start(sample_rate);
+    state.dictation_stream.start(sample_rate, language);
     Ok(())
 }
 
@@ -671,9 +679,10 @@ pub async fn save_voice_note(
             .to_string_lossy()
             .into_owned();
         let asr = state.asr.clone();
-        let transcript = tauri::async_runtime::spawn_blocking(move || asr.transcribe_file(&path))
-            .await
-            .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
+        let transcript =
+            tauri::async_runtime::spawn_blocking(move || asr.transcribe_file(&path, None))
+                .await
+                .map_err(|e| AppError::Unexpected(format!("tarea de transcripción: {e}")))?;
         if let Ok(t) = transcript {
             let trimmed = t.text.trim();
             if !trimmed.is_empty() {

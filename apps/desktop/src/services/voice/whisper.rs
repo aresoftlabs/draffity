@@ -51,7 +51,7 @@ impl ASRService for WhisperLocalASR {
         self.home.bin_dir().exists() && self.select_model().is_some()
     }
 
-    fn transcribe_file(&self, path: &str) -> AppResult<Transcript> {
+    fn transcribe_file(&self, path: &str, language: Option<&str>) -> AppResult<Transcript> {
         let bin = self.home.bin_dir();
         if !bin.exists() {
             return Err(AppError::Unsupported(
@@ -75,7 +75,7 @@ impl ASRService for WhisperLocalASR {
             .arg("-f")
             .arg(path)
             .arg("-l")
-            .arg("auto")
+            .arg(language.unwrap_or("auto"))
             .arg("-oj")
             .arg("-of")
             .arg(&base)
@@ -101,6 +101,7 @@ impl ASRService for WhisperLocalASR {
     fn transcribe_file_with_progress(
         &self,
         path: &str,
+        language: Option<&str>,
         on_progress: &mut dyn FnMut(u8),
     ) -> AppResult<Transcript> {
         let bin = self.home.bin_dir();
@@ -125,7 +126,7 @@ impl ASRService for WhisperLocalASR {
             .arg("-f")
             .arg(path)
             .arg("-l")
-            .arg("auto")
+            .arg(language.unwrap_or("auto"))
             .arg("--print-progress")
             .arg("-oj")
             .arg("-of")

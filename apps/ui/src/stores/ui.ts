@@ -1,7 +1,7 @@
 ﻿import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { setTheme as applyTheme, getStoredTheme, type ThemeMode } from '@/styles/theme';
-import { setLocale as applyLocale } from '@/locales';
+import { setLocale as applyLocale, type Locale } from '@/locales';
 
 const STORAGE_PREFIX = 'draffity.ui.';
 
@@ -136,7 +136,7 @@ export const useUiStore = defineStore('ui', () => {
     setTheme(effectiveDark() ? 'light' : 'dark');
   }
 
-  function setLocale(locale: 'es' | 'en') {
+  function setLocale(locale: Locale) {
     applyLocale(locale);
   }
 

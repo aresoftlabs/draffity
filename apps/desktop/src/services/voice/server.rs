@@ -43,7 +43,7 @@ pub fn build_server_args(model: &Path, vad_model: &Path, port: u16) -> Vec<Strin
 use crate::error::{AppError, AppResult};
 
 /// POST del WAV a `<base>/inference` y parseo. Separado del proceso para testear contra un stub.
-pub fn transcribe_at(base_url: &str, wav: &[u8]) -> AppResult<Transcript> {
+pub fn transcribe_at(base_url: &str, wav: &[u8], language: Option<&str>) -> AppResult<Transcript> {
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(120))
         .build()
@@ -52,9 +52,14 @@ pub fn transcribe_at(base_url: &str, wav: &[u8]) -> AppResult<Transcript> {
         .file_name("audio.wav")
         .mime_str("audio/wav")
         .map_err(|e| AppError::Unexpected(format!("multipart: {e}")))?;
-    let form = reqwest::blocking::multipart::Form::new()
+    let mut form = reqwest::blocking::multipart::Form::new()
         .part("file", part)
         .text("response_format", "json");
+    if let Some(l) = language {
+        if l != "auto" {
+            form = form.text("language", l.to_string());
+        }
+    }
     let resp = client
         .post(format!("{base_url}/inference"))
         .multipart(form)
@@ -130,8 +135,8 @@ impl WhisperServer {
         matches!(self.child.try_wait(), Ok(None))
     }
 
-    pub fn transcribe(&self, wav: &[u8]) -> AppResult<Transcript> {
-        transcribe_at(&format!("http://127.0.0.1:{}", self.port), wav)
+    pub fn transcribe(&self, wav: &[u8], language: Option<&str>) -> AppResult<Transcript> {
+        transcribe_at(&format!("http://127.0.0.1:{}", self.port), wav, language)
     }
 
     pub fn shutdown(&mut self) {
@@ -163,7 +168,12 @@ impl WhisperServerManager {
     /// Transcribe con el server caliente. Lo arranca si hace falta y lo
     /// reinicia si el proceso murió. `Err` si no hay binario/modelo (el caller
     /// cae al CLI).
-    pub fn transcribe(&self, model: &Path, wav: &[u8]) -> AppResult<Transcript> {
+    pub fn transcribe(
+        &self,
+        model: &Path,
+        wav: &[u8],
+        language: Option<&str>,
+    ) -> AppResult<Transcript> {
         let bin = self.home.whisper_server_bin_path();
         let vad = self.home.vad_model_path();
         let mut guard = self
@@ -178,7 +188,7 @@ impl WhisperServerManager {
         if guard.is_none() {
             *guard = Some(WhisperServer::start(&bin, model, &vad)?);
         }
-        guard.as_ref().unwrap().transcribe(wav)
+        guard.as_ref().unwrap().transcribe(wav, language)
     }
 
     pub fn shutdown(&self) {
@@ -254,7 +264,7 @@ mod tests {
         let (port, _h) = spawn_stub();
         let base = format!("http://127.0.0.1:{port}");
         let wav = vec![0u8; 64];
-        let t = transcribe_at(&base, &wav).expect("transcribe ok");
+        let t = transcribe_at(&base, &wav, None).expect("transcribe ok");
         assert_eq!(t.text, "hola desde el stub");
     }
 

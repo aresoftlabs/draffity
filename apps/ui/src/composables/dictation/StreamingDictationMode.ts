@@ -2,7 +2,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { ipc } from '@/services/ipc';
 import type { VoiceStreamPartial, VoiceStreamFinal } from '@/services/ipc';
 import { useStreamingCapture } from '@/audio/useStreamingCapture';
-import { resolveInputDeviceId } from './settings';
+import { resolveInputDeviceId, resolveVoiceLanguage } from './settings';
 import type { DictationMode } from './types';
 
 const SAMPLE_RATE = 16000;
@@ -31,7 +31,7 @@ export function createStreamingDictationMode() {
 
     async start(ctx) {
       try {
-        await ipc.dictationStreamStart(SAMPLE_RATE);
+        await ipc.dictationStreamStart(SAMPLE_RATE, resolveVoiceLanguage());
         active = true;
         unlistenPartial = await listen<VoiceStreamPartial>('voice:stream:partial', (e) => {
           if (active) ctx.editor.setGhost(e.payload.text);
