@@ -16,6 +16,7 @@ export default [
       '**/test-results/**',
       'apps/desktop/gen/**',
       '**/components.d.ts',
+      'apps/ui/public/**',
     ],
   },
   js.configs.recommended,
