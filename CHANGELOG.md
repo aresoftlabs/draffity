@@ -288,6 +288,34 @@ Round de usabilidad sobre el rediseño
 - **Hot-swap de tier** (S5-10, P1 → E-02). Sólo gana valor con un
   tier real al que swapear.
 
+## [0.14.0] — 2026-06-06
+
+### Added — Dictado en streaming ("En vivo")
+
+- Nuevo modo de dictado **en vivo**: las palabras aparecen en el editor mientras
+  hablás (pseudo-streaming sobre whisper, ventana deslizante) y se consolidan por
+  frase. Desacoplado por modo (Manual / En vivo) con patrón Strategy; el modo
+  manual queda intacto. Captura por AudioWorklet (PCM16 16 kHz) + sesión de
+  streaming en backend (whisper-server + endpoint por energía).
+
+### Added — Idioma global (5 idiomas, UI + voz)
+
+- Soporte **completo a 5 idiomas** (español, inglés, portugués, francés, italiano)
+  para la UI y la voz, con idioma global + override opcional de voz.
+- Selector de idioma data-driven; traducciones pt/fr/it completas; test de paridad
+  de locales (toda clave existe en los 5 idiomas).
+- La voz sigue el idioma: whisper transcribe en el idioma elegido (`-l <lang>`);
+  read-aloud usa la voz recomendada del idioma; **preview de voz por idioma** (la
+  frase de muestra se ve y se dice en el idioma de la voz).
+
+### Fixed
+
+- **Windows:** ya no parpadea una ventana de consola al transcribir/sintetizar
+  (`CREATE_NO_WINDOW` en los spawns de whisper/piper).
+- **Tauri 2.11:** nombres de evento migrados de `.` a `:` (Tauri 2.11 rechaza el
+  punto), restaurando el streaming de sugerencias IA inline y las barras de
+  progreso de transcripción/descarga que estaban rotas en silencio.
+
 ## [0.12.0-beta] — 2026-05-28
 
 Sprint D cerrado al 100% (7 historias). Foco en **DX, arquitectura y
