@@ -26,31 +26,38 @@ export function useStreamingCapture() {
       ? { deviceId: { exact: deviceId }, channelCount: 1 }
       : { channelCount: 1 };
     stream = await navigator.mediaDevices.getUserMedia({ audio });
-    let needsResample = false;
+    // A partir de acá el micro ya está abierto: si algo falla (p. ej. addModule
+    // 404), limpiar para no dejar el track vivo, y propagar el error.
     try {
-      ctx = new AudioContext({ sampleRate: 16000, latencyHint: 'interactive' });
-      needsResample = Math.abs(ctx.sampleRate - 16000) > 1;
-    } catch {
-      ctx = new AudioContext({ latencyHint: 'interactive' });
-      needsResample = true;
+      let needsResample = false;
+      try {
+        ctx = new AudioContext({ sampleRate: 16000, latencyHint: 'interactive' });
+        needsResample = Math.abs(ctx.sampleRate - 16000) > 1;
+      } catch {
+        ctx = new AudioContext({ latencyHint: 'interactive' });
+        needsResample = true;
+      }
+      if (ctx.state === 'suspended') await ctx.resume();
+      await ctx.audioWorklet.addModule('/pcm-worklet.js');
+      source = ctx.createMediaStreamSource(stream);
+      node = new AudioWorkletNode(ctx, 'pcm-capture', {
+        numberOfOutputs: 0,
+        channelCount: 1,
+      } as AudioWorkletNodeOptions);
+      const nativeRate = ctx.sampleRate;
+      node.port.onmessage = (e: MessageEvent<{ pcm: ArrayBuffer }>) => {
+        let f32: Float32Array = new Float32Array(e.data.pcm as ArrayBuffer);
+        if (needsResample) f32 = downsampleTo16k(f32, nativeRate);
+        level.value = rmsFloat32(f32);
+        elapsedMs.value = performance.now() - startedAt;
+        onPcm?.(float32ToInt16(f32));
+      };
+      source.connect(node);
+      startedAt = performance.now();
+    } catch (e) {
+      await stop();
+      throw e;
     }
-    if (ctx.state === 'suspended') await ctx.resume();
-    await ctx.audioWorklet.addModule('/pcm-worklet.js');
-    source = ctx.createMediaStreamSource(stream);
-    node = new AudioWorkletNode(ctx, 'pcm-capture', {
-      numberOfOutputs: 0,
-      channelCount: 1,
-    } as AudioWorkletNodeOptions);
-    const nativeRate = ctx.sampleRate;
-    node.port.onmessage = (e: MessageEvent<{ pcm: ArrayBuffer }>) => {
-      let f32: Float32Array = new Float32Array(e.data.pcm as ArrayBuffer);
-      if (needsResample) f32 = downsampleTo16k(f32, nativeRate);
-      level.value = rmsFloat32(f32);
-      elapsedMs.value = performance.now() - startedAt;
-      onPcm?.(float32ToInt16(f32));
-    };
-    source.connect(node);
-    startedAt = performance.now();
   }
 
   async function stop() {
