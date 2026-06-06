@@ -25,7 +25,8 @@ function isLocale(v: string | null | undefined): v is Locale {
 export function detectLocale(): Locale {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (isLocale(stored)) return stored;
-  return 'es';
+  const browser = (navigator.language ?? 'es').toLowerCase().slice(0, 2);
+  return isLocale(browser) ? browser : 'es';
 }
 
 export const i18n = createI18n({

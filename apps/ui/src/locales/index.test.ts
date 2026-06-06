@@ -22,8 +22,18 @@ describe('i18n locales', () => {
     expect(detectLocale()).toBe('pt');
   });
 
-  it('detectLocale falls back to es for unsupported stored/browser values', () => {
+  it('detectLocale uses the browser language when nothing is stored', () => {
+    const orig = navigator.language;
+    Object.defineProperty(navigator, 'language', { value: 'fr-FR', configurable: true });
+    expect(detectLocale()).toBe('fr');
+    Object.defineProperty(navigator, 'language', { value: orig, configurable: true });
+  });
+
+  it('detectLocale falls back to es when neither stored nor browser is supported', () => {
     localStorage.setItem('draffity.locale', 'de');
+    const orig = navigator.language;
+    Object.defineProperty(navigator, 'language', { value: 'de-DE', configurable: true });
     expect(detectLocale()).toBe('es');
+    Object.defineProperty(navigator, 'language', { value: orig, configurable: true });
   });
 });
