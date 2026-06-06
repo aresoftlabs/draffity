@@ -2,7 +2,7 @@
 
 ## Reporte de vulnerabilidades
 
-Reportá vulnerabilidades de seguridad **en privado** a **hola@aresoft.cl**.
+Reportá vulnerabilidades de seguridad **en privado** a **hello@draffity.com**.
 No abras issues públicos para problemas de seguridad.
 
 Acusamos recibo dentro de 5 días hábiles y, tras el triage, damos una estimación

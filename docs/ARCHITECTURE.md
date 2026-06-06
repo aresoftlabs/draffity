@@ -1,6 +1,7 @@
 # Architecture
 
-> Estado: Fase 0 (scaffolding). Documento vivo — se actualiza al final de cada épica.
+> Estado: v0.14.0 (beta) — editor, binder, codex, export/import, IA (BYOK), voz local
+> y auto-update operativos. Documento vivo — se actualiza al final de cada épica.
 
 ## Visión global
 
@@ -47,7 +48,7 @@ Cada comando Tauri es una función `#[tauri::command]` fina que invoca servicios
 
 ## Storage
 
-- **Un único archivo SQLite canónico** en `<app_data_dir>/draffity.db` (Windows: `%APPDATA%\cl.aresoft.draffity\draffity.db`). Ver [ADR 0002](./ADR/0002-sqlite-canonico-vs-por-proyecto.md) para el razonamiento.
+- **Un único archivo SQLite canónico** en `~/.draffity/draffity.db` (en Windows, `%USERPROFILE%\.draffity\draffity.db`). El root `~/.draffity/` (resuelto por `DraffityHome`) agrupa DB, `voice/`, `media/`, `backups/`, `logs/` y `templates/`, y admite override vía `config.json`. Ver [ADR 0002](./ADR/0002-sqlite-canonico-vs-por-proyecto.md) para el razonamiento.
 - Modo WAL + `foreign_keys=ON` + `synchronous=NORMAL`.
 - Migraciones versionadas en `apps/desktop/src/migrations/`, aplicadas en orden por `LocalStorageService::migrate()`.
 
@@ -57,15 +58,17 @@ Cada comando Tauri es una función `#[tauri::command]` fina que invoca servicios
 - **Pinia** stores: `project`, `document`, `ui`. Solo estado UI/cliente — la verdad vive en Rust/SQLite.
 - **TipTap** como editor (extensible vía plugins de la comunidad y propios).
 - **PrimeVue + Tailwind**: componentes ricos (Tree, Splitter, Dialog) + utility CSS.
-- **vue-i18n** ES/EN desde día uno.
+- **vue-i18n** con idioma global en 5 lenguas (English, Español, Français, Italiano, Português), aplicado a UI **y** voz.
 
 ## Event bus
 
-Rust emite eventos con `tauri::Manager::emit`:
+Rust emite eventos con `tauri::Manager::emit`. Los nombres usan `:` como separador
+(Tauri 2.11 rechaza `.` en nombres de evento), definidos como constantes en
+[`events.rs`](../apps/desktop/src/events.rs):
 
-- `project.opened`, `project.archived`, `project.created`, `project.deleted`
-- `document.created`, `document.saved`, `document.deleted`, `document.moved`
-- `snapshot.created`, `snapshot.restored`
+- `project:created`, `project:opened`, `project:archived`, `project:deleted`
+- `document:created`, `document:saved`, `document:moved`, `document:deleted`
+- `snapshot:created`
 
 La UI se suscribe con `listen()`. Servicios de fondo (IA, ASR, TTS) pueden suscribirse igual sin tocar el core.
 
@@ -95,7 +98,13 @@ Operaciones que tocan ≥2 tablas o ≥2 rows van en `conn.transaction()`. Un fa
 
 Si feature B necesita reaccionar a algo que hace feature A, **A emite evento, B se suscribe**. No imports directos cruzados. Esto es lo que permite que servicios de IA, ASR o TTS se enganchen sin tocar el core.
 
-**Ejemplos**: [`events.rs`](../apps/desktop/src/events.rs) emite `project.opened`, `document.saved`, `snapshot.created`, etc.
+**Ejemplos**: [`events.rs`](../apps/desktop/src/events.rs) emite `project:opened`, `document:saved`, `snapshot:created`, etc.
+
+## Distribución y auto-update
+
+- **Releases públicas servidas desde R2.** Un tag `v*` dispara `release.yml`, que buildea y firma (minisign) los instaladores (NSIS Windows + AppImage Linux) y los sube a un bucket Cloudflare R2 expuesto vía dominio propio `bins.draffity.com`.
+- **Manifiesto propio.** `scripts/build-update-manifest.mjs` arma `app/stable/latest.json`; la app lo lee sin auth y verifica la firma del artefacto contra la `pubkey` en `tauri.conf.json`.
+- **Updater in-app.** `tauri-plugin-updater` aplica el update sin prompt de UAC (NSIS per-user en Windows, reemplazo in-place del AppImage en Linux). Detalle completo en [`AUTO-UPDATE.md`](./AUTO-UPDATE.md).
 
 ## Decisiones registradas (ADRs)
 

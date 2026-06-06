@@ -60,7 +60,7 @@ En el Inspector, sección **Versiones**:
 ## Exportar
 
 1. En la cabecera del proyecto, pulsa **Exportar**.
-2. Elige formato: `Markdown`, `Word (DOCX)` o `EPUB`.
+2. Elige formato: `Markdown`, `Word (DOCX)`, `EPUB` o `PDF` (listo para imprimir).
 3. Selecciona dónde guardar el archivo.
 
 El export procesa el árbol completo del proyecto en orden de aparición.
@@ -68,7 +68,7 @@ El export procesa el árbol completo del proyecto en orden de aparición.
 ## Ajustes
 
 - **Tema** — claro, oscuro o según el sistema.
-- **Idioma** — Español o English (toda la UI).
+- **Idioma** — global en 5 lenguas (English · Español · Français · Italiano · Português), aplicado a la UI y a la voz.
 - **Fuente del editor** — serif (Lora), sans (Inter) o monospace (JetBrains Mono).
 - **Intervalo de autoguardado** — 200 ms a 3 segundos.
 - **Hábito de escritura** — racha actual y más larga (días consecutivos).
@@ -95,15 +95,15 @@ Podés también importar binarios manualmente si tenés los archivos ya descarga
 
 ## Datos y privacidad
 
-- Todo se guarda en tu disco local: una sola base SQLite en `<carpeta de datos de la app>/draffity.db` (en Windows: `%APPDATA%\cl.aresoft.draffity`).
-- Los logs van a `<carpeta de datos>/logs/draffity.log` con rotación diaria.
+- Todo se guarda en tu disco local, bajo `~/.draffity/` (en Windows: `%USERPROFILE%\.draffity\`): una sola base SQLite `draffity.db`, más `voice/`, `media/`, `backups/`, `templates/` y `logs/`.
+- Los logs van a `~/.draffity/logs/draffity.log` con rotación diaria.
 - No hay telemetría ni envío a servidores externos.
 
-## Problemas conocidos en alpha
+## Problemas conocidos en beta
 
-- Export PDF llegará en una próxima iteración.
-- macOS no está soportado en esta alpha (se planea para post-MVP).
+- El export PDF genera una página HTML lista para imprimir; convertís a PDF desde el diálogo de impresión del navegador ("Guardar como PDF").
+- macOS no está soportado todavía (se planea para v1.0).
 
 ## Reportar un bug
 
-Mira en `<carpeta de datos>/logs/draffity.log` y abre un issue en el repositorio adjuntando el log y los pasos para reproducir.
+Mira en `~/.draffity/logs/draffity.log` y abre un issue en el repositorio adjuntando el log y los pasos para reproducir.

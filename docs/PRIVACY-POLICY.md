@@ -48,11 +48,9 @@ Ninguno de ellos transmite datos sin una acción tuya.
 ## Tu derecho a borrar
 
 Para eliminar todos los datos de Draffity borra la carpeta
-`<app_data>/Draffity` (la ruta exacta depende de tu sistema
-operativo — `~/Library/Application Support/Draffity/` en macOS,
-`%APPDATA%\Draffity\` en Windows, `~/.local/share/Draffity/` en
-Linux). El uninstaller del binario no toca esa carpeta para que un
-upgrade no te haga perder trabajo.
+`~/.draffity/` (en Windows: `%USERPROFILE%\.draffity\`). El
+uninstaller del binario no toca esa carpeta para que un upgrade no
+te haga perder trabajo.
 
 ## Cambios a esta política
 
@@ -61,13 +59,13 @@ se actualiza y el CHANGELOG del release menciona el cambio.
 
 ## Responsable
 
-El responsable del tratamiento es **Aresoft SpA** (hola@aresoft.cl),
+El responsable del tratamiento es **Aresoft SpA** (hello@draffity.com),
 titular del proyecto Draffity.
 
 ## Contacto
 
 Bugs y consultas sobre privacidad: abre una issue en el repositorio
-de Draffity o escribe a [hola@aresoft.cl](mailto:hola@aresoft.cl).
+de Draffity o escribe a [hello@draffity.com](mailto:hello@draffity.com).
 
 ---
 
