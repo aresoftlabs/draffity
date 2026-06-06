@@ -3,6 +3,8 @@ import { onBeforeUnmount, ref, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { ipc } from '@/services/ipc';
 import { findMatches } from './useProseMirrorSearch';
+import { resolveVoiceLanguage } from '@/composables/dictation/settings';
+import { i18n, type Locale } from '@/locales';
 
 /**
  * Resolve the current TTS voice ID from the settings store.
@@ -13,6 +15,30 @@ export function resolveVoiceId(): string {
   try {
     const store = useVoiceSettingsStore();
     return store.ttsVoiceId ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Language-aware TTS voice resolver (H-07).
+ * When the user has explicitly chosen a voice (`ttsVoiceId`), that wins.
+ * Otherwise, pick the recommended (or first) *installed* voice for the
+ * resolved TTS language (voice-language override → global locale → '').
+ */
+export async function resolveTtsVoiceId(): Promise<string> {
+  try {
+    const store = useVoiceSettingsStore();
+    if (store.ttsVoiceId) return store.ttsVoiceId;
+  } catch {
+    // Pinia not active — fall through to catalog lookup
+  }
+  const v = resolveVoiceLanguage();
+  const lang: Locale = v === 'auto' ? (i18n.global.locale.value as Locale) : v;
+  try {
+    const catalog = await ipc.getVoiceCatalog();
+    const voices = catalog.find((g) => g.lang === lang)?.voices.filter((x) => x.installed) ?? [];
+    return (voices.find((x) => x.recommended) ?? voices[0])?.id ?? '';
   } catch {
     return '';
   }
@@ -84,7 +110,7 @@ export function useReadAloud(editor: Ref<Editor | null>, options: ReadAloudOptio
     highlight(sentence);
     let audio;
     try {
-      audio = await ipc.synthesizeSpeech(sentence, resolveVoiceId());
+      audio = await ipc.synthesizeSpeech(sentence, await resolveTtsVoiceId());
     } catch (e) {
       const message = String((e as { message?: string })?.message ?? e);
       error.value = message;
