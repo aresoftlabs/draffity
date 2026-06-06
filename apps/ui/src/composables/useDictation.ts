@@ -1,11 +1,12 @@
-import { onUnmounted, ref, watch, type Ref } from 'vue';
+import { computed, onUnmounted, ref, watch, type Ref } from 'vue';
 import type { Editor } from '@tiptap/vue-3';
 import { useVoiceRecorder } from '@/audio/useVoiceRecorder';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { VoiceTranscribeProgress } from '@/services/ipc';
 import { createEditorBuffer } from './dictation/editorBuffer';
 import { createManualDictationMode } from './dictation/ManualDictationMode';
-import { resolveAutoStop } from './dictation/settings';
+import { createStreamingDictationMode } from './dictation/StreamingDictationMode';
+import { resolveAutoStop, resolveDictationMode } from './dictation/settings';
 import type {
   DictationContext,
   DictationMode,
@@ -54,7 +55,13 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
     clipboardFallback,
   };
 
-  const mode: DictationMode = createManualDictationMode();
+  let activeMode: DictationMode = createManualDictationMode();
+  const activeModeId = ref<'manual' | 'streaming'>('manual');
+  function pickMode(): DictationMode {
+    return resolveDictationMode() === 'streaming'
+      ? createStreamingDictationMode()
+      : createManualDictationMode();
+  }
 
   let unlistenProgress: UnlistenFn | null = null;
   let disposed = false;
@@ -68,7 +75,7 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && phase.value === 'recording') {
       e.preventDefault();
-      mode.cancel(ctx);
+      activeMode.cancel(ctx);
     }
   }
   window.addEventListener('keydown', onKeydown);
@@ -81,13 +88,15 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
 
   function start() {
     error.value = null;
-    void mode.start(ctx);
+    activeMode = pickMode();
+    activeModeId.value = activeMode.id;
+    void activeMode.start(ctx);
   }
   function stopAndInsert() {
-    if (phase.value === 'recording') void mode.stop(ctx);
+    if (phase.value === 'recording') void activeMode.stop(ctx);
   }
   function cancel() {
-    mode.cancel(ctx);
+    activeMode.cancel(ctx);
   }
   function toggle() {
     if (phase.value === 'recording') stopAndInsert();
@@ -97,16 +106,44 @@ export function useDictation(editor: Ref<Editor | null>, options: DictationOptio
   watch(
     () => recorder.isSilent.value,
     (silent) => {
-      if (silent && phase.value === 'recording' && resolveAutoStop()) void mode.stop(ctx);
+      if (silent && phase.value === 'recording' && resolveAutoStop()) void activeMode.stop(ctx);
     },
+  );
+
+  type CaptureHandle = {
+    capture?: {
+      level: { value: number };
+      waveform: { value: Uint8Array };
+      elapsedMs: { value: number };
+      isSilent: { value: boolean };
+    };
+  };
+  const streamingCapture = () => (activeMode as DictationMode & CaptureHandle).capture;
+  const level = computed(() =>
+    activeModeId.value === 'streaming'
+      ? (streamingCapture()?.level.value ?? 0)
+      : recorder.level.value,
+  );
+  const waveform = computed(() =>
+    activeModeId.value === 'streaming'
+      ? (streamingCapture()?.waveform.value ?? new Uint8Array(0))
+      : recorder.waveform.value,
+  );
+  const elapsedMs = computed(() =>
+    activeModeId.value === 'streaming'
+      ? (streamingCapture()?.elapsedMs.value ?? 0)
+      : recorder.elapsedMs.value,
+  );
+  const isSilent = computed(() =>
+    activeModeId.value === 'streaming' ? false : recorder.isSilent.value,
   );
 
   return {
     phase,
-    level: recorder.level,
-    waveform: recorder.waveform,
-    elapsedMs: recorder.elapsedMs,
-    isSilent: recorder.isSilent,
+    level,
+    waveform,
+    elapsedMs,
+    isSilent,
     progress,
     error,
     start,
