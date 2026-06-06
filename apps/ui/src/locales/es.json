@@ -343,6 +343,7 @@
     "voiceAccelMetal": "Metal (GPU Apple)",
     "voiceAccelVulkan": "Vulkan (GPU)",
     "voiceAccelCpu": "CPU",
+    "voicePreviewSample": "Hola, así suena esta voz.",
     "legal": "Legal",
     "legalHint": "Privacidad y términos de uso. Se abren en el lector interno de la app.",
     "privacyLink": "Política de privacidad",
