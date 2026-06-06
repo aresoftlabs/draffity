@@ -61,4 +61,18 @@ describe('createEditorBuffer streaming', () => {
     buf.clearGhost();
     ed.destroy();
   });
+
+  it('commitStreaming inserts HTML-special chars as plain text (no HTML parsing)', () => {
+    const ed = new Editor({
+      extensions: [StarterKit, DictationPlaceholder, DictationGhost],
+      content: '<p></p>',
+    });
+    ed.commands.setTextSelection(1);
+    const buf = createEditorBuffer(ref(ed));
+    buf.commitStreaming('<b>x</b> ');
+    // The literal angle-bracket sequence must appear in the document text,
+    // proving insertContent did NOT parse the string as HTML.
+    expect(ed.getText()).toContain('<b>x</b>');
+    ed.destroy();
+  });
 });

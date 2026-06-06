@@ -44,7 +44,7 @@ export function createEditorBuffer(editor: Ref<EditorLike | null>): EditorDictat
       const ed = rawEditor();
       if (!ed) return false;
       ed.commands.clearDictationGhost?.();
-      return ed.commands.insertContent(text) ?? false;
+      return ed.commands.insertContent({ type: 'text', text }) ?? false;
     },
   };
 }
