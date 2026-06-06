@@ -1,6 +1,6 @@
 import { ipc } from '@/services/ipc';
 import { shouldConfirmDiscard } from '@/composables/dictationDiscard';
-import { resolveInputDeviceId } from './settings';
+import { resolveInputDeviceId, resolveVoiceLanguage } from './settings';
 import type { DictationMode } from './types';
 
 /**
@@ -31,7 +31,7 @@ export function createManualDictationMode(): DictationMode {
       ctx.setPhase('transcribing');
       try {
         const rec = await ctx.recorder.stop();
-        const transcript = await ipc.transcribeAudio(rec.wav);
+        const transcript = await ipc.transcribeAudio(rec.wav, undefined, resolveVoiceLanguage());
         if (myRun !== runId) return; // cancelado mientras transcribía
         const clean = transcript.text.trim();
         if (!clean) {

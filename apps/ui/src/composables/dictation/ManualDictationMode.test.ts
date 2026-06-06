@@ -6,7 +6,12 @@ import { createManualDictationMode } from './ManualDictationMode';
 vi.mock('@/services/ipc', () => ({
   ipc: { transcribeAudio: vi.fn() },
 }));
+vi.mock('./settings', () => ({
+  resolveInputDeviceId: vi.fn(() => null),
+  resolveVoiceLanguage: vi.fn(() => 'es'),
+}));
 import { ipc } from '@/services/ipc';
+import { resolveVoiceLanguage } from './settings';
 
 function makeCtx(over: Partial<DictationContext> = {}): DictationContext {
   return {
@@ -57,6 +62,19 @@ describe('ManualDictationMode', () => {
     expect(ctx.editor.beginPending).toHaveBeenCalled();
     expect(ctx.editor.commit).toHaveBeenCalledWith('hola mundo ');
     expect(ctx.setPhase).toHaveBeenLastCalledWith('idle');
+  });
+
+  it('stop: passes resolveVoiceLanguage() as the language arg to transcribeAudio', async () => {
+    (ipc.transcribeAudio as ReturnType<typeof vi.fn>).mockResolvedValue({
+      text: 'prueba',
+      segments: [],
+    });
+    (resolveVoiceLanguage as ReturnType<typeof vi.fn>).mockReturnValue('es');
+    const mode = createManualDictationMode();
+    const ctx = makeCtx();
+    await mode.start(ctx);
+    await mode.stop(ctx);
+    expect(ipc.transcribeAudio).toHaveBeenCalledWith(expect.any(Uint8Array), undefined, 'es');
   });
 
   it('stop: empty transcript clears the pending marker, no commit', async () => {

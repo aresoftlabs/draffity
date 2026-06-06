@@ -148,14 +148,14 @@ impl Transcriber for WhisperTranscriber {
             if let Some(ref m) = model {
                 if self.server.available() {
                     let wav = std::fs::read(&path)?;
-                    if let Ok(t) = self.server.transcribe(m, &wav) {
+                    if let Ok(t) = self.server.transcribe(m, &wav, None) {
                         return Ok(t.text);
                     }
                 }
             }
             // Fallback: CLI batch (resuelve el modelo internamente).
             self.asr
-                .transcribe_file(&path.to_string_lossy())
+                .transcribe_file(&path.to_string_lossy(), None)
                 .map(|t| t.text)
         })();
         let _ = std::fs::remove_file(&path);

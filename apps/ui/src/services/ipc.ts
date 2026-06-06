@@ -278,10 +278,11 @@ export const ipc = {
   deleteVoiceModel: (modelId: string) => invoke<void>('delete_voice_model', { modelId }),
   deleteVoiceVoice: (voiceId: string) => invoke<void>('delete_voice_voice', { voiceId }),
   importVoiceBinary: (sourcePath: string) => invoke<void>('import_voice_binary', { sourcePath }),
-  transcribeAudio: (wav: Uint8Array, sampleRate?: number | null) =>
+  transcribeAudio: (wav: Uint8Array, sampleRate?: number | null, language?: string | null) =>
     invoke<Transcript>('transcribe_audio', {
       wav: Array.from(wav),
       sampleRate: sampleRate ?? null,
+      language: language ?? null,
     }),
   listVoiceVoices: () => invoke<VoiceVoice[]>('list_voice_voices'),
   downloadVoiceVoice: (voiceId: string) => invoke<void>('download_voice_voice', { voiceId }),
