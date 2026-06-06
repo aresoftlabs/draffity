@@ -1,40 +1,45 @@
 //! Event names emitted on the Tauri event bus.
 //!
 //! AI and voice features (background jobs, codex updates) subscribe
-//! to these without modifying the core. Names are stable wire identifiers —
-//! never rename, only add.
+//! to these without modifying the core.
+//!
+//! **Separador `:` (no `.`)**: Tauri 2.11 valida los nombres de evento y
+//! rechaza el `.` (permite alfanuméricos, `-`, `/`, `:`, `_`). Un nombre con
+//! punto hace que `listen`/`emit` fallen ("Event name must include only
+//! alphanumeric characters, '-', '/', ':' and '_'"). Mantener `:` como
+//! separador de namespace. El test `event_names_are_valid_for_tauri` lo blinda.
 //!
 //! The string consts remain the source of truth for the wire name (existing
 //! emitters keep using them). `AppEvent` (E-09) adds a typed front door so new
 //! AI/voice emitters get a checked enum instead of a stringly-typed name; its
 //! `name()` returns exactly these consts.
 
-pub const PROJECT_CREATED: &str = "project.created";
-pub const PROJECT_OPENED: &str = "project.opened";
-pub const PROJECT_ARCHIVED: &str = "project.archived";
-pub const PROJECT_DELETED: &str = "project.deleted";
+pub const PROJECT_CREATED: &str = "project:created";
+pub const PROJECT_OPENED: &str = "project:opened";
+pub const PROJECT_ARCHIVED: &str = "project:archived";
+pub const PROJECT_DELETED: &str = "project:deleted";
 
-pub const DOCUMENT_CREATED: &str = "document.created";
-pub const DOCUMENT_SAVED: &str = "document.saved";
-pub const DOCUMENT_MOVED: &str = "document.moved";
-pub const DOCUMENT_DELETED: &str = "document.deleted";
+pub const DOCUMENT_CREATED: &str = "document:created";
+pub const DOCUMENT_SAVED: &str = "document:saved";
+pub const DOCUMENT_MOVED: &str = "document:moved";
+pub const DOCUMENT_DELETED: &str = "document:deleted";
 
-pub const SNAPSHOT_CREATED: &str = "snapshot.created";
+pub const SNAPSHOT_CREATED: &str = "snapshot:created";
 
 // AI/voice events (Épicas F/G/H). Placeholders wired by their épica; declared
 // here so the typed enum and subscribers share one stable name. Marked
 // dead_code until their emitters land — same convention as AppState's
 // not-yet-consumed service fields.
 // `AI_SUGGESTION_RECEIVED` is already emitted by the AI inline command.
-pub const AI_SUGGESTION_RECEIVED: &str = "ai.suggestion.received";
+pub const AI_SUGGESTION_RECEIVED: &str = "ai:suggestion:received";
 #[allow(dead_code)]
-pub const AI_VALIDATION_COMPLETED: &str = "ai.validation.completed";
+pub const AI_VALIDATION_COMPLETED: &str = "ai:validation:completed";
 #[allow(dead_code)]
-pub const VOICE_TRANSCRIPTION_PARTIAL: &str = "voice.transcription.partial";
+pub const VOICE_TRANSCRIPTION_PARTIAL: &str = "voice:transcription:partial";
 #[allow(dead_code)]
-pub const VOICE_TRANSCRIPTION_COMPLETE: &str = "voice.transcription.complete";
+pub const VOICE_TRANSCRIPTION_COMPLETE: &str = "voice:transcription:complete";
 #[allow(dead_code)]
-pub const VOICE_TTS_PROGRESS: &str = "voice.tts.progress";
+pub const VOICE_TTS_PROGRESS: &str = "voice:tts:progress";
 
 /// Typed view over the event bus. `name()` yields the stable wire string, so
 /// `app.emit(AppEvent::DocumentSaved.name(), payload)` is equivalent to the
@@ -79,6 +84,25 @@ impl AppEvent {
             AppEvent::VoiceTtsProgress => VOICE_TTS_PROGRESS,
         }
     }
+
+    /// Todas las variantes — usado por el test-guard de validez de nombres.
+    #[cfg(test)]
+    const ALL: [AppEvent; 14] = [
+        AppEvent::ProjectCreated,
+        AppEvent::ProjectOpened,
+        AppEvent::ProjectArchived,
+        AppEvent::ProjectDeleted,
+        AppEvent::DocumentCreated,
+        AppEvent::DocumentSaved,
+        AppEvent::DocumentMoved,
+        AppEvent::DocumentDeleted,
+        AppEvent::SnapshotCreated,
+        AppEvent::AiSuggestionReceived,
+        AppEvent::AiValidationCompleted,
+        AppEvent::VoiceTranscriptionPartial,
+        AppEvent::VoiceTranscriptionComplete,
+        AppEvent::VoiceTtsProgress,
+    ];
 }
 
 #[cfg(test)]
@@ -95,11 +119,27 @@ mod tests {
     fn ai_voice_event_names_are_namespaced() {
         assert_eq!(
             AppEvent::AiSuggestionReceived.name(),
-            "ai.suggestion.received"
+            "ai:suggestion:received"
         );
         assert_eq!(
             AppEvent::VoiceTranscriptionPartial.name(),
-            "voice.transcription.partial"
+            "voice:transcription:partial"
         );
+    }
+
+    /// Tauri 2.11 rechaza nombres de evento con `.` (permite alfanum, `-`, `/`,
+    /// `:`, `_`). Este guard falla si alguna constante vuelve a usar un punto u
+    /// otro carácter inválido.
+    #[test]
+    fn event_names_are_valid_for_tauri() {
+        for ev in AppEvent::ALL {
+            let n = ev.name();
+            assert!(
+                !n.is_empty()
+                    && n.chars()
+                        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '/' | ':' | '_')),
+                "event name '{n}' has characters invalid for Tauri 2.11 event validation"
+            );
+        }
     }
 }

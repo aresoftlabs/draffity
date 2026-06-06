@@ -10,7 +10,7 @@ import { useAiUsageStore } from '@/stores/aiUsage';
  * preview with accept/reject. The floating panel renders this state; the
  * editor is only mutated on `accept()`.
  *
- * Streaming arrives as `ai.suggestion.received` events tagged with the request
+ * Streaming arrives as `ai:suggestion:received` events tagged with the request
  * id (the backend runs the blocking HTTP off-thread). `reject()` cancels via
  * `ai_cancel` so the backend stops feeding deltas.
  */
@@ -60,7 +60,7 @@ export function useAiInline(opts: Options) {
   const showsDiff = computed(() => meta?.action === 'rewrite' || meta?.action === 'expand');
 
   onMounted(async () => {
-    unlisten = await listen<AiDeltaEvent>('ai.suggestion.received', (event) => {
+    unlisten = await listen<AiDeltaEvent>('ai:suggestion:received', (event) => {
       if (event.payload.requestId !== currentRequestId) return;
       streamedText.value += event.payload.delta;
     });
