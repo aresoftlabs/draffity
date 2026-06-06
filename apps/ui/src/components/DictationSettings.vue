@@ -437,6 +437,18 @@ onBeforeUnmount(() => {
     </div>
     <p class="text-xs opacity-50 mt-1">{{ t('settings.voiceAutoStopSilenceHint') }}</p>
 
+    <!-- Dictation mode toggle (Manual / En vivo) -->
+    <div class="mt-3 flex items-center gap-2">
+      <ToggleSwitch
+        :model-value="voiceSettings.dictationMode === 'streaming'"
+        input-id="dictation-mode"
+        :aria-label="t('settings.voiceDictationMode')"
+        @update:model-value="(v) => (voiceSettings.dictationMode = v ? 'streaming' : 'manual')"
+      />
+      <label for="dictation-mode" class="text-sm">{{ t('settings.voiceDictationMode') }}</label>
+    </div>
+    <p class="text-xs opacity-60 mt-1">{{ t('settings.voiceDictationModeHint') }}</p>
+
     <!-- ASR test recorder -->
     <div class="mt-3">
       <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2">
