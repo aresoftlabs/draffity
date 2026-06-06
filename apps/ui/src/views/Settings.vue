@@ -19,6 +19,7 @@ import SettingsAI from '@/components/SettingsAI.vue';
 import SettingsVoice from '@/components/SettingsVoice.vue';
 import SettingsStats from '@/components/SettingsStats.vue';
 import SettingsUpdates from '@/components/SettingsUpdates.vue';
+import { SUPPORTED_LOCALES, LOCALE_NAMES, type Locale } from '@/locales';
 import { useUiStore } from '@/stores/ui';
 import { useProjectStore } from '@/stores/project';
 import { builtInFamily, useEditorSettings, type EditorFont } from '@/composables/useEditorSettings';
@@ -37,10 +38,7 @@ const themeOptions = computed(() => [
   { label: t('settings.themeSystem'), value: 'system' },
 ]);
 
-const localeOptions = [
-  { label: 'Español', value: 'es' },
-  { label: 'English', value: 'en' },
-];
+const localeOptions = SUPPORTED_LOCALES.map((value) => ({ label: LOCALE_NAMES[value], value }));
 
 const toast = useToast();
 
@@ -166,7 +164,7 @@ const themeModel = computed({
 
 const localeModel = computed({
   get: () => locale.value,
-  set: (v: string) => ui.setLocale(v as 'es' | 'en'),
+  set: (v: string) => ui.setLocale(v as Locale),
 });
 
 /**
@@ -433,7 +431,7 @@ const navSections: { id: SettingsSection; key: string }[] = [
             <h2 class="text-sm font-semibold uppercase tracking-wide opacity-70 mb-3">
               {{ t('settings.language') }}
             </h2>
-            <SelectButton
+            <Select
               v-model="localeModel"
               :options="localeOptions"
               option-label="label"
