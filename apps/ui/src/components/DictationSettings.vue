@@ -11,6 +11,7 @@ import { ipc, type AccelStatus, type VoiceModel, type VoiceStatus } from '@/serv
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
 import { useVoiceRecorder } from '@/audio/useVoiceRecorder';
 import VoiceRecorderControl from './VoiceRecorderControl.vue';
+import { SUPPORTED_LOCALES, LOCALE_NAMES } from '@/locales';
 
 /**
  * "Dictado" block (Whisper/ASR): binary status, model selector, model
@@ -79,6 +80,12 @@ const installedModelIds = computed(
 const asrOptions = computed(() =>
   voiceModels.value.filter((m) => m.installed).map((m) => ({ label: m.id, value: m.id })),
 );
+
+const voiceLangOptions = computed(() => [
+  { label: t('settings.voiceLangFollowApp'), value: null },
+  ...SUPPORTED_LOCALES.map((v) => ({ label: LOCALE_NAMES[v], value: v })),
+  { label: t('settings.voiceLangAuto'), value: 'auto' },
+]);
 
 function isSelectedAsrModelMissing(): boolean {
   const selected = voiceSettings.asrModelId;
@@ -448,6 +455,21 @@ onBeforeUnmount(() => {
       <label for="dictation-mode" class="text-sm">{{ t('settings.voiceDictationMode') }}</label>
     </div>
     <p class="text-xs opacity-60 mt-1">{{ t('settings.voiceDictationModeHint') }}</p>
+
+    <!-- Voice language selector -->
+    <div class="mt-3">
+      <label class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2 block">{{
+        t('settings.voiceLang')
+      }}</label>
+      <Select
+        v-model="voiceSettings.voiceLanguage"
+        :options="voiceLangOptions"
+        option-label="label"
+        option-value="value"
+        class="w-full"
+        :aria-label="t('settings.voiceLang')"
+      />
+    </div>
 
     <!-- ASR test recorder -->
     <div class="mt-3">

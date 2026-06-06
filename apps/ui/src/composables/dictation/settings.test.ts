@@ -3,6 +3,8 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useVoiceSettingsStore } from '@/stores/voiceSettings';
 import { resolveAsrModelId, resolveInputDeviceId, resolveAutoStop } from './settings';
 import { resolveDictationMode } from './settings';
+import { resolveVoiceLanguage } from './settings';
+import { setLocale } from '@/locales';
 
 describe('dictation settings resolvers', () => {
   afterEach(() => localStorage.clear());
@@ -37,5 +39,21 @@ describe('resolveDictationMode', () => {
   it('falls back to manual without active pinia', () => {
     setActivePinia(undefined as never);
     expect(resolveDictationMode()).toBe('manual');
+  });
+});
+
+describe('resolveVoiceLanguage', () => {
+  it('follows the app locale when no override', () => {
+    setActivePinia(createPinia());
+    setLocale('fr');
+    expect(resolveVoiceLanguage()).toBe('fr');
+  });
+  it('uses the voice override when set (locale or auto)', () => {
+    setActivePinia(createPinia());
+    setLocale('fr');
+    useVoiceSettingsStore().voiceLanguage = 'es';
+    expect(resolveVoiceLanguage()).toBe('es');
+    useVoiceSettingsStore().voiceLanguage = 'auto';
+    expect(resolveVoiceLanguage()).toBe('auto');
   });
 });

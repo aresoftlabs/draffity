@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import type { Locale } from '@/locales';
 
 const STORAGE_KEY = 'draffity.voiceSettings';
 
@@ -14,6 +15,8 @@ interface VoiceSettings {
   autoStopOnSilence: boolean;
   /** Modo de dictado: 'manual' (por defecto) o 'streaming'. */
   dictationMode: 'manual' | 'streaming';
+  /** Idioma de voz: override explícito o null = seguir el idioma global de la app. */
+  voiceLanguage: Locale | 'auto' | null;
 }
 
 const DEFAULTS: VoiceSettings = {
@@ -24,6 +27,7 @@ const DEFAULTS: VoiceSettings = {
   inputDeviceId: null,
   autoStopOnSilence: false,
   dictationMode: 'manual',
+  voiceLanguage: null,
 };
 
 function load(): VoiceSettings {
@@ -46,6 +50,9 @@ function load(): VoiceSettings {
       inputDeviceId: 'inputDeviceId' in parsed ? (parsed.inputDeviceId ?? null) : null,
       autoStopOnSilence: 'autoStopOnSilence' in parsed ? Boolean(parsed.autoStopOnSilence) : false,
       dictationMode: parsed.dictationMode === 'streaming' ? 'streaming' : 'manual',
+      voiceLanguage: ['es', 'en', 'pt', 'fr', 'it', 'auto'].includes(parsed.voiceLanguage)
+        ? parsed.voiceLanguage
+        : null,
     };
   } catch {
     return { ...DEFAULTS };
@@ -67,6 +74,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
   const inputDeviceId = ref<string | null>(initial.inputDeviceId);
   const autoStopOnSilence = ref<boolean>(initial.autoStopOnSilence);
   const dictationMode = ref<'manual' | 'streaming'>(initial.dictationMode);
+  const voiceLanguage = ref<Locale | 'auto' | null>(initial.voiceLanguage);
 
   watch(
     [
@@ -77,6 +85,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
       inputDeviceId,
       autoStopOnSilence,
       dictationMode,
+      voiceLanguage,
     ],
     () => {
       save({
@@ -87,6 +96,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
         inputDeviceId: inputDeviceId.value,
         autoStopOnSilence: autoStopOnSilence.value,
         dictationMode: dictationMode.value,
+        voiceLanguage: voiceLanguage.value,
       });
     },
     { deep: true },
@@ -100,6 +110,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     inputDeviceId.value = null;
     autoStopOnSilence.value = false;
     dictationMode.value = 'manual';
+    voiceLanguage.value = null;
   }
 
   return {
@@ -110,6 +121,7 @@ export const useVoiceSettingsStore = defineStore('voiceSettings', () => {
     inputDeviceId,
     autoStopOnSilence,
     dictationMode,
+    voiceLanguage,
     reset,
   };
 });
